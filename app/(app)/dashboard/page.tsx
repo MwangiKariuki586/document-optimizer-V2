@@ -1,0 +1,204 @@
+import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import {
+  ClipboardList,
+  Download,
+  FileText,
+  FileUp,
+  Plus,
+  Star,
+  WandSparkles,
+} from "lucide-react";
+import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
+import { DocumentStats } from "@/components/dashboard/DocumentStats";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { RecentDocuments } from "@/components/dashboard/RecentDocuments";
+import { SuggestionsReady } from "@/components/dashboard/SuggestionsReady";
+import { UsageSummary } from "@/components/dashboard/UsageSummary";
+import { EmptyState } from "@/components/feedback/EmptyState";
+import { InlineAlert } from "@/components/feedback/InlineAlert";
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  getDashboardData,
+  getEmptyDashboardData,
+  type DashboardData,
+} from "@/lib/dashboard/dashboard.service";
+
+const quickActions = [
+  {
+    title: "Upload Document",
+    description: "Upload a file from your device",
+    href: "/documents/new",
+    icon: FileUp,
+  },
+  {
+    title: "Create Blank Document",
+    description: "Start with a clean slate",
+    href: "/documents/new",
+    icon: FileText,
+  },
+  {
+    title: "Paste Text",
+    description: "Paste text to optimize instantly",
+    href: "/documents/new",
+    icon: ClipboardList,
+  },
+];
+
+const aiActionLimit = 1000;
+
+function formatNumber(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
+function progressClass(value: number, limit: number): string {
+  if (limit <= 0 || value <= 0) return "w-0";
+
+  const percent = Math.min(100, Math.round((value / limit) * 100));
+
+  if (percent >= 90) return "w-[90%]";
+  if (percent >= 78) return "w-[78%]";
+  if (percent >= 68) return "w-[68%]";
+  if (percent >= 62) return "w-[62%]";
+  if (percent >= 48) return "w-[48%]";
+  if (percent >= 36) return "w-[36%]";
+  if (percent >= 25) return "w-1/4";
+  return "w-[12%]";
+}
+
+function qualityLabel(score: number): string {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Good";
+  if (score > 0) return "Needs Review";
+  return "No score yet";
+}
+
+async function loadDashboardData(userId: string): Promise<{
+  data: DashboardData;
+  error: string | null;
+}> {
+  try {
+    return {
+      data: await getDashboardData(userId),
+      error: null,
+    };
+  } catch (error) {
+    console.error("[dashboard/load]", error);
+
+    return {
+      data: getEmptyDashboardData(),
+      error:
+        "We could not load dashboard data. Check the Supabase server configuration and try again.",
+    };
+  }
+}
+
+export default async function DashboardPage() {
+  const { userId } = await auth();
+  const { data: dashboardData, error } = userId
+    ? await loadDashboardData(userId)
+    : { data: getEmptyDashboardData(), error: null };
+
+  const hasDocuments = dashboardData.recentDocuments.length > 0;
+  const stats = [
+    {
+      label: "Total Documents",
+      value: formatNumber(dashboardData.metrics.totalDocuments),
+      helper: `${formatNumber(dashboardData.metrics.documentsThisMonth)} this month`,
+      icon: FileText,
+      variant: "info" as const,
+    },
+    {
+      label: "AI Actions This Month",
+      value: formatNumber(dashboardData.metrics.aiActionsThisMonth),
+      helper: `${formatNumber(dashboardData.metrics.aiActionsThisMonth)} of ${formatNumber(aiActionLimit)}`,
+      icon: WandSparkles,
+      progressClass: progressClass(
+        dashboardData.metrics.aiActionsThisMonth,
+        aiActionLimit,
+      ),
+      variant: "accent" as const,
+    },
+    {
+      label: "Exports",
+      value: formatNumber(dashboardData.metrics.totalExports),
+      helper: `+${formatNumber(dashboardData.metrics.exportsThisMonth)} this month`,
+      icon: Download,
+      variant: "success" as const,
+    },
+    {
+      label: "Avg. Quality Score",
+      value: formatNumber(dashboardData.metrics.avgQualityScore),
+      helper: qualityLabel(dashboardData.metrics.avgQualityScore),
+      icon: Star,
+      variant: "ai" as const,
+    },
+  ];
+
+  return (
+    <PageShell>
+      <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-[28px] font-bold leading-9 text-text-primary md:text-[40px] md:leading-[48px]">
+            Dashboard Workspace
+          </h1>
+          <p className="mt-2 max-w-2xl text-base leading-[26px] text-text-secondary">
+            Optimize documents with AI while tracking formatting confidence,
+            document activity, and usage.
+          </p>
+        </div>
+        <Link
+          href="/documents/new"
+          className="inline-flex w-fit items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
+        >
+          <Plus className="size-4" />
+          New Document
+        </Link>
+      </header>
+
+      {error ? (
+        <InlineAlert title="Dashboard data unavailable" variant="warning">
+          {error}
+        </InlineAlert>
+      ) : null}
+
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-6">
+          <DashboardQuickActions actions={quickActions} />
+          <DocumentStats stats={stats} />
+
+          {hasDocuments ? (
+            <RecentDocuments documents={dashboardData.recentDocuments} />
+          ) : (
+            <EmptyState
+              title="No documents yet."
+              description="Upload a file, paste text, or create a blank document to begin."
+              icon={<FileText className="size-6" />}
+              action={
+                <Link
+                  href="/documents/new"
+                  className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
+                >
+                  <Plus className="size-4" />
+                  Start a Document
+                </Link>
+              }
+            />
+          )}
+        </div>
+
+        <UsageSummary
+          aiActionLimit={aiActionLimit}
+          aiActionsUsed={dashboardData.metrics.aiActionsThisMonth}
+          exportFormats={dashboardData.exportFormats}
+          usage={dashboardData.usage}
+        />
+      </div>
+
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
+        <SuggestionsReady suggestions={dashboardData.suggestions} />
+        <RecentActivity activity={dashboardData.activity} />
+      </div>
+    </PageShell>
+  );
+}
