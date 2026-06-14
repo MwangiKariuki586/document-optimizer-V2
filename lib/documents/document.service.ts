@@ -18,10 +18,13 @@ import { FILE_TYPE_TO_DB } from "@/lib/documents/upload.validators";
 import type { Json, TablesInsert } from "@/lib/supabase/types";
 import type {
   CreateBlankDocumentInput,
+  CreateManualVersionInput,
   CreatePasteDocumentInput,
   CreateUploadedDocumentInput,
   CreatedDocument,
   CreatedUploadedDocument,
+  EditorDocument,
+  UpdateDocumentContentInput,
 } from "@/lib/documents/document.types";
 
 const EMPTY_EDITOR_JSON: Json = { type: "doc", content: [] };
@@ -76,6 +79,157 @@ async function createDocumentWithInitialVersion(
   });
 
   return { id: document.id, title: document.title };
+}
+
+// Loads a single document scoped to its owner. Returns null when the document
+// does not exist or does not belong to the authenticated user.
+export async function getDocumentForUser(
+  userId: string,
+  documentId: string,
+): Promise<EditorDocument | null> {
+  const supabase = createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select(
+      "id,title,file_type,fidelity_status,original_file_key,editor_json,current_markdown,word_count,updated_at",
+    )
+    .eq("id", documentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[documents/get]", error.message);
+    throw new Error("Failed to load document");
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  // Latest version number drives the editor's "Version N (Current)" label.
+  // Scoped to the owner; defaults to 0 when no versions exist yet.
+  const { data: latestVersion, error: versionError } = await supabase
+    .from("document_versions")
+    .select("version_number")
+    .eq("document_id", documentId)
+    .eq("user_id", userId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (versionError) {
+    console.error("[documents/get/version]", versionError.message);
+  }
+
+  return {
+    id: data.id,
+    title: data.title,
+    fileType: data.file_type,
+    fidelityStatus: data.fidelity_status,
+    hasOriginalFile: Boolean(data.original_file_key),
+    editorJson: data.editor_json,
+    currentMarkdown: data.current_markdown ?? "",
+    wordCount: data.word_count,
+    updatedAt: data.updated_at,
+    versionNumber: latestVersion?.version_number ?? 0,
+  };
+}
+
+// Saves manual editor changes. Ownership is enforced by scoping the update to the
+// user's row; word count is recomputed server-side rather than trusted from the client.
+// Returns null when no owned row matched (treated as not found by the route).
+export async function updateDocumentContent(
+  input: UpdateDocumentContentInput,
+): Promise<{ id: string } | null> {
+  const supabase = createSupabaseServerClient();
+  const wordCount = countWords(input.currentMarkdown);
+
+  const { data, error } = await supabase
+    .from("documents")
+    .update({
+      title: input.title.trim(),
+      editor_json: input.editorJson,
+      current_markdown: input.currentMarkdown,
+      word_count: wordCount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.documentId)
+    .eq("user_id", input.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[documents/update]", error.message);
+    throw new Error("Failed to save document");
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  await recordUsageEvent(supabase, {
+    userId: input.userId,
+    eventType: "manual_save",
+    documentId: data.id,
+  });
+
+  return { id: data.id };
+}
+
+// Creates a manual version checkpoint. Persists the current editor content (so the
+// document and the snapshot stay consistent) AND stores a recoverable copy in
+// document_versions. Ownership is enforced by scoping the update to the user's row.
+// Returns the new version number (for the editor's "Version N" label), or null
+// when no owned row matched (treated as not found by the route).
+export async function createManualVersion(
+  input: CreateManualVersionInput,
+): Promise<{ id: string; versionNumber: number } | null> {
+  const supabase = createSupabaseServerClient();
+  const wordCount = countWords(input.currentMarkdown);
+
+  const { data: document, error: updateError } = await supabase
+    .from("documents")
+    .update({
+      title: input.title.trim(),
+      editor_json: input.editorJson,
+      current_markdown: input.currentMarkdown,
+      word_count: wordCount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.documentId)
+    .eq("user_id", input.userId)
+    .select("id,title,formatting_metadata")
+    .maybeSingle();
+
+  if (updateError) {
+    console.error("[documents/version]", updateError.message);
+    throw new Error("Failed to save document version");
+  }
+
+  if (!document) {
+    return null;
+  }
+
+  const version = await createDocumentVersion(supabase, {
+    documentId: document.id,
+    userId: input.userId,
+    title: document.title,
+    source: "manual_save",
+    contentMarkdown: input.currentMarkdown,
+    editorJson: input.editorJson,
+    formattingMetadata: document.formatting_metadata,
+    notes: input.notes ?? null,
+  });
+
+  await recordUsageEvent(supabase, {
+    userId: input.userId,
+    eventType: "manual_save",
+    documentId: document.id,
+    metadata: { versioned: true },
+  });
+
+  return { id: version.id, versionNumber: version.versionNumber };
 }
 
 export async function createBlankDocument(

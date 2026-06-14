@@ -28,6 +28,55 @@ export const documentContentSchema = z
     `Content must be ${DOCUMENT_CONTENT_MAX.toLocaleString("en-US")} characters or fewer`,
   );
 
+// Editor body content may be empty (e.g. a blank document) but is still capped.
+export const documentBodySchema = z
+  .string({ message: "Content is required" })
+  .max(
+    DOCUMENT_CONTENT_MAX,
+    `Content must be ${DOCUMENT_CONTENT_MAX.toLocaleString("en-US")} characters or fewer`,
+  );
+
+// TipTap document JSON. Kept permissive (passthrough) but must be a `doc` root so
+// malformed payloads are rejected before they reach the database.
+export const editorJsonSchema = z
+  .object({
+    type: z.literal("doc"),
+    content: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
+export const updateDocumentSchema = z.object({
+  title: documentTitleSchema,
+  editorJson: editorJsonSchema,
+  currentMarkdown: documentBodySchema,
+});
+
+export type UpdateDocumentRequest = z.infer<typeof updateDocumentSchema>;
+
+// Optional free-text note attached to a manual version snapshot. Capped; no
+// character allowlist (free text, stored via the parameterized Supabase client).
+export const VERSION_NOTES_MAX = 280;
+
+export const versionNotesSchema = z
+  .string()
+  .trim()
+  .max(
+    VERSION_NOTES_MAX,
+    `Notes must be ${VERSION_NOTES_MAX} characters or fewer`,
+  )
+  .optional();
+
+// Manual version snapshot: persists the current editor content and stores a
+// recoverable copy. Mirrors the save payload plus an optional note.
+export const createVersionSchema = z.object({
+  title: documentTitleSchema,
+  editorJson: editorJsonSchema,
+  currentMarkdown: documentBodySchema,
+  notes: versionNotesSchema,
+});
+
+export type CreateVersionRequest = z.infer<typeof createVersionSchema>;
+
 export const createBlankDocumentSchema = z.object({
   sourceType: z.literal("blank").optional(),
   title: documentTitleSchema,

@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 4 - Document Editor Workspace
-**Last completed:** 12 Upload Document (Phase 3 complete)
-**Next:** Phase 4 / 13 Document Editor Page - Full UI
+**Last completed:** 15e Save and Version Menu UX Refinement
+**Next:** Phase 5 / 16 AI Actions Panel - Full UI
 
 ---
 
@@ -37,9 +37,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 4 - Document Editor Workspace
 
-- [ ] 13 Document Editor Page - Full UI
-- [ ] 14 Document Editor - Real Data
-- [ ] 15 Manual Version Creation
+- [x] 13 Document Editor Page - Full UI
+- [x] 14 Document Editor - Real Data
+- [x] 15 Manual Version Creation
 
 ### Phase 5 - AI Actions and Preview
 
@@ -93,6 +93,122 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-14
+Feature: 15e Save and Version Menu UX Refinement
+Status: Completed
+Files changed: components/editor/EditorMenu.tsx (new), components/editor/EditorTopBar.tsx, components/editor/VersionMenu.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Polished Save and Version dropdown UX for design consistency. Added shared EditorMenu primitives (backdrop, panel, section header, two-line menu item with description, footer). Save split button: right-aligned menu with descriptions ("Update the working copy" / "Create a recoverable snapshot"), dirty-state dot, rotating caret, Escape to close. Version pill: shortened to Version N + Current chip, badge-based source labels, subtler current-row highlight (left accent border + light tint), shared menu chrome. EditorTopBar lifts openMenu state so only one menu is open at a time; VersionMenu is controlled via open/onOpenChange.
+Verification: npx tsc --noEmit passed; npm run lint passed clean.
+Follow-up: Restore and preview remain Phase 7. Continue Phase 5 / 16 AI Actions Panel - Full UI.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 15d Save Split Button + Version History Pill
+Status: Completed
+Files changed: lib/versions/versions.service.ts, app/api/documents/[id]/versions/route.ts, components/editor/VersionMenu.tsx (new), components/editor/EditorTopBar.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Per user decision, split Save and version history into two controls. Save is now a split button (primary Save + caret menu with "Save" and "Save version"); always visible with a subtle "Saved" state when clean. The version pill no longer houses "Save current version"; it is now a read-only version-history dropdown via new VersionMenu component. Backend: added VersionListItem type and listDocumentVersions service (owner-scoped, ordered by version_number desc); added GET /api/documents/[id]/versions returning {success, data: VersionListItem[]}. VersionMenu lazy-fetches on open, shows spinner while loading, lists versions with number/source label/relative timestamp, highlights current version, and notes restore/preview are Phase 7. EditorWorkspace passes currentVersionNumber, documentId, and versionRefreshKey (versionNumber) to EditorTopBar.
+Verification: npx tsc --noEmit passed; npm run lint passed clean.
+Follow-up: Phase 7 restore and per-version preview remain deferred. Continue Phase 5 / 16 AI Actions Panel - Full UI.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 15c Manual Version Dropdown (re-added on top of 15b)
+Status: Completed
+Files changed: lib/versions/versions.service.ts, lib/documents/document.service.ts, lib/documents/document.validators.ts, lib/documents/document.types.ts, app/api/documents/[id]/versions/route.ts (re-created), components/editor/EditorTopBar.tsx, components/editor/EditorWorkspace.tsx, context/architecture.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Per user decision, brought back the manual "Save current version" action as a dropdown on the version pill, coexisting with automatic versioning. createDocumentVersion now selects+returns version_number (additive; snapshotDocumentVersion return type updated accordingly). Re-added createVersionSchema/versionNotesSchema/VERSION_NOTES_MAX/CreateVersionRequest validators, CreateManualVersionInput type, and createManualVersion service (ownership-scoped persist of current content + manual_save snapshot via createDocumentVersion + manual_save usage {versioned:true}); it returns the new versionNumber. Re-created POST /api/documents/[id]/versions returning {id, versionNumber}. EditorTopBar version pill is again a dropdown (onCreateVersion + isCreatingVersion): "Save current version" menu item, CometSpinner in the pill while creating, transparent fixed backdrop closes the menu. EditorWorkspace tracks versionNumber in state (seeded from document.versionNumber), handleCreateVersion POSTs {title, editorJson, currentMarkdown: getMarkdown()} and updates the label to the returned versionNumber on success; the pill label is now `Version ${versionNumber} (Current)` and updates live.
+Verification: npx tsc --noEmit passed; npm run lint clean; npm test 16/16 pass.
+Follow-up: Same as 15b — snapshotDocumentVersion still to be wired into AI/suggestion/restore (Phases 5-7); sidebar "Versions" count still mock; notes have no input UI (null).
+```
+
+```txt
+Date: 2026-06-14
+Feature: 15b Automatic Versioning Foundation (refactor of Task 15)
+Status: Completed (code); DB migration verified already applied
+Files changed: package.json, package-lock.json, lib/editor/editor-extensions.ts, lib/editor/editor-extensions.test.ts, components/editor/EditorWorkspace.tsx, components/editor/EditorTopBar.tsx, lib/documents/document.service.ts, lib/documents/document.validators.ts, lib/documents/document.types.ts, lib/versions/versions.service.ts, supabase/schema/phase-4-version-number.sql, context/architecture.md, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+Files removed: app/api/documents/[id]/versions/route.ts (+ empty versions/ dir)
+What was completed: Per user decision, folded versioning into automatic pre-destructive safety points and removed the manual "Save current version" action; added the versioning foundation (real version_number + label) and real Markdown serialization.
+  - Markdown: installed @tiptap/markdown@3.26.1 and added Markdown to the shared editorExtensions. Save now sends editor.getMarkdown() (real Markdown) instead of editor.getText() for current_markdown. Added 2 headless tests (headings/bold + bullet lists) -> 16/16 pass.
+  - Removed manual versioning: deleted the POST /api/documents/[id]/versions route, createManualVersion service, createVersionSchema/versionNotesSchema/CreateVersionRequest/VERSION_NOTES_MAX validators, and CreateManualVersionInput type. EditorTopBar lost the version dropdown menu + onCreateVersion/isCreatingVersion props; the version pill is now a display-only label. EditorWorkspace lost handleCreateVersion/isCreatingVersion.
+  - Reusable safety helper: added snapshotDocumentVersion(supabase, {documentId,userId,source,notes}) to versions.service — ownership-scoped read of the document's CURRENT title/current_markdown/editor_json/formatting_metadata, then createDocumentVersion with the given source; returns null when not owned. To be called BEFORE destructive writes in AI apply (Phase 5), suggestion apply (Phase 6), restore (Phase 7). Not yet wired (those flows don't exist).
+  - Real version label: version_number already exists in the DB (see migration note). Added versionNumber to EditorDocument; getDocumentForUser now also reads the max version_number for the doc (ownership-scoped, defaults 0) and the editor shows `Version ${versionNumber} (Current)` instead of the hardcoded "Version 4".
+DB migration: IMPORTANT — the Supabase MCP was initially connected to the WRONG project (a transit/nganya app at dinxdvlaffkrmsipqskg). User reconnected it to the correct project (dotbzqdqqlnxhhajljkq). Verified the version_number migration was ALREADY fully applied there: column version_number integer not null default 0, unique index document_versions_document_version_number_unique (document_id, version_number), BEFORE INSERT trigger document_versions_set_version_number -> set_document_version_number() (max+1 per document), and real backfilled values. No migration needed to apply. Added supabase/schema/phase-4-version-number.sql mirroring the deployed objects exactly (idempotent record). types.ts already included version_number, so no regen needed.
+Verification: npx tsc --noEmit passed; npm run lint clean; npm test 16/16 pass. DB state verified via MCP read-only queries.
+Follow-up: Wire snapshotDocumentVersion into AI/suggestion/restore flows in Phases 5-7. The sidebar "Versions 12" count and AI usage/user card remain mock (Phase 7/9). No notes input UI (notes always null). @tiptap/markdown is flagged "early release" by Tiptap — watch for serialization edge cases; word_count now counts markdown text (minor).
+```
+
+```txt
+Date: 2026-06-14
+Feature: 15 Manual Version Creation
+Status: Superseded by 15b (manual version creation removed)
+Files changed: lib/documents/document.validators.ts, lib/documents/document.types.ts, lib/documents/document.service.ts, app/api/documents/[id]/versions/route.ts, components/editor/EditorTopBar.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added user-triggered manual version snapshots from the editor (Phase 4 / Task 15). Validators: createVersionSchema (title + editorJson + currentMarkdown + optional notes, capped at VERSION_NOTES_MAX=280) and versionNotesSchema. Types: CreateManualVersionInput. Service: createManualVersion(input) in document.service — ownership-scoped update of the document's current content (title/editor_json/current_markdown/word_count/updated_at, .eq user_id, maybeSingle -> null when not owned) AND a recoverable snapshot inserted into document_versions via the existing createDocumentVersion (source 'manual_save', title, content_markdown, editor_json, formatting_metadata pulled from the updated row, notes); records a 'manual_save' usage event with metadata {versioned:true}. Save + snapshot run together so the document and the version stay consistent. Route: thin POST /api/documents/[id]/versions (auth -> await params -> validate -> service -> 404 when not found/owned -> {success,data:{id,documentId}}). UI: EditorTopBar is now "use client" and the version pill is a dropdown (onCreateVersion + isCreatingVersion); the "Save current version" menu item POSTs the current editor state, the pill shows a CometSpinner while creating, and a transparent fixed backdrop closes the menu on outside click. EditorWorkspace owns isCreatingVersion + handleCreateVersion (POSTs {title, editorJson: getJSON(), currentMarkdown: getText()}; on success sets saveState 'saved' since the content was persisted; success/error toasts).
+Verification: npx tsc --noEmit passed; npm run lint passed clean. Live flow to verify by signing in, editing a document, opening the version pill -> "Save current version", and confirming a document_versions row (source=manual_save, content_markdown/editor_json/formatting_metadata populated) plus a usage_ledger manual_save{versioned:true} row, and that the document's editor_json/current_markdown/word_count/updated_at were saved.
+Follow-up: No version_number column exists; version ordering is by created_at and numbering/labels ("Version 4 (Current)") stay mock until Phase 7 (Version History, Tasks 22-23) renders the list in this same dropdown. Notes have no input UI yet (always null). current_markdown stores TipTap getText() (plain text) as the portable fallback; real markdown serialization deferred. Pre-destructive auto-versioning before AI/suggestion apply comes with Phases 5-6.
+```
+
+```txt
+Date: 2026-06-14
+Feature: Editor Workspace Visual Refinement
+Status: Completed
+Files changed: components/layout/AppHeader.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorSidebar.tsx, components/editor/EditorTopBar.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorStatusBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined the editor workspace UI against context/designs/editor workspace.png without changing data flow or backend wiring. The app header now uses a compact rounded shell, 1280px workspace width, and circular logo mark while keeping authenticated navigation and actions. The editor workspace uses tighter page padding, narrower side rails, and a viewport height tied to the compact header. The canvas now renders a centered document-paper surface inside a subtle editor background while preserving TipTap and zoom behavior. Sidebar, top bar, toolbar, suggestions rail, and status bar were tightened to better match the reference density. The Save action remains available for dirty/saving states; undo/redo, toolbar controls, suggestions open/close, zoom, and existing links remain intact. Comment and more-options controls were restored visually only to match the design and remain unwired.
+Verification: npm run lint passed; npx tsc --noEmit passed; ReadLints reported no errors on the edited files. Browser/dev-server confirmation: opened the document editor route in the default browser; Next served `/documents/[id]` with 200 after compiling, with no new runtime error shown in the dev log.
+Follow-up: Continue Phase 4 / 15 Manual Version Creation.
+```
+
+```txt
+Date: 2026-06-14
+Feature: AI Suggestions Panel Button Placement Refinement
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Moved the Export and AI Assistant buttons inside the AI Suggestions panel card and adjusted spacing to match the reference crop: two equal columns, internal p-3 padding, gap-3 between buttons, h-9 button height, and a bottom separator before the panel header. Behavior remains unchanged.
+Verification: npm run lint passed; npx tsc --noEmit passed; ReadLints reported no errors on the edited files.
+Follow-up: Continue section-by-section visual refinements as requested.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 14c Editor Layout Fidelity + Desktop Single-Viewport (follow-up to Task 14)
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorSidebar.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorStatusBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Zeroed out remaining editor UI mismatches vs context/designs/editor workspace.png and made the workspace fit one desktop viewport with no page scroll. Layout: at xl the main is height-capped to calc(100vh-97px) (app header) with overflow-hidden; the column grid is the flex-grow row (xl:flex-1 xl:min-h-0 xl:grid-rows-1) and the metrics bar is shrink-0. Each column passes min-h-0 so the canvas and the suggestions card list scroll internally (overflow-y-auto) instead of the page. Below xl the layout stacks and the page scrolls normally. EditorCanvas dropped the fixed max-h-[calc(100vh-16rem)] in favor of xl:flex-1/min-h-0 fill. EditorSuggestionsPanel: panel fills column height (xl:h-full/min-h-0), header/filters/footer shrink-0, card list scrolls. Visual fidelity: sidebar file tile now shows a file-type letter (docx->W, pdf->P, markdown->M, txt->T) in an info square; card subtitle reflects save state ("Saved just now" / "Saving…" / "Unsaved changes"); AI usage card matches the design ("AI Usage (This month)", compact "7,200 / 10,000 tokens"); usage + user cards pinned to the bottom via mt-auto. Toolbar font/size defaults read "Inter" / "11" to match the design. Status bar Readability badge reads "Grade 8".
+Verification: npx tsc --noEmit passed; no linter errors on the edited components.
+Follow-up: Comment and "more options" top-bar buttons remain removed per the earlier user decision (they appear in the reference design); re-add if exact visual parity is preferred. Continue Phase 4 / 15 Manual Version Creation.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 14b Editor Toolbar/Zoom Wiring (follow-up to Task 14)
+Status: Completed
+Files changed: package.json, package-lock.json, vitest.config.ts, lib/editor/editor-extensions.ts, lib/editor/editor-extensions.test.ts, components/editor/EditorWorkspace.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorTopBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Made the remaining editor controls functional after the user reported them not working (most were placeholders). Installed @tiptap/extension-text-style (TextStyleKit: TextStyle/Color/FontFamily/FontSize), @tiptap/extension-highlight, and @tiptap/extension-text-align. Centralized the editor extension set in lib/editor/editor-extensions.ts (StarterKit + TextStyleKit + Highlight + TextAlign), consumed by EditorWorkspace. Wired the full toolbar: block-type select (Normal/H1-H3 via setParagraph/setHeading), font-family and font-size selects (setFontFamily/setFontSize + unset), bold/italic/underline, text color (input type=color -> setColor), highlight (toggleHighlight), bullet/ordered lists, list indent (sink/liftListItem), text align (left/center/right/justify via setTextAlign), and inline code, all with active-state highlighting. Made the canvas zoom functional (EditorCanvas is now a client component: 50%-200%, step 10, reset, transform scale on the content wrapper). Removed the comment and "more options" top-bar buttons per user decision (not MVP features). Added a Vitest + jsdom setup (vitest.config.ts with @ alias + jsdom env, "test": "vitest run") and lib/editor/editor-extensions.test.ts covering all wired commands.
+Verification: npx tsc --noEmit passed; npm run lint passed clean; npm test -> 14/14 editor-command tests pass (bold, italic, underline, code, highlight, color, font family, font size, heading, paragraph, bullet list, ordered list, text align, undo/redo) in ~1.6s. (Note: a true in-browser Playwright e2e is gated by Clerk auth and is scoped to Phase 10; this headless test verifies the editor command layer the toolbar drives.)
+Follow-up: Continue Phase 4 / 15 Manual Version Creation. Vitest test infra was introduced early (Phase 10 scope) to satisfy the verification request; expand coverage during the Phase 10 testing pass.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 14 Document Editor - Real Data
+Status: Completed
+Files changed: package.json, package-lock.json, app/globals.css, app/(app)/documents/[id]/page.tsx, app/api/documents/[id]/route.ts, lib/documents/document.validators.ts, lib/documents/document.types.ts, lib/documents/document.service.ts, components/editor/EditorWorkspace.tsx, components/editor/EditorTopBar.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorSidebar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired the editor workspace to real document data and integrated the TipTap editor. Installed @tiptap/react, @tiptap/starter-kit, @tiptap/pm (v3.26.1). Backend: added getDocumentForUser (ownership-scoped select via .eq user_id + maybeSingle, returns EditorDocument or null) and updateDocumentContent (ownership-scoped update; recomputes word_count server-side with countWords; records manual_save usage; returns null when no owned row matched) to document.service. Added documentBodySchema (empty-allowed, capped), editorJsonSchema (doc root, passthrough), and updateDocumentSchema to document.validators, plus EditorDocument/UpdateDocumentContentInput types. Added a thin PATCH /api/documents/[id] route (auth -> await params -> validate -> service -> 404 when not found/owned). The [id] page is now an async Server Component that resolves the Clerk user, loads the document, and calls notFound() when missing/unowned, passing EditorDocument to the workspace. Frontend: EditorWorkspace owns useEditor(StarterKit, immediatelyRender:false), content from editor_json, onUpdate tracks word/char counts + dirty state, onSelectionUpdate keeps toolbar active states fresh; handleSave PATCHes {title, editorJson, currentMarkdown} with success/error toasts and dirty/saving state. EditorTopBar gained a save indicator + Save LoadingButton, an indicators slot (FidelityBadge + "Original file preserved" chip), and wired undo/redo. EditorToolbar wires bold/italic/underline/bullet/ordered list/code with active highlighting (font/size/color/highlight/align/indent remain placeholders). EditorCanvas renders <EditorContent> inside a .document-editor wrapper; EditorSidebar shows real file name + file-type label + save-state pill. Added token-based .ProseMirror styles to globals.css. A persistent formatting-warning InlineAlert shows for Limited Formatting / Formatting Review Needed fidelity.
+Verification: npx tsc --noEmit passed; npm run lint passed clean. Dev server (Turbopack) compiled and served /documents/[id] with 200 for a real document; no runtime errors in the dev log. Live save (PATCH) and ownership 404 to be exercised by signing in, editing, saving, and confirming documents.updated_at/editor_json/current_markdown/word_count change and a manual_save usage row is written.
+Follow-up: Continue Phase 4 / 15 Manual Version Creation (snapshot current state into document_versions with source=manual_save and notes). Note: manual save currently overwrites document content without first creating a snapshot; Task 15 adds explicit snapshots and pre-destructive version safety. current_markdown stores TipTap getText() (plain text) as the portable fallback; real markdown serialization is deferred. Toolbar font/size/color/highlight/align/indent need extra TipTap extensions before wiring.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 13 Document Editor Page - Full UI
+Status: Completed
+Files changed: app/(app)/documents/[id]/page.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorSidebar.tsx, components/editor/EditorTopBar.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorStatusBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Built the full Phase 4 editor workspace UI from context/designs/editor workspace.png using mock data only. Replaced the [id] placeholder with an async page that awaits params (Next 16) and renders EditorWorkspace. Added a three-pane layout (left sidebar rail, center document column, right AI Suggestions panel) plus a full-width bottom metrics bar, wrapped in a 1280px workspace container. EditorWorkspace is the only client component and holds local mock state (title input, suggestions open/closed, active filter). EditorSidebar: back link, file card with save status + "All changes saved" pill, vertical nav (Editor active, AI Suggestions 6, Versions 12, Export, Document Info), AI usage card (7,200/10,000 tokens, 72% bar), and user card. EditorTopBar: editable title + pencil, "Version 4 (Current)" pill, undo/redo/comment/more. EditorToolbar: Normal/Inter/11 selectors + bold/italic/underline/color/highlight/lists/indent/align/code groups, horizontally scrollable. EditorCanvas: mock Q2 Marketing Strategy document (H1/H2/H3, paragraphs, bullet list, inline accent SuggestionMark chips for phrases 1 and 2) with a footer (1,238 words, 7,890 characters, English (US), 100% zoom controls). EditorSuggestionsPanel: Export + AI Assistant buttons, header with count + close, filter tabs (All/Clarity/Tone/Structure/SEO), 3 suggestion cards (Clarity + Tone current/suggested pairs, Structure recommendation note), Apply/Ignore/more, Apply All 6, and a collapsed "Show AI Suggestions" reopen state. EditorStatusBar: AI Status, Document Health 86, Readability Gr 8, SEO Score 79, Version Safety with token conic score rings. All controls are non-functional placeholders for later phases. Registered all six editor components in ui-registry.
+Verification: npx tsc --noEmit passed; npm run lint passed clean. Dev server (Turbopack) compiled and served /documents/[id] with 200 after the change. All colors use project tokens (no raw Tailwind colors / hex); score rings reuse the dashboard conic-gradient token pattern.
+Follow-up: Start Phase 4 / 14 Document Editor - Real Data: load the document by ID, verify Clerk ownership, render from editor_json/fallback, show real fidelity + original-file indicator, and wire title/content save. Note: version (Phase 7) and export (Phase 8) entry points and the AI Assistant/Apply actions remain non-functional until their phases. Editor container uses max-w-[1280px] vs the standard 1200px page width to fit the three-pane workspace; revisit if a single page-width rule is preferred.
+```
 
 ```txt
 Date: 2026-06-14
@@ -347,7 +463,8 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 4 / 13 Document Editor Page - Full UI (reference context/designs/editor workspace.png)
-2. Build the editor workspace UI with mock data (title, save status, fidelity indicator, toolbar, canvas, AI/suggestions/version/export access)
-3. Visually verify before wiring real document data in 14 Document Editor - Real Data
+1. Start Phase 5 / 16 AI Actions Panel - Full UI (build the AI actions panel with mock data, referencing context/designs/results preview.png or editor workspace)
+2. AI action cards/buttons: Optimize, Improve Clarity, Fix Grammar, Rewrite, Summarize, Translate, Tone Analyze, SEO Analyze, Simplify Language
+3. Optional action settings (tone, audience, language, preserve-structure toggle), CometSpinner loading state, disabled-while-processing, and error state
+4. Defer real provider calls to Task 17 (AI Provider Abstraction) — Phase 5 step 16 is UI-only
 ```

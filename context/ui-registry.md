@@ -229,6 +229,8 @@ className="border-b border-border-light bg-background-soft/95 px-4 py-3 backdrop
 className="mx-auto flex min-h-[72px] max-w-[1200px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-6"
 className="hidden items-center gap-8 md:flex"
 className="mx-auto mt-3 max-w-[1200px] rounded-2xl border border-border-light bg-surface p-3 shadow-card-soft md:hidden"
+className="border-b border-border-light bg-background-soft/95 px-3 py-2 backdrop-blur md:px-5"
+className="mx-auto flex min-h-14 max-w-[1280px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-5"
 ```
 
 **Variants:**
@@ -238,7 +240,7 @@ className="mx-auto mt-3 max-w-[1200px] rounded-2xl border border-border-light bg
 
 **Rules:**
 
-- Keep navigation visually consistent with `PublicNavbar`.
+- Keep navigation visually consistent with `PublicNavbar`; the editor refinement uses the compact rounded header shell and circular logo mark from the editor design while preserving authenticated app links.
 - Active item uses `text-accent`.
 - Mobile navigation is a compact dropdown, not a sidebar.
 
@@ -809,7 +811,208 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 ## Editor Components
 
-_Empty._
+> Task 13 built the editor workspace UI; Task 14 wired the center column (title, TipTap editor, save, fidelity/original indicators) to real document data. The toolbar is now fully functional (block type, font family, font size, bold, italic, underline, text color, highlight, bullet/ordered lists, list indent, text align, inline code) plus undo/redo and functional zoom — all verified by `lib/editor/editor-extensions.test.ts`. The comment and "⋯" top-bar buttons were removed (not MVP features). Still mock until later phases: version dropdown + history (Task 15 / Phase 7), AI Assistant (Phase 5), suggestions Apply/Ignore (Phase 6), sidebar nav, AI usage, user card, and the bottom metrics bar.
+
+### EditorWorkspace
+
+**Path:** `components/editor/EditorWorkspace.tsx`
+
+**Purpose:**
+
+Client orchestrator for the document editor workspace. Receives a real `EditorDocument`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, suggestions open/closed, active filter), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Core classes:**
+
+```txt
+className="flex-1 bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:overflow-hidden"
+className="mx-auto flex h-full max-w-[1280px] flex-col gap-3"
+className="grid gap-3 lg:grid-cols-[224px_minmax(0,1fr)] xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:grid-cols-[224px_minmax(0,1fr)_300px]"
+```
+
+**Rules:**
+
+- Only this file carries `"use client"`; it owns the editor and passes the `editor` instance + handlers down.
+- TipTap uses `immediatelyRender: false` (required for Next SSR). Content comes from `editor_json`; save PATCHes `/api/documents/[id]` with `{ title, editorJson, currentMarkdown }` (server recomputes word count).
+- Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh - 73px` (compact app header) with `overflow-hidden`; the column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`) and the metrics bar is `shrink-0`. Each column passes `min-h-0` so the canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
+- On mobile the canvas column comes first (`order-1`), then suggestions, then the sidebar rail.
+- Suggestions panel, AI usage, user card, and metrics bar are still mock (later phases).
+
+### EditorSidebar
+
+**Path:** `components/editor/EditorSidebar.tsx`
+
+**Purpose:**
+
+Left workspace rail: back-to-documents link, document file card (real file name + file-type letter tile + saved-state subtitle) with a save-state pill, vertical workspace nav (Editor, AI Suggestions, Versions, Export, Document Info), AI usage card, and user card. Fills column height (`h-full flex-col`) with usage + user cards pinned to the bottom via `mt-auto`.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Variants:**
+
+- Active nav item — `bg-accent-light text-accent`; inactive — `text-text-secondary hover:bg-surface-secondary`.
+- Save pill: `saved` → success; `dirty`/`saving` → `bg-surface-tertiary text-text-secondary`.
+
+**Rules:**
+
+- Takes `fileName`, `fileType`, and `saveState` from real document data; AI usage and user card remain mock until Phase 9.
+- File tile shows a type letter (`docx`→W, `pdf`→P, `markdown`→M, `txt`→T) in an info-tinted square, falling back to the `FileText` icon. The card subtitle reflects `saveState` ("Saved just now" / "Saving…" / "Unsaved changes").
+- Exports `EditorNavKey`. Nav buttons are non-functional until later phases.
+
+### EditorTopBar
+
+**Path:** `components/editor/EditorTopBar.tsx`
+
+**Purpose:**
+
+Editor header row with an editable document title, a Save split button (primary Save + caret menu with Save / Save version), a fidelity indicator (via `indicators` slot), a version-history pill (`VersionMenu`), and undo/redo/comment/more controls.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Rules:**
+
+- `"use client"` (owns `openMenu: "save" | "version" | null` for mutual exclusion). Title is a controlled input (`title` + `onTitleChange`); changes mark the workspace dirty.
+- Save is always visible as a split button: primary action saves via `onSave` (PATCH `/api/documents/[id]` with `editor.getMarkdown()`); caret opens an `EditorMenuPanel` with two `EditorMenuItem`s — **Save** (*"Update the working copy"*) and **Save version** (*"Create a recoverable snapshot"*). When clean, primary shows "Saved" with check; when dirty, accent "Save" with unsaved dot; when saving, spinner + "Saving". Caret rotates when open; Escape closes. Opening Save closes Version menu and vice versa.
+- The version pill is delegated to `VersionMenu` (`currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`). Restore and preview remain Phase 7.
+- Undo/redo are wired to the TipTap `editor` (disabled via `editor.can()`). Comment and more-options controls are visual affordances only and remain unwired until their feature scope exists.
+
+### EditorMenu
+
+**Path:** `components/editor/EditorMenu.tsx`
+
+**Purpose:**
+
+Shared dropdown primitives for editor top-bar menus (Save and Version history).
+
+**Used on:**
+
+- `/documents/[id]` (via `EditorTopBar`, `VersionMenu`)
+
+**Rules:**
+
+- `"use client"`. Exports `EditorMenuBackdrop`, `EditorMenuPanel` (right-aligned, `shadow-popover`, `p-1.5`), `EditorMenuSectionHeader`, `EditorMenuItem` (icon + label + optional description), `EditorMenuFooter`.
+
+### VersionMenu
+
+**Path:** `components/editor/VersionMenu.tsx`
+
+**Purpose:**
+
+Read-only version-history dropdown for the editor top bar. Shows the current version label and, on open, fetches and lists all versions for the document.
+
+**Used on:**
+
+- `/documents/[id]` (via `EditorTopBar`)
+
+**Rules:**
+
+- `"use client"`. Props: `currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`.
+- Pill shows `Version N` + inline **Current** chip; chevron rotates when open. Lazy-fetches `GET /api/documents/[id]/versions` when opened. Current row uses subtle left accent border + light tint (not full block fill); source shown as a small pill badge; relative timestamp on the right. `EditorMenuSectionHeader` / `EditorMenuFooter` for consistent chrome. Escape and backdrop close. Rows are non-interactive; footer: *"Restore and preview coming in a later update."*
+
+### EditorToolbar
+
+**Path:** `components/editor/EditorToolbar.tsx`
+
+**Purpose:**
+
+Fully functional formatting toolbar. Receives the TipTap `editor` and wires block type (`<select>`: Normal/H1–H3), font family + font size (`<select>`s via TextStyleKit), bold, italic, underline, text color (`<input type="color">` → `setColor`), highlight, bullet/ordered lists, list indent (sink/lift list item), text align (left/center/right/justify), and inline code.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Core classes:**
+
+```txt
+className="flex items-center gap-1 overflow-x-auto border-t border-border-light px-3 py-1.5"
+```
+
+**Rules:**
+
+- Active controls use `bg-accent-light text-accent` via `editor.isActive(...)`; select values come from `editor.getAttributes("textStyle")` / heading state.
+- Editor extensions are defined once in `lib/editor/editor-extensions.ts` (StarterKit + TextStyleKit + Highlight + TextAlign) and verified by `lib/editor/editor-extensions.test.ts`.
+
+### EditorCanvas
+
+**Path:** `components/editor/EditorCanvas.tsx`
+
+**Purpose:**
+
+Document canvas hosting the live TipTap `<EditorContent>` (real `editor_json`) plus a footer with word/character counts, language, and zoom controls.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Core classes:**
+
+```txt
+className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
+className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary px-4 py-4 xl:min-h-0"
+className="document-editor mx-auto min-h-[620px] w-full max-w-[720px] origin-top rounded-lg border border-border-light bg-surface px-6 py-7 shadow-card-soft transition-transform md:px-10 md:py-9"
+```
+
+**Rules:**
+
+- The document area scrolls internally (`overflow-y-auto`). At `xl` the canvas grows to fill the column (`xl:flex-1 xl:min-h-0`) so its height is driven by the viewport-fit layout; below `xl` it keeps `min-h-[320px]` and grows with content. The inner document paper is centered on a subtle workspace surface. The `.ProseMirror` min-height is 240px (in `globals.css`).
+- The `.document-editor` wrapper applies token-based `.ProseMirror` styles defined in `app/globals.css` (headings, lists, code, blockquote, links).
+- Word/character counts are passed in from the workspace.
+- This is a client component: zoom is functional (50%–200%, step 10, reset) via local state and a `transform: scale()` on the content wrapper.
+
+### EditorSuggestionsPanel
+
+**Path:** `components/editor/EditorSuggestionsPanel.tsx`
+
+**Purpose:**
+
+Right-rail AI Suggestions panel: internal Export + AI Assistant action row, panel header with count and close, filter tabs (All/Clarity/Tone/Structure/SEO), suggestion cards (current vs suggested, Apply/Ignore), and an Apply All action. Collapses to a "Show AI Suggestions" button when closed.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Variants:**
+
+- Type badges: `Clarity` → info, `Tone` → ai, `Structure` → warning, `SEO` → success.
+- Suggestion card with current/suggested pair, or a recommendation `note` only.
+
+**Rules:**
+
+- Exports `EditorSuggestion`, `SuggestionType`, `SuggestionFilter`.
+- At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
+- Preview-first: Apply/Ignore/Apply All are non-functional until Phase 6 (Suggestions) wiring.
+- Export and AI Assistant actions sit inside the suggestions panel card as a two-column row with `gap-3`, `p-3`, and a bottom separator.
+
+### EditorStatusBar
+
+**Path:** `components/editor/EditorStatusBar.tsx`
+
+**Purpose:**
+
+Full-width metrics bar: AI Status, Document Health, Readability, SEO Score, and Version Safety with score rings and short context lines.
+
+**Used on:**
+
+- `/documents/[id]`
+
+**Core classes:**
+
+```txt
+className="grid shrink-0 gap-4 rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:grid-cols-2 xl:grid-cols-5"
+className="bg-[conic-gradient(var(--color-success)_86%,var(--color-border-light)_0)]"
+```
+
+**Rules:**
+
+- Score rings use token-based conic gradients (matches the dashboard chart pattern).
+- Metrics are mock; real quality/readability/SEO scoring is out of MVP scope unless requested.
 
 ---
 

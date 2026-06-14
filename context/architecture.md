@@ -336,7 +336,12 @@ Signed download URL is returned
 | editor_json         | jsonb       | Version editor content                                                       |
 | formatting_metadata | jsonb       | Version formatting metadata                                                  |
 | notes               | text        | Optional version notes                                                       |
+| version_number      | integer     | Per-document sequential number; auto-assigned by a BEFORE INSERT trigger      |
 | created_at          | timestamptz | Created timestamp                                                            |
+
+`version_number` is assigned automatically by the `set_document_version_number()` trigger (max+1 per `document_id`) and is unique per `(document_id, version_number)`. Application code never sets it. See `supabase/schema/phase-4-version-number.sql`.
+
+Versioning model: versions are created (1) automatically at document creation (`upload` / `paste` / `blank`), (2) automatically as pre-destructive safety snapshots before AI apply, suggestion apply, or restore via `snapshotDocumentVersion()` in `lib/versions/versions.service.ts`, and (3) on demand via the editor's "Save current version" dropdown action (`manual_save`, `createManualVersion()` + `POST /api/documents/[id]/versions`). The plain Save only overwrites the live document row (no snapshot).
 
 ### `ai_requests`
 

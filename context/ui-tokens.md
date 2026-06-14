@@ -52,8 +52,8 @@ className = "bg-purple-500 text-gray-600";
 @import "tailwindcss";
 
 @theme {
-  /* Font */
-  --font-sans: "Inter", sans-serif;
+  /* Font — Inter is loaded by next/font under --font-inter; reference it first. */
+  --font-sans: var(--font-inter), "Inter", sans-serif;
 
   /* Page and surface backgrounds */
   --color-background: #f8f7ff;
@@ -233,7 +233,7 @@ Used for AI-specific actions, previews, suggestion cards, and AI result states.
 
 Font family: **Inter**.
 
-Use `next/font/google` to load Inter.
+Use `next/font/google` to load Inter under its own variable (`--font-inter`), then reference it from `--font-sans` in `@theme` (`--font-sans: var(--font-inter), "Inter", sans-serif;`).
 
 | Element           | Size | Weight | Line height | Token                 |
 | ----------------- | ---- | ------ | ----------- | --------------------- |

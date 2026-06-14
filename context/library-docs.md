@@ -567,6 +567,20 @@ export function DocumentEditor({ initialContent }: Props) {
 }
 ```
 
+### Extensions and Markdown
+
+The editor extension set is centralized in `lib/editor/editor-extensions.ts` (shared by the editor and the headless tests): `StarterKit`, `TextStyleKit`, `Highlight`, `TextAlign`, and `Markdown` (`@tiptap/markdown`).
+
+`@tiptap/markdown` adds bidirectional Markdown. Use `editor.getMarkdown()` to serialize the document to real Markdown when persisting `current_markdown` (not `editor.getText()`, which is plain text). Example save payload:
+
+```typescript
+body: JSON.stringify({
+  title,
+  editorJson: editor.getJSON(),
+  currentMarkdown: editor.getMarkdown(),
+});
+```
+
 ### Storage
 
 Persist editor content as:
@@ -582,7 +596,7 @@ formatting_metadata
 - TipTap must stay inside editor-specific Client Components
 - Do not put TipTap in page-level Server Components
 - Store `editor_json` as the main rich editor representation
-- Keep `current_markdown` as portable fallback content
+- Keep `current_markdown` as portable fallback content; serialize it with `editor.getMarkdown()`
 - Do not treat extracted text as the only source of truth
 - Preserve document structure where technically possible
 - Debounce saves where appropriate

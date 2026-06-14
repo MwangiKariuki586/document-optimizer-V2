@@ -13,11 +13,11 @@ import { Inter } from "next/font/google";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-inter",
 });
 ```
 
-The `--font-sans` variable is declared in `@theme` in `globals.css`.
+In `@theme` in `globals.css`, declare `--font-sans` so it references the loaded font first: `--font-sans: var(--font-inter), "Inter", sans-serif;`. Do not point `next/font`'s `variable` directly at `--font-sans` — `@theme` also emits a `:root` value for `--font-sans`, and that literal `"Inter"` name (which the browser never loaded under that name) can win the cascade, silently falling back to the system sans.
 
 Apply the font variable class to the `<html>` tag in the root layout.
 
