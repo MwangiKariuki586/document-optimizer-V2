@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 2 - Dashboard Workspace
-**Last completed:** 08 Dashboard - Real Data
-**Next:** Continue Phase 3 - Upload/Create Document Flow / 09 Upload/Create Page - Full UI
+**Phase:** Phase 4 - Document Editor Workspace
+**Last completed:** 12 Upload Document (Phase 3 complete)
+**Next:** Phase 4 / 13 Document Editor Page - Full UI
 
 ---
 
@@ -30,10 +30,10 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 3 - Upload/Create Document Flow
 
-- [ ] 09 Upload/Create Page - Full UI
-- [ ] 10 Create Blank Document
-- [ ] 11 Paste Text Document
-- [ ] 12 Upload Document
+- [x] 09 Upload/Create Page - Full UI
+- [x] 10 Create Blank Document
+- [x] 11 Paste Text Document
+- [x] 12 Upload Document
 
 ### Phase 4 - Document Editor Workspace
 
@@ -80,6 +80,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - Homepage CTAs are auth-aware when Clerk keys are configured: signed-in users go to `/dashboard`, signed-out users go to `/login`; without Clerk keys they fall back to `/login`.
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
+- Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
 
 ---
 
@@ -92,6 +93,46 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-14
+Feature: 12 Upload Document
+Status: Completed
+Files changed: package.json, package-lock.json, next.config.ts, lib/parsing/parse-file.ts, lib/parsing/parse-text.ts, lib/parsing/parse-markdown.ts, lib/parsing/parse-docx.ts, lib/parsing/parse-pdf.ts, lib/storage/storage.service.ts, lib/documents/upload.validators.ts, lib/documents/document.types.ts, lib/documents/document.service.ts, app/api/upload/route.ts, components/upload/UploadDropzone.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired file upload + parsing end to end, completing Phase 3. Installed unpdf (PDF) and mammoth (DOCX) and added them to serverExternalPackages in next.config.ts. Added a parsing layer (parse-file orchestrator + parse-text/markdown/docx/pdf) returning the standard ParsedDocument shape. Added storage.service (uploadOriginalFile to private documents bucket at {userId}/{documentId}/original/{safeFileName}, best-effort removeOriginalFile cleanup). Added upload.validators (10MB cap, extension/type detection, storage-safe filename, filename->title via the shared allowlist). Added createUploadedDocument to document.service: parse-first, upload original, insert document (source_type=upload, status=ready, original_file_key, extracted_text/editor_json/current_markdown/formatting_metadata/fidelity_status/word_count), create initial 'upload' version, record 'upload' usage, with rollback (delete doc + remove file) on failure. Added thin POST /api/upload (nodejs runtime, multipart). Wired UploadDropzone with real drag/choose, uploading+parsing state (CometSpinner), inline error, success + formatting-warning toasts, redirect. Fidelity: TXT=Plain Text Only, Markdown=Structure Preserved, DOCX=Limited Formatting (warn), PDF=Original Preserved (warn). Also added the missing Upload Components section to ui-registry.
+Verification: npx tsc --noEmit passed; npm run lint passed clean. Dev server hot-restarted cleanly after the next.config change and serves /documents/new without errors. Blank and paste flows confirmed live in the dev log (POST /api/documents 201 -> redirect). Upload route to be exercised live by signing in and uploading each file type. Full production build (next build) was skipped to avoid conflicting with the active dev server holding .next.
+Follow-up: Start Phase 4 / 13 Document Editor Page - Full UI. Live-verify the upload flow for PDF/DOCX/MD/TXT and confirm the original file lands in the private documents bucket and rows appear in documents + document_versions + usage_ledger.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 11 Paste Text Document
+Status: Completed
+Files changed: lib/documents/text-to-editor.ts, lib/documents/document.validators.ts, lib/documents/document.types.ts, lib/documents/document.service.ts, app/api/documents/route.ts, components/upload/PasteTextForm.tsx, context/progress-tracker.md
+What was completed: Wired paste-text document creation end to end. Added a text-to-editor utility (normalizeText, countWords, plainTextToEditorJson that builds a TipTap doc of one paragraph per line with blank lines preserved). Added documentContentSchema (trim, min 1, max 100,000; no allowlist since body content is large free-text) and createPasteDocumentSchema reusing the shared documentTitleSchema allowlist. Refactored document.service to a shared createDocumentWithInitialVersion helper and added createPasteDocument (source_type=paste, status=ready, file_type=none, fidelity_status='Plain Text Only', stores extracted_text + current_markdown + editor_json + word_count). The POST /api/documents route now branches by sourceType (blank | paste) and rejects unsupported sources. Wired PasteTextForm with title allowlist validation, required content, LoadingButton, success/error toasts, and redirect to /documents/[id]. Initial version source='paste'.
+Verification: npx tsc --noEmit passed; npm run lint passed clean. Live end-to-end create requires a signed-in Clerk session plus Supabase server env.
+Follow-up: Continue Phase 3 / 12 Upload Document (file upload + parsing + private storage). Verify the live paste flow once signed in; pasted content will render in the editor once Phase 4 is built.
+```
+
+```txt
+Date: 2026-06-13
+Feature: 10 Create Blank Document
+Status: Completed
+Files changed: package.json, package-lock.json, lib/auth/clerk.ts, lib/documents/document.types.ts, lib/documents/document.validators.ts, lib/documents/document.service.ts, lib/versions/versions.service.ts, lib/usage/usage.service.ts, app/api/documents/route.ts, components/upload/BlankDocumentForm.tsx, context/progress-tracker.md
+What was completed: Wired blank document creation end to end. Installed zod. Added a Clerk server user resolver, a Zod blank-document validator, a thin POST /api/documents route handler (auth -> validate -> service -> JSON), and a document service that inserts a blank document (source_type=blank, status=ready, file_type=none, fidelity_status='Structure Preserved', empty TipTap editor_json), creates the initial 'blank' version, and records a document_create usage event. The version write is critical with best-effort document rollback on failure; usage write is non-blocking. Wired BlankDocumentForm to POST with a LoadingButton, success/error toasts, and redirect to /documents/[id].
+Verification: npm run lint passed cleanly; npm run build passed and registered /api/documents as a dynamic route. Live end-to-end create requires a signed-in Clerk session plus Supabase server env.
+Follow-up: Continue Phase 3 / 11 Paste Text Document. Verify the live create flow once signed in, and confirm the new document opens in the editor (editor is built in Phase 4).
+```
+
+```txt
+Date: 2026-06-10
+Feature: 09 Upload/Create Page - Full UI
+Status: Completed
+Files changed: app/(app)/documents/new/page.tsx, components/upload/SupportedFormats.tsx, components/upload/WhatHappensNext.tsx, components/upload/UploadDropzone.tsx, components/upload/PasteTextForm.tsx, components/upload/BlankDocumentForm.tsx, components/upload/UploadTabs.tsx, components/upload/RecentUploads.tsx, components/upload/UploadTips.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Built the full UI for the Upload/Create Page with 8 new reusable UI components representing the three creation flows (Upload File, Paste Text, Create Blank) and informational sidebars. Built with purely mock data and disabled inputs. Correctly registered the new components in the ui-registry.md. 
+Verification: npm run lint passed cleanly. npm run build passed cleanly, rendering a static page. UI aligns with tokens and project rules.
+Follow-up: Continue Phase 3 / 10 Create Blank Document to begin wiring the backend logic for the mock forms.
+```
 
 ```txt
 Date: 2026-06-10
@@ -306,8 +347,7 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 3 - Upload/Create Document Flow / 09 Upload/Create Page - Full UI
-2. Build the upload/create UI with mock states, referencing context/designs/upload document.png
-3. Verify desktop and mobile layouts visually
-4. Update context/ui-registry.md for new reusable upload components
+1. Start Phase 4 / 13 Document Editor Page - Full UI (reference context/designs/editor workspace.png)
+2. Build the editor workspace UI with mock data (title, save status, fidelity indicator, toolbar, canvas, AI/suggestions/version/export access)
+3. Visually verify before wiring real document data in 14 Document Editor - Real Data
 ```

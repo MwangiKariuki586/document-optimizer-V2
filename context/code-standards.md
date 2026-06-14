@@ -241,6 +241,42 @@ Standard error response:
 
 ---
 
+## Input Validation and Sanitization
+
+All user-provided input must be validated before it reaches the service layer or the database. The server-side Zod schema is always the source of truth. Client-side checks are for fast feedback only and never replace server validation.
+
+Rules:
+
+- Validate every request body, query param, and form value with Zod on the server.
+- Define shared field schemas in the relevant `lib/<domain>/*.validators.ts` file and reuse them on both server and client. Do not duplicate validation logic.
+- User-facing free-text fields (titles, names, labels) must use a clean-character allowlist, not a denylist. Reject anything outside the allowlist.
+- Trim input and enforce explicit min/max length on every text field.
+- Reject control characters and unsafe symbols. Prefer Unicode-aware allowlists so legitimate international text is still accepted.
+- Mirror the shared schema/pattern on the client for inline feedback (error message, `aria-invalid`, error styling, disabled submit), but always re-validate on the server.
+- Never trust client validation, hidden fields, or client-provided `user_id`.
+
+Document title standard (reuse for all document-title inputs):
+
+```typescript
+// lib/documents/document.validators.ts
+export const TITLE_ALLOWED_PATTERN = /^[\p{L}\p{N} \-_.,'()&]+$/u;
+
+export const documentTitleSchema = z
+  .string({ message: "Document title is required" })
+  .trim()
+  .min(1, "Document title is required")
+  .max(120, "Document title must be 120 characters or fewer")
+  .regex(TITLE_ALLOWED_PATTERN, TITLE_ALLOWED_MESSAGE);
+```
+
+### SQL Injection
+
+- SQL injection protection comes from the Supabase JS client, which sends values as parameters through PostgREST. Never build raw SQL by concatenating user input.
+- If a raw SQL path is ever required (e.g. an RPC or migration), use parameterized queries only and get approval first.
+- Input allowlists are defense-in-depth and reduce the stored-data attack surface; they are not the primary SQL-injection control.
+
+---
+
 ## Service Layer
 
 Business logic belongs in `lib/`.

@@ -644,6 +644,101 @@ className="h-8 appearance-none rounded-md border border-border bg-surface py-1 p
 
 ---
 
+## Upload Components
+
+### UploadTabs
+
+**Path:** `components/upload/UploadTabs.tsx`
+
+**Purpose:**
+
+Tabbed container for the three document creation methods (Upload File, Create Blank, Paste Text) on `/documents/new`.
+
+**Used on:**
+
+- `/documents/new`
+
+**Rules:**
+
+- Holds the active-tab state and renders `UploadDropzone`, `BlankDocumentForm`, or `PasteTextForm`.
+- Uses `role="tablist"` / `role="tab"` / `role="tabpanel"` for accessibility.
+
+### UploadDropzone
+
+**Path:** `components/upload/UploadDropzone.tsx`
+
+**Purpose:**
+
+Drag-and-drop / choose-file zone that uploads a file to `POST /api/upload`, shows uploading + parsing state, and redirects to the new document.
+
+**Used on:**
+
+- `/documents/new` (Upload File tab)
+
+**Variants:**
+
+- idle — drop zone with Choose File button
+- uploading — CometSpinner with "Uploading & analyzing…" and the file name
+- error — `InlineAlert` (error) below the zone
+
+**Rules:**
+
+- Client-side validates type/size via `validateUpload` before sending (server re-validates).
+- Sends `multipart/form-data`; does not set `Content-Type` manually.
+- Shows a warning toast when the API returns formatting warnings.
+
+### BlankDocumentForm
+
+**Path:** `components/upload/BlankDocumentForm.tsx`
+
+**Purpose:**
+
+Creates a blank document via `POST /api/documents` (`sourceType: "blank"`) and redirects to the editor.
+
+**Used on:**
+
+- `/documents/new` (Create Blank tab)
+
+**Rules:**
+
+- Title uses the shared clean-character allowlist (`TITLE_ALLOWED_PATTERN`) with inline error + `aria-invalid`.
+- Uses `LoadingButton`; success/error via `appToast`.
+
+### PasteTextForm
+
+**Path:** `components/upload/PasteTextForm.tsx`
+
+**Purpose:**
+
+Creates a document from pasted text via `POST /api/documents` (`sourceType: "paste"`) and redirects to the editor.
+
+**Used on:**
+
+- `/documents/new` (Paste Text tab)
+
+**Rules:**
+
+- Title uses the shared allowlist; content is required and capped at `DOCUMENT_CONTENT_MAX`.
+- Shows live word/character count; uses `LoadingButton` and `appToast`.
+
+### SupportedFormats / WhatHappensNext / RecentUploads / UploadTips
+
+**Path:** `components/upload/*.tsx`
+
+**Purpose:**
+
+Informational sidebar and helper sections on the upload page (supported formats, post-upload steps, recent uploads, tips). Presentational only.
+
+**Used on:**
+
+- `/documents/new`
+
+**Rules:**
+
+- Static/presentational; no data wiring required for the current phase.
+
+---
+
 ## Document Components
 
 ### DocumentStatusBadge
@@ -709,12 +804,6 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 - Match fidelity token mappings from `ui-tokens.md`.
 - Export `FidelityStatus` for dashboard data type compatibility.
-
----
-
-## Upload Components
-
-_Empty._
 
 ---
 

@@ -1,57 +1,50 @@
-import { FileUp, PenLine, Plus } from "lucide-react";
-import { InlineAlert } from "@/components/feedback/InlineAlert";
+import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
+import { UploadTabs } from "@/components/upload/UploadTabs";
+import { SupportedFormats } from "@/components/upload/SupportedFormats";
+import { WhatHappensNext } from "@/components/upload/WhatHappensNext";
+import { RecentUploads } from "@/components/upload/RecentUploads";
+import { UploadTips } from "@/components/upload/UploadTips";
 
-const options = [
-  {
-    title: "Upload File",
-    description: "Prepare PDF, DOCX, Markdown, and TXT upload states.",
-    Icon: FileUp,
-  },
-  {
-    title: "Paste Text",
-    description: "Create a document from copied text or draft content.",
-    Icon: PenLine,
-  },
-  {
-    title: "Create Blank",
-    description: "Start with a clean editor workspace.",
-    Icon: Plus,
-  },
-];
+export const metadata = {
+  title: "Upload / Create Document — Document Optimizer",
+  description:
+    "Upload an existing file, start from scratch, or paste your text to get started.",
+};
 
 export default function NewDocumentPage() {
   return (
     <PageShell>
       <PageHeader
         eyebrow="Create"
-        title="Start a document"
-        description="Mock shell entry point for the upload/create flow. Full UI states are scheduled for Phase 3."
+        title="Upload / Create Document"
+        description="Upload an existing file, start from scratch, or paste your text to get started. We'll help you improve it with AI."
       />
-      <InlineAlert title="Upload states are being prepared" variant="info">
-        This shell route confirms the creation entry point. The full upload,
-        paste, blank, progress, success, and error states are scheduled for
-        Phase 3.
-      </InlineAlert>
-      <section className="grid gap-4 md:grid-cols-3">
-        {options.map(({ Icon, ...option }) => (
-          <article
-            key={option.title}
-            className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-          >
-            <span className="flex size-12 items-center justify-center rounded-xl bg-accent-lighter text-accent">
-              <Icon className="size-6" />
-            </span>
-            <h2 className="mt-5 text-lg font-semibold leading-7 text-text-primary">
-              {option.title}
-            </h2>
-            <p className="mt-2 text-sm leading-[22px] text-text-secondary">
-              {option.description}
-            </p>
-          </article>
-        ))}
-      </section>
+
+      {/* Main content grid: tabs (left) + sidebar (right) */}
+      <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
+        {/* UploadTabs — Upload / Create Blank / Paste Text */}
+        <UploadTabs />
+
+        {/* Sidebar */}
+        <aside className="flex flex-col gap-4">
+          <SupportedFormats />
+          <WhatHappensNext />
+        </aside>
+      </div>
+
+      {/* Recent uploads table */}
+      <RecentUploads />
+
+      {/* Tips section */}
+      <UploadTips />
+
+      {/* Footer note */}
+      <p className="flex items-center justify-center gap-2 text-xs text-text-muted">
+        <ShieldCheck className="size-3.5 text-success" aria-hidden="true" />
+        Your original files are always preserved and secure.
+      </p>
     </PageShell>
   );
 }
