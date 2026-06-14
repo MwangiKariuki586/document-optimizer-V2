@@ -811,7 +811,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 ## Editor Components
 
-> Task 13 built the editor workspace UI; Task 14 wired the center column (title, TipTap editor, save, fidelity/original indicators) to real document data. The toolbar is now fully functional (block type, font family, font size, bold, italic, underline, text color, highlight, bullet/ordered lists, list indent, text align, inline code) plus undo/redo and functional zoom — all verified by `lib/editor/editor-extensions.test.ts`. The comment and "⋯" top-bar buttons were removed (not MVP features). Still mock until later phases: version dropdown + history (Task 15 / Phase 7), AI Assistant (Phase 5), suggestions Apply/Ignore (Phase 6), sidebar nav, AI usage, user card, and the bottom metrics bar.
+> Task 13 built the editor workspace UI; Task 14 wired the center column to real document data. Task 16 added the AI Actions panel in the right rail (opened from AI Assistant). Still mock until later phases: suggestions Apply/Ignore (Phase 6), sidebar nav switching, export, AI usage/user card, and bottom metrics bar.
 
 ### EditorWorkspace
 
@@ -819,7 +819,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 **Purpose:**
 
-Client orchestrator for the document editor workspace. Receives a real `EditorDocument`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, suggestions open/closed, active filter), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
+Client orchestrator for the document editor workspace. Receives a real `EditorDocument`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
 
 **Used on:**
 
@@ -839,7 +839,8 @@ className="grid gap-3 lg:grid-cols-[224px_minmax(0,1fr)] xl:min-h-0 xl:flex-1 xl
 - TipTap uses `immediatelyRender: false` (required for Next SSR). Content comes from `editor_json`; save PATCHes `/api/documents/[id]` with `{ title, editorJson, currentMarkdown }` (server recomputes word count).
 - Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh - 73px` (compact app header) with `overflow-hidden`; the column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`) and the metrics bar is `shrink-0`. Each column passes `min-h-0` so the canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
 - On mobile the canvas column comes first (`order-1`), then suggestions, then the sidebar rail.
-- Suggestions panel, AI usage, user card, and metrics bar are still mock (later phases).
+- Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. AI Assistant in suggestions opens `AIActionsPanel`; back returns to suggestions; close collapses the rail.
+- Suggestions Apply/Ignore, AI usage, user card, and metrics bar are still mock (later phases).
 
 ### EditorSidebar
 
@@ -988,6 +989,7 @@ Right-rail AI Suggestions panel: internal Export + AI Assistant action row, pane
 - Exports `EditorSuggestion`, `SuggestionType`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
 - Preview-first: Apply/Ignore/Apply All are non-functional until Phase 6 (Suggestions) wiring.
+- Export is non-functional until Phase 8. AI Assistant opens `AIActionsPanel` via `onOpenAIActions`.
 - Export and AI Assistant actions sit inside the suggestions panel card as a two-column row with `gap-3`, `p-3`, and a bottom separator.
 
 ### EditorStatusBar
@@ -1018,7 +1020,70 @@ className="bg-[conic-gradient(var(--color-success)_86%,var(--color-border-light)
 
 ## AI Components
 
-_Empty._
+### AIActionsPanel
+
+**Path:** `components/ai/AIActionsPanel.tsx`
+
+**Purpose:**
+
+Right-rail AI action picker for the document editor. Shows nine AI actions, optional settings (tone, audience, language, preserve-structure), processing/ready/error states, and preview-first reassurance. Wired in Phase 5 / 18 to run the selected action through `POST /api/documents/[id]/ai`.
+
+**Used on:**
+
+- `/documents/[id]` (via `EditorWorkspace`, opened from `EditorSuggestionsPanel` AI Assistant button)
+
+**Core classes:**
+
+```txt
+className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
+className="rounded-xl border p-3 ... border-ai bg-ai-muted" (selected action card)
+className="bg-ai-muted/40" (AI Summary strip)
+```
+
+**Variants:**
+
+- Action cards with category-tinted icon tiles (ai, info, success, warning, accent).
+- Status: idle, processing (`LoadingButton` + CometSpinner), ready (success strip + saved request id), error (`InlineAlert` + retry).
+
+**Rules:**
+
+- `"use client"`. Exports `AIActionSettings`, `AIActionStatus`.
+- Props: `onBack` (return to suggestions), optional `onClose` (collapse right rail), `onRunAction` (provided by `EditorWorkspace`).
+- `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`; the panel shows returned summary/id on success.
+- AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
+
+### AIResultPreview
+
+**Path:** `components/ai/AIResultPreview.tsx`
+
+**Purpose:**
+
+Client preview screen for a completed AI request. Compares original document content with AI output, shows AI summary, score/metric cards, formatting/version-safety notice, and lets the user copy, discard, regenerate/edit preferences, or explicitly apply the result.
+
+**Used on:**
+
+- `/documents/[id]/preview?requestId=...`
+
+**Core classes:**
+
+```txt
+className="mx-auto grid max-w-[1280px] gap-3 xl:grid-cols-[224px_minmax(0,1fr)_300px]"
+className="order-1 min-w-0 rounded-xl border border-border bg-surface shadow-card-soft xl:order-2"
+className="grid min-h-[540px] lg:grid-cols-2"
+```
+
+**Variants:**
+
+- Suggestion/category chips for clarity, grammar, tone, structure, and SEO.
+- Document score panel with token-based conic gradient and metric bars.
+- Empty revised result branch for analysis-only outputs.
+
+**Rules:**
+
+- `"use client"`. Receives an ownership-scoped `AIRequestPreview` from the server page.
+- Copy uses `navigator.clipboard` and `appToast`.
+- Apply calls `POST /api/documents/[id]/ai/[requestId]/apply`; the service snapshots the current document before updating content.
+- Regenerate, Edit Preferences, and Discard return to the editor for now; richer regenerate behavior can be added later.
 
 ---
 

@@ -5,6 +5,7 @@ import { useEditor, type JSONContent } from "@tiptap/react";
 
 import { editorExtensions } from "@/lib/editor/editor-extensions";
 
+import { AIActionsPanel } from "@/components/ai/AIActionsPanel";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorStatusBar } from "@/components/editor/EditorStatusBar";
@@ -20,12 +21,29 @@ import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { appToast } from "@/lib/feedback/toast";
 import { countWords } from "@/lib/documents/text-to-editor";
 import type { EditorDocument } from "@/lib/documents/document.types";
+import type {
+  AIActionKey,
+  AIActionOptions,
+  AIActionResult,
+} from "@/lib/ai/ai.types";
 
 type EditorWorkspaceProps = {
   document: EditorDocument;
 };
 
 export type SaveState = "saved" | "dirty" | "saving";
+
+type RightPanelMode = "suggestions" | "ai-actions";
+
+type RunAIActionResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    id: string;
+    status: "completed";
+    result: AIActionResult;
+  };
+};
 
 const SUGGESTIONS: EditorSuggestion[] = [
   {
@@ -83,6 +101,7 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [versionNumber, setVersionNumber] = useState(document.versionNumber);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+  const [rightPanel, setRightPanel] = useState<RightPanelMode>("suggestions");
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
   const [counts, setCounts] = useState({
@@ -193,6 +212,39 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
     }
   };
 
+  const handleRunAIAction = async (input: {
+    action: AIActionKey;
+    options: AIActionOptions;
+  }) => {
+    if (!editor) {
+      throw new Error("The editor is still loading. Please try again.");
+    }
+
+    const response = await fetch(`/api/documents/${document.id}/ai`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: input.action,
+        options: input.options,
+        contentMarkdown: editor.getMarkdown(),
+      }),
+    });
+
+    const data: RunAIActionResponse = await response.json();
+
+    if (!response.ok || !data.success || !data.data) {
+      throw new Error(data.error ?? "Could not run AI action.");
+    }
+
+    appToast.success("AI result is ready for review.");
+
+    return {
+      id: data.data.id,
+      summary: data.data.result.summary,
+      previewHref: `/documents/${document.id}/preview?requestId=${data.data.id}`,
+    };
+  };
+
   const fidelityStatus = document.fidelityStatus as FidelityStatus;
   const formattingWarning = FORMATTING_WARNING[document.fidelityStatus];
 
@@ -247,16 +299,31 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
           </div>
 
           <div className="order-3 lg:order-3 lg:col-span-2 xl:col-span-1 xl:min-h-0">
-            <EditorSuggestionsPanel
-              open={suggestionsOpen}
-              onClose={() => setSuggestionsOpen(false)}
-              onReopen={() => setSuggestionsOpen(true)}
-              suggestions={SUGGESTIONS}
-              filters={FILTERS}
-              activeFilter={activeFilter}
-              onFilterChange={setActiveFilter}
-              totalCount={6}
-            />
+            {rightPanel === "ai-actions" ? (
+              <AIActionsPanel
+                onBack={() => setRightPanel("suggestions")}
+                onClose={() => {
+                  setRightPanel("suggestions");
+                  setSuggestionsOpen(false);
+                }}
+                onRunAction={handleRunAIAction}
+              />
+            ) : (
+              <EditorSuggestionsPanel
+                open={suggestionsOpen}
+                onClose={() => setSuggestionsOpen(false)}
+                onReopen={() => setSuggestionsOpen(true)}
+                onOpenAIActions={() => {
+                  setSuggestionsOpen(true);
+                  setRightPanel("ai-actions");
+                }}
+                suggestions={SUGGESTIONS}
+                filters={FILTERS}
+                activeFilter={activeFilter}
+                onFilterChange={setActiveFilter}
+                totalCount={6}
+              />
+            )}
           </div>
         </div>
 

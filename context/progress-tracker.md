@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 4 - Document Editor Workspace
-**Last completed:** 15e Save and Version Menu UX Refinement
-**Next:** Phase 5 / 16 AI Actions Panel - Full UI
+**Phase:** Phase 5 - AI Actions and Preview
+**Last completed:** 19 AI Result Preview
+**Next:** Phase 6 / 20 Suggestions UI
 
 ---
 
@@ -43,10 +43,10 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 5 - AI Actions and Preview
 
-- [ ] 16 AI Actions Panel - Full UI
-- [ ] 17 AI Provider Abstraction
-- [ ] 18 Run AI Action
-- [ ] 19 AI Result Preview
+- [x] 16 AI Actions Panel - Full UI
+- [x] 17 AI Provider Abstraction
+- [x] 18 Run AI Action
+- [x] 19 AI Result Preview
 
 ### Phase 6 - Suggestions
 
@@ -93,6 +93,46 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-14
+Feature: 19 AI Result Preview
+Status: Completed
+Files changed: app/(app)/documents/[id]/preview/page.tsx (new), app/api/documents/[id]/ai/[requestId]/apply/route.ts (new), components/ai/AIResultPreview.tsx (new), components/ai/AIActionsPanel.tsx, components/editor/EditorWorkspace.tsx, lib/ai/ai.service.ts, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Built and wired the AI result preview flow using context/designs/results preview.png. Added /documents/[id]/preview?requestId=... server page that authenticates with Clerk and loads a completed ai_requests row through ownership-scoped getAIRequestPreview(). Added AIResultPreview client UI with original vs AI-optimized panels, summary/sidebar cards, document score panel, formatting preservation notice, Copy result, Regenerate/Edit Preferences/Discard links back to editor, and Apply to Document. Added POST /api/documents/[id]/ai/[requestId]/apply; apply loads the owned completed AI request, requires revisedMarkdown, snapshots the current document first via snapshotDocumentVersion(source=ai_apply), updates current_markdown/editor_json/word_count, records usage metadata, redirects back to editor, and never auto-applies without the button click. AIActionsPanel now links View preview to the saved request preview page.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (5 files, 31 tests). ReadLints reported no errors on changed files.
+Follow-up: Continue Phase 6 / 20 Suggestions UI. Preview currently converts applied revisedMarkdown through plainTextToEditorJson, so rich markdown-to-TipTap conversion remains an improvement opportunity.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 18 Run AI Action
+Status: Completed
+Files changed: app/api/documents/[id]/ai/route.ts (new), lib/ai/ai.service.ts (new), lib/ai/ai.validators.ts, lib/ai/ai.validators.test.ts, lib/usage/usage.service.ts, components/ai/AIActionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired AI actions to real backend execution while preserving preview-first safety. Added POST /api/documents/[id]/ai (Clerk auth, body validation, ownership-scoped service call). Added runDocumentAIAction service: verifies document ownership, creates a running ai_requests row, calls runAIAction() through the provider abstraction, updates the ai_requests row to completed with normalized output/provider/model/tokens/cost or failed with a safe error, and records ai_action usage with token/cost metadata on success. Updated usage tracking to accept provider/model/token/cost fields. AIActionsPanel now receives onRunAction, calls the route through EditorWorkspace with editor.getMarkdown(), shows real processing/error/ready states, and displays the saved request summary/id. No document content is changed and no AI output is applied automatically.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (5 files, 31 tests). ReadLints reported no errors on changed files.
+Follow-up: Continue Phase 5 / 19 AI Result Preview: load saved ai_requests by id, show original/result preview, and add apply/copy/regenerate/discard UI. Applying output must snapshot the current document first.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 17 AI Provider Abstraction
+Status: Completed
+Files changed: package.json, package-lock.json, lib/ai/ai.types.ts (new), lib/ai/ai.validators.ts (new), lib/ai/ai-prompts.ts (new), lib/ai/ai-normalize.ts (new), lib/ai/ai-cost.ts (new), lib/ai/ai-router.ts (new), lib/ai/providers/openai.provider.ts (new), lib/ai/providers/gemini.provider.ts (new), lib/ai/*.test.ts (new), context/library-docs.md, context/code-standards.md, context/progress-tracker.md
+What was completed: Added the AI service/provider abstraction for Phase 5 / 17. Installed the approved OpenAI and Gemini SDKs (`openai`, `@google/genai`). Added Zod validation for all nine AI actions, shared action options (tone/audience/language/preserveStructure), normalized preview/suggestions/analysis output, prompt construction, safe provider response normalization, estimated cost calculation, provider selection, and `runAIAction(input)` as the single entry point. Added OpenAI and Gemini providers that request JSON output and normalize token usage/cost behind the router. No API route, ai_requests persistence, usage writes, document mutation, or preview navigation was added; those remain Task 18/19.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (5 files, 29 tests). ReadLints reported no errors in lib/ai.
+Follow-up: Continue Phase 5 / 18 Run AI Action: add POST /api/documents/[id]/ai, verify ownership, validate input, create ai_requests rows, call runAIAction, persist normalized results, record usage, and wire AIActionsPanel to the route.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 16 AI Actions Panel - Full UI
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx (new), components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Built the Phase 5 / 16 AI Actions Panel as UI-only mock data inside the editor right rail. Added AIActionsPanel with nine action cards (Optimize, Improve Clarity, Fix Grammar, Rewrite, Summarize, Translate, Tone Analyze, SEO Analyze, Simplify Language), optional settings (tone, audience, language, preserve-structure toggle default on), mock processing via LoadingButton/CometSpinner, mock ready-for-review and error states via InlineAlert, and preview-first reassurance copy aligned to context/designs/results preview.png. EditorWorkspace now switches the right rail between suggestions and ai-actions; EditorSuggestionsPanel AI Assistant button opens the panel; back/close return to suggestions. No API routes, provider calls, ai_requests writes, or preview-page navigation added.
+Verification: npx tsc --noEmit passed; npm run lint passed clean (only pre-existing EditorTopBar unused-import warnings).
+Follow-up: Continue Phase 5 / 17 AI Provider Abstraction. Wire real AI execution in Task 18 and full result preview page in Task 19. View preview button remains disabled placeholder until Task 19.
+```
 
 ```txt
 Date: 2026-06-14
@@ -463,8 +503,8 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 5 / 16 AI Actions Panel - Full UI (build the AI actions panel with mock data, referencing context/designs/results preview.png or editor workspace)
-2. AI action cards/buttons: Optimize, Improve Clarity, Fix Grammar, Rewrite, Summarize, Translate, Tone Analyze, SEO Analyze, Simplify Language
-3. Optional action settings (tone, audience, language, preserve-structure toggle), CometSpinner loading state, disabled-while-processing, and error state
-4. Defer real provider calls to Task 17 (AI Provider Abstraction) — Phase 5 step 16 is UI-only
+1. Start Phase 6 / 20 Suggestions UI
+2. Build the suggestions UI with mock data, referencing context/designs/editor workspace.png
+3. Include suggestion list/cards, type badges, original/suggested text, explanation, Apply/Ignore buttons, applied/ignored state, and empty state
+4. Keep suggestion generation/apply/ignore logic deferred to Phase 6 / 21
 ```

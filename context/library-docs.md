@@ -363,20 +363,32 @@ All OpenAI calls must go through the AI provider abstraction.
 
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+import { buildAIUserPrompt, AI_SYSTEM_PROMPT } from "@/lib/ai/ai-prompts";
+import { normalizeProviderResponse } from "@/lib/ai/ai-normalize";
 
 export async function runOpenAIAction(
   input: AIActionInput,
 ): Promise<AIActionResult> {
-  const response = await openai.chat.completions.create({
-    model: input.model,
-    temperature: input.temperature,
-    messages: input.messages,
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+
+  const response = await client.chat.completions.create({
+    model: input.model ?? "gpt-4o-mini",
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: AI_SYSTEM_PROMPT },
+      { role: "user", content: buildAIUserPrompt(input) },
+    ],
   });
 
-  return normalizeOpenAIResponse(response);
+  return normalizeProviderResponse({
+    input,
+    provider: "openai",
+    model: input.model ?? "gpt-4o-mini",
+    text: response.choices[0]?.message.content ?? undefined,
+    inputTokens: response.usage?.prompt_tokens,
+    outputTokens: response.usage?.completion_tokens,
+  });
 }
 ```
 
@@ -449,14 +461,32 @@ All Gemini calls must go through the AI provider abstraction.
 ```typescript
 // lib/ai/providers/gemini.provider.ts
 
+import { GoogleGenAI } from "@google/genai";
+
 export async function runGeminiAction(
   input: AIActionInput,
 ): Promise<AIActionResult> {
-  // initialize Gemini client
-  // call model
-  // normalize response
+  const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  const model = input.model ?? "gemini-2.0-flash";
 
-  return normalizedResult;
+  const response = await client.models.generateContent({
+    model,
+    contents: buildAIUserPrompt(input),
+    config: {
+      systemInstruction: AI_SYSTEM_PROMPT,
+      temperature: 0.3,
+      responseMimeType: "application/json",
+    },
+  });
+
+  return normalizeProviderResponse({
+    input,
+    provider: "gemini",
+    model,
+    text: response.text,
+    inputTokens: response.usageMetadata?.promptTokenCount,
+    outputTokens: response.usageMetadata?.candidatesTokenCount,
+  });
 }
 ```
 
@@ -490,12 +520,65 @@ The AI router decides which provider handles an AI action.
 // lib/ai/ai-router.ts
 
 export async function runAIAction(
-  input: AIActionInput,
+  input: unknown,
 ): Promise<AIActionResult> {
-  const provider = selectProvider(input);
+  const parsed = aiActionInputSchema.safeParse(input);
 
-  return provider.run(input);
+  if (!parsed.success) {
+    throw new Error("Invalid AI action input");
+  }
+
+  const provider = selectAIProvider(parsed.data);
+
+  return provider.run(parsed.data);
 }
+```
+
+Current `lib/ai` structure:
+
+```txt
+lib/ai/ai.types.ts        → shared action/provider/result types
+lib/ai/ai.validators.ts   → Zod input/output validation for AI actions
+lib/ai/ai.service.ts      → document-scoped AI request persistence and usage tracking
+lib/ai/ai-prompts.ts      → shared system/user prompt construction
+lib/ai/ai-normalize.ts    → provider JSON parsing and result normalization
+lib/ai/ai-cost.ts         → estimated token cost helper
+lib/ai/ai-router.ts       → provider selection and runAIAction entry point
+lib/ai/providers/*        → OpenAI and Gemini adapters
+```
+
+Task 18 route flow:
+
+```txt
+POST /api/documents/[id]/ai
+  → authenticate with Clerk
+  → validate body with runAIActionRequestSchema
+  → runDocumentAIAction()
+  → ownership-scoped document lookup
+  → create ai_requests row with status=running
+  → call runAIAction() provider abstraction
+  → update ai_requests completed/failed
+  → record ai_action usage on success
+```
+
+Task 19 preview/apply flow:
+
+```txt
+/documents/[id]/preview?requestId=...
+  → authenticate with Clerk in the server page
+  → getAIRequestPreview()
+  → ownership-scoped ai_requests + documents lookup
+  → render original/current document content beside saved AI output
+
+POST /api/documents/[id]/ai/[requestId]/apply
+  → authenticate with Clerk
+  → applyAIRequestResult()
+  → load owned completed ai_requests row
+  → require output.revisedMarkdown
+  → snapshotDocumentVersion(source=ai_apply)
+  → update documents.current_markdown/editor_json/word_count
+  → record usage metadata
+  → redirect client back to editor
 ```
 
 ### Normalized Result Shape
@@ -504,8 +587,26 @@ export async function runAIAction(
 type AIActionResult = {
   action: string;
   mode: "preview" | "suggestions" | "analysis";
-  output: unknown;
-  summary?: string;
+  output: {
+    mode: "preview" | "suggestions" | "analysis";
+    summary: string;
+    revisedMarkdown: string | null;
+    suggestions: Array<{
+      type: "clarity" | "grammar" | "tone" | "structure" | "seo";
+      originalText: string;
+      suggestedText: string;
+      explanation: string;
+    }>;
+    analysis: {
+      clarity?: number;
+      tone?: number;
+      structure?: number;
+      seo?: number;
+      notes: string[];
+    };
+    warnings: string[];
+  };
+  summary: string;
   provider: "openai" | "gemini";
   model: string;
   inputTokens?: number;
@@ -518,11 +619,13 @@ type AIActionResult = {
 ### Rules
 
 - Route handlers call the AI router, not providers
+- Route handlers should call `runDocumentAIAction()` for document-scoped execution; it owns `ai_requests` persistence and usage recording.
 - Providers return normalized results
 - AI actions must support preview-first workflows
 - Structure-preserving behavior is the default
 - AI output must be stored before being applied
 - Applying AI output is a separate user action
+- Applying AI output must call `snapshotDocumentVersion()` first; never update document content directly from the preview UI.
 
 ---
 

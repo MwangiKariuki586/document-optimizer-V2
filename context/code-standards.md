@@ -631,7 +631,7 @@ Approved dependencies:
 - `@clerk/nextjs` — authentication
 - `@supabase/supabase-js` — Supabase database and storage
 - `openai` — OpenAI API
-- Gemini SDK — Gemini provider
+- `@google/genai` — Gemini provider
 - `zod` — validation
 - `@tiptap/react` — editor
 - `@tiptap/starter-kit` — editor toolkit

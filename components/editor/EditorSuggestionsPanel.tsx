@@ -21,6 +21,7 @@ type EditorSuggestionsPanelProps = {
   open: boolean;
   onClose: () => void;
   onReopen: () => void;
+  onOpenAIActions: () => void;
   suggestions: EditorSuggestion[];
   filters: SuggestionFilter[];
   activeFilter: string;
@@ -39,6 +40,7 @@ export function EditorSuggestionsPanel({
   open,
   onClose,
   onReopen,
+  onOpenAIActions,
   suggestions,
   filters,
   activeFilter,
@@ -59,6 +61,7 @@ export function EditorSuggestionsPanel({
             </button>
             <button
               type="button"
+              onClick={onOpenAIActions}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-accent px-4 text-xs font-semibold text-accent-foreground shadow-card-soft transition hover:bg-accent-dark"
             >
               <Sparkles className="size-4" />
