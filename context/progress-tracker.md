@@ -81,6 +81,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Homepage CTAs are auth-aware when Clerk keys are configured: signed-in users go to `/dashboard`, signed-out users go to `/login`; without Clerk keys they fall back to `/login`.
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
 - Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
+- Decision: Gemini is the primary MVP AI provider because the Gemini API test works and the project is avoiding separate OpenAI API billing for MVP. OpenAI remains optional/future through the provider abstraction.
 
 ---
 
@@ -93,6 +94,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-14
+Feature: Gemini-first AI Provider Strategy
+Status: Completed
+Files changed: context/architecture.md, context/build-plan.md, context/code-standards.md, context/library-docs.md, .env.example, lib/ai/ai-router.ts, lib/ai/providers/gemini.provider.ts, lib/ai/providers/openai.provider.ts, lib/ai/ai-router.test.ts, context/progress-tracker.md
+What was completed: Switched the MVP AI strategy from OpenAI-first to Gemini-first. Documented Gemini as the primary MVP provider and OpenAI as optional/future only. Updated env documentation so GEMINI_API_KEY is required for MVP AI actions and OPENAI_API_KEY is optional/future. AI router now defaults to Gemini without checking OpenAI configuration. Gemini provider uses the tested @google/genai pattern with gemini-2.5-flash as the default model. OpenAI provider remains behind the abstraction as a future-only placeholder that throws a clear MVP-disabled message.
+Verification: npm test -- lib/ai/ai-router.test.ts passed (7 tests); npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (5 files, 34 tests). ReadLints reported no errors on changed files.
+Follow-up: Verify one Gemini AI action end-to-end with the real GEMINI_API_KEY, then continue Phase 6 / 20 Suggestions UI.
+```
 
 ```txt
 Date: 2026-06-14
@@ -503,8 +514,9 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 6 / 20 Suggestions UI
-2. Build the suggestions UI with mock data, referencing context/designs/editor workspace.png
-3. Include suggestion list/cards, type badges, original/suggested text, explanation, Apply/Ignore buttons, applied/ignored state, and empty state
-4. Keep suggestion generation/apply/ignore logic deferred to Phase 6 / 21
+1. Verify one Gemini AI action end-to-end with `GEMINI_API_KEY`
+2. Start Phase 6 / 20 Suggestions UI
+3. Build the suggestions UI with mock data, referencing context/designs/editor workspace.png
+4. Include suggestion list/cards, type badges, original/suggested text, explanation, Apply/Ignore buttons, applied/ignored state, and empty state
+5. Keep suggestion generation/apply/ignore logic deferred to Phase 6 / 21
 ```

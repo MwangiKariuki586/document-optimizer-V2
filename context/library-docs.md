@@ -350,111 +350,17 @@ return data.signedUrl;
 
 ---
 
-## OpenAI
-
-OpenAI is one of the approved AI providers.
-
-All OpenAI calls must go through the AI provider abstraction.
-
-### Provider Pattern
-
-```typescript
-// lib/ai/providers/openai.provider.ts
-
-import OpenAI from "openai";
-
-import { buildAIUserPrompt, AI_SYSTEM_PROMPT } from "@/lib/ai/ai-prompts";
-import { normalizeProviderResponse } from "@/lib/ai/ai-normalize";
-
-export async function runOpenAIAction(
-  input: AIActionInput,
-): Promise<AIActionResult> {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-
-  const response = await client.chat.completions.create({
-    model: input.model ?? "gpt-4o-mini",
-    temperature: 0.3,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: AI_SYSTEM_PROMPT },
-      { role: "user", content: buildAIUserPrompt(input) },
-    ],
-  });
-
-  return normalizeProviderResponse({
-    input,
-    provider: "openai",
-    model: input.model ?? "gpt-4o-mini",
-    text: response.choices[0]?.message.content ?? undefined,
-    inputTokens: response.usage?.prompt_tokens,
-    outputTokens: response.usage?.completion_tokens,
-  });
-}
-```
-
-### Structured JSON Pattern
-
-```typescript
-const response = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
-  response_format: { type: "json_object" },
-  temperature: 0.3,
-  messages: [
-    {
-      role: "system",
-      content: "Return only valid JSON.",
-    },
-    {
-      role: "user",
-      content: prompt,
-    },
-  ],
-});
-
-const content = response.choices[0]?.message?.content;
-
-if (!content) {
-  throw new Error("AI response was empty");
-}
-
-const parsed = JSON.parse(content);
-```
-
-### Usage
-
-Use OpenAI for:
-
-- document optimization
-- grammar improvement
-- clarity improvement
-- rewriting
-- summarization
-- tone analysis
-- SEO analysis
-- suggestion generation
-- document structure analysis
-
-### Rules
-
-- Never call OpenAI directly from route handlers
-- Never call OpenAI directly from components
-- Always use the AI router
-- Always validate AI input with Zod
-- Always normalize provider responses
-- Always store AI requests in `ai_requests`
-- Always record token usage where available
-- Always return preview-first results
-- Never automatically overwrite document content
-- Use lower temperature for analysis and structured output
-- Use higher temperature only for creative rewriting where approved
-
----
-
 ## Gemini
 
-Gemini is an approved secondary AI provider.
+Gemini is the primary MVP AI provider.
 
 All Gemini calls must go through the AI provider abstraction.
+
+### Environment
+
+```txt
+GEMINI_API_KEY=required for MVP AI actions
+```
 
 ### Provider Pattern
 
@@ -466,10 +372,12 @@ import { GoogleGenAI } from "@google/genai";
 export async function runGeminiAction(
   input: AIActionInput,
 ): Promise<AIActionResult> {
-  const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-  const model = input.model ?? "gemini-2.0-flash";
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+  });
+  const model = input.model ?? "gemini-2.5-flash";
 
-  const response = await client.models.generateContent({
+  const response = await ai.models.generateContent({
     model,
     contents: buildAIUserPrompt(input),
     config: {
@@ -494,25 +402,72 @@ export async function runGeminiAction(
 
 Use Gemini for:
 
-- fallback AI provider
-- cost comparison
-- alternate document analysis
-- future provider routing
+- document optimization
+- clarity improvement
+- grammar fixes
+- rewriting
+- summarization
+- translation
+- tone analysis
+- SEO analysis
+- simplifying language
+- suggestion generation
 
 ### Rules
 
 - Never call Gemini directly from route handlers
 - Never call Gemini directly from components
-- Gemini results must normalize into the same `AIActionResult` shape as OpenAI
+- Always use `lib/ai/ai-router.ts`
+- Gemini results must normalize into the shared `AIActionResult` shape
 - Provider-specific errors must be converted into safe app errors
 - Record provider and model in `ai_requests`
 - Record usage where available
+- Always return preview-first results
+- Never automatically overwrite document content
+
+---
+
+## OpenAI
+
+OpenAI is an optional future provider. It is not required for MVP completion and must not be selected by default.
+
+All OpenAI calls must go through the AI provider abstraction if the provider is re-enabled later.
+
+### Environment
+
+```txt
+OPENAI_API_KEY=optional/future only
+```
+
+### MVP Placeholder Pattern
+
+```typescript
+// lib/ai/providers/openai.provider.ts
+
+import { AIProviderError, type AIProvider } from "@/lib/ai/ai.types";
+
+export const openAIProvider: AIProvider = {
+  name: "openai",
+  defaultModel: "gpt-4o-mini",
+  async run() {
+    throw new AIProviderError("OpenAI provider is not enabled for MVP");
+  },
+};
+```
+
+### Rules
+
+- Never call OpenAI directly from route handlers
+- Never call OpenAI directly from components
+- Keep OpenAI behind `lib/ai/ai-router.ts`
+- OpenAI must not block MVP AI action completion
+- Re-enable OpenAI later only through the provider abstraction
 
 ---
 
 ## AI Router
 
-The AI router decides which provider handles an AI action.
+The AI router decides which provider handles an AI action. For the MVP it defaults to Gemini unless another enabled provider is explicitly configured later.
 
 ### Pattern
 
@@ -544,7 +499,7 @@ lib/ai/ai-prompts.ts      → shared system/user prompt construction
 lib/ai/ai-normalize.ts    → provider JSON parsing and result normalization
 lib/ai/ai-cost.ts         → estimated token cost helper
 lib/ai/ai-router.ts       → provider selection and runAIAction entry point
-lib/ai/providers/*        → OpenAI and Gemini adapters
+lib/ai/providers/*        → Gemini adapter and optional/future OpenAI placeholder
 ```
 
 Task 18 route flow:
@@ -620,6 +575,7 @@ type AIActionResult = {
 
 - Route handlers call the AI router, not providers
 - Route handlers should call `runDocumentAIAction()` for document-scoped execution; it owns `ai_requests` persistence and usage recording.
+- The AI router defaults to Gemini for MVP execution.
 - Providers return normalized results
 - AI actions must support preview-first workflows
 - Structure-preserving behavior is the default

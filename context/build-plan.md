@@ -398,11 +398,13 @@ Create the AI service layer.
 **Logic:**
 
 - Create AI router
-- Create OpenAI provider
-- Create Gemini provider
+- Create Gemini provider first as the primary MVP implementation
+- Keep OpenAI provider deferred as an optional future provider
+- Route AI actions through Gemini by default
 - Normalize AI responses
 - Validate AI action input with Zod
 - Track provider, model, token usage, and estimated cost
+- Do not require OpenAI for MVP completion
 - Route handlers must not call providers directly
 
 ---

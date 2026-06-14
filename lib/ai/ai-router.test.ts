@@ -43,18 +43,22 @@ describe("selectAIProvider", () => {
     expect(provider.name).toBe("gemini");
   });
 
-  it("prefers OpenAI when configured", () => {
+  it("uses explicitly requested OpenAI only as a future provider path", () => {
+    const provider = selectAIProvider({ ...baseInput, provider: "openai" });
+
+    expect(provider.name).toBe("openai");
+  });
+
+  it("prefers Gemini even when both provider keys are configured", () => {
     process.env.OPENAI_API_KEY = "test-openai-key";
     process.env.GEMINI_API_KEY = "test-gemini-key";
 
     const provider = selectAIProvider(baseInput);
 
-    expect(provider.name).toBe("openai");
+    expect(provider.name).toBe("gemini");
   });
 
-  it("falls back to Gemini when only Gemini is configured", () => {
-    process.env.GEMINI_API_KEY = "test-gemini-key";
-
+  it("defaults to Gemini when no provider is explicitly requested", () => {
     const provider = selectAIProvider(baseInput);
 
     expect(provider.name).toBe("gemini");
@@ -65,6 +69,20 @@ describe("runAIAction", () => {
   it("rejects invalid input before provider execution", async () => {
     await expect(runAIAction({ action: "bad" })).rejects.toThrow(
       "Invalid AI action input",
+    );
+  });
+
+  it("fails clearly when the default Gemini provider is not configured", async () => {
+    await expect(runAIAction(baseInput)).rejects.toThrow(
+      "Gemini is not configured",
+    );
+  });
+
+  it("fails clearly when OpenAI is explicitly requested during MVP", async () => {
+    await expect(
+      runAIAction({ ...baseInput, provider: "openai" }),
+    ).rejects.toThrow(
+      "OpenAI provider is not enabled for MVP",
     );
   });
 });

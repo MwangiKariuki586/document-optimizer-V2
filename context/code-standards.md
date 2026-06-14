@@ -433,9 +433,12 @@ Normalized Result
 
 Rules:
 
+- Gemini is the default MVP AI provider.
+- All AI calls must stay behind `lib/ai/ai-router.ts`.
 - Route handlers must not call OpenAI or Gemini directly
 - Components must not call AI providers directly
 - AI providers must return normalized results
+- OpenAI is optional/future-only for MVP and must not block AI workflow completion.
 - AI requests must be stored in `ai_requests`
 - Token usage and estimated cost should be recorded where available
 - AI failures must be saved as safe error messages
@@ -571,8 +574,8 @@ Never hardcode keys, URLs, or secrets.
 | `NEXT_PUBLIC_SUPABASE_URL`          | Supabase browser/server clients |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | Supabase browser client         |
 | `SUPABASE_SERVICE_ROLE_KEY`         | Server-only Supabase access     |
-| `OPENAI_API_KEY`                    | OpenAI provider                 |
-| `GEMINI_API_KEY`                    | Gemini provider                 |
+| `GEMINI_API_KEY`                    | Required MVP Gemini provider    |
+| `OPENAI_API_KEY`                    | Optional/future OpenAI provider |
 | `NEXT_PUBLIC_APP_URL`               | App URL redirects and links     |
 
 Rules:
@@ -630,8 +633,8 @@ Approved dependencies:
 
 - `@clerk/nextjs` — authentication
 - `@supabase/supabase-js` — Supabase database and storage
-- `openai` — OpenAI API
-- `@google/genai` — Gemini provider
+- `@google/genai` — Gemini API provider
+- `openai` — optional/future OpenAI API provider
 - `zod` — validation
 - `@tiptap/react` — editor
 - `@tiptap/starter-kit` — editor toolkit

@@ -9,7 +9,7 @@ import {
   type AIProvider,
 } from "@/lib/ai/ai.types";
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -26,10 +26,10 @@ export const geminiProvider: AIProvider = {
   defaultModel: DEFAULT_GEMINI_MODEL,
   async run(input: AIActionInput): Promise<AIActionResult> {
     const model = input.model ?? DEFAULT_GEMINI_MODEL;
-    const client = getGeminiClient();
+    const ai = getGeminiClient();
 
     try {
-      const response = await client.models.generateContent({
+      const response = await ai.models.generateContent({
         model,
         contents: buildAIUserPrompt(input),
         config: {

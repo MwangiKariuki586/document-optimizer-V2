@@ -11,7 +11,7 @@
 | Backend Access     | Supabase JS Client                | Database and storage access                                 |
 | Backend Management | Supabase MCP                      | Schema inspection, migrations, RLS, and verification        |
 | Storage            | Supabase Storage or Cloudflare R2 | Private original files and exports                          |
-| AI Providers       | OpenAI + Gemini                   | Document analysis, rewriting, suggestions, and optimization |
+| AI Providers       | Gemini primary + OpenAI future    | MVP document analysis, rewriting, suggestions, and optimization |
 | AI Layer           | Provider abstraction              | Normalized AI calls across providers                        |
 | Editor             | TipTap                            | Rich document editing                                       |
 | Validation         | Zod                               | Request and form validation                                 |
@@ -155,8 +155,8 @@
 │   │   ├── ai.validators.ts
 │   │   ├── ai-cost.ts
 │   │   └── providers/
-│   │       ├── openai.provider.ts
-│   │       └── gemini.provider.ts
+│   │       ├── gemini.provider.ts
+│   │       └── openai.provider.ts         → Optional future provider placeholder
 │   ├── suggestions/
 │   │   └── suggestions.service.ts
 │   ├── versions/
@@ -482,6 +482,15 @@ The service role key must only be used on the server.
 
 All AI calls must go through the AI router.
 
+AI provider strategy:
+
+```txt
+Primary MVP provider: Gemini
+Optional future provider: OpenAI
+```
+
+The provider abstraction stays in place so OpenAI can be re-enabled later without changing route handlers, services, or components. `lib/ai/providers/gemini.provider.ts` is the first real provider implementation for MVP. `lib/ai/providers/openai.provider.ts`, if present, is deferred/future-only and must not block MVP completion.
+
 ```typescript
 // lib/ai/ai-router.ts
 
@@ -497,13 +506,13 @@ export async function runAIAction(
 Provider implementations must normalize their response into the same result shape.
 
 ```txt
-OpenAI Provider
+Gemini Provider
         ↓
 AI Router
         ↓
 Normalized AI Result
 
-Gemini Provider
+OpenAI Provider (future optional)
         ↓
 AI Router
         ↓

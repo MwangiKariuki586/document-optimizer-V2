@@ -4,24 +4,18 @@ import { geminiProvider } from "@/lib/ai/providers/gemini.provider";
 import { openAIProvider } from "@/lib/ai/providers/openai.provider";
 
 const providers: Record<AIProvider["name"], AIProvider> = {
-  openai: openAIProvider,
   gemini: geminiProvider,
+  openai: openAIProvider,
 };
+
+const DEFAULT_AI_PROVIDER: AIProvider["name"] = "gemini";
 
 export function selectAIProvider(input: AIActionInput): AIProvider {
   if (input.provider) {
     return providers[input.provider];
   }
 
-  if (process.env.OPENAI_API_KEY) {
-    return providers.openai;
-  }
-
-  if (process.env.GEMINI_API_KEY) {
-    return providers.gemini;
-  }
-
-  return providers.openai;
+  return providers[DEFAULT_AI_PROVIDER];
 }
 
 export async function runAIAction(input: unknown): Promise<AIActionResult> {
