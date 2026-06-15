@@ -1,92 +1,66 @@
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import type { FidelityStatus } from "@/components/documents/FidelityBadge";
 
-type ScoreRingProps = {
-  value: string;
-  ringClass: string;
+type EditorStatusBarProps = {
+  fidelityStatus: FidelityStatus;
+  healthScore?: number;
+  readabilityScore?: number;
+  seoScore?: number;
 };
 
-function ScoreRing({ value, ringClass }: ScoreRingProps) {
+type MetricPillProps = {
+  label: string;
+  value: number;
+};
+
+const healthScoreByFidelity: Record<FidelityStatus, number> = {
+  "Structure Preserved": 86,
+  "Original Preserved": 84,
+  "Limited Formatting": 64,
+  "Plain Text Only": 58,
+  "Formatting Review Needed": 62,
+};
+
+function getScoreClass(value: number): string {
+  if (value >= 80) {
+    return "bg-success-muted text-success-foreground";
+  }
+
+  if (value >= 65) {
+    return "bg-warning-muted text-warning-foreground";
+  }
+
+  return "bg-error-muted text-error-foreground";
+}
+
+function MetricPill({ label, value }: MetricPillProps) {
   return (
-    <span
-      className={`flex size-11 shrink-0 items-center justify-center rounded-full p-1 ${ringClass}`}
-    >
-      <span className="flex size-full items-center justify-center rounded-full bg-surface text-xs font-bold text-text-primary">
-        {value}
+    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-border-light bg-surface px-3 py-1.5 shadow-card-soft">
+      <span className="truncate text-xs font-medium text-text-secondary">
+        {label}
       </span>
-    </span>
+      <span
+        className={`rounded-full px-2 py-0.5 text-xs font-bold ${getScoreClass(value)}`}
+      >
+        {value}%
+      </span>
+    </div>
   );
 }
 
-export function EditorStatusBar() {
+export function EditorStatusBar({
+  fidelityStatus,
+  healthScore,
+  readabilityScore = 82,
+  seoScore = 79,
+}: EditorStatusBarProps) {
+  const resolvedHealthScore =
+    healthScore ?? healthScoreByFidelity[fidelityStatus];
+
   return (
-    <section className="grid shrink-0 gap-4 rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:grid-cols-2 xl:grid-cols-5">
-      <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success-muted text-success">
-          <CheckCircle2 className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">AI Status</p>
-          <p className="text-sm font-semibold text-success-foreground">
-            Active
-          </p>
-          <p className="text-xs text-text-muted">
-            All suggestions are context-aware.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <ScoreRing
-          value="86"
-          ringClass="bg-[conic-gradient(var(--color-success)_86%,var(--color-border-light)_0)]"
-        />
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">Document Health</p>
-          <p className="text-sm font-semibold text-text-primary">Good</p>
-          <p className="text-xs text-text-muted">Well-structured and clear.</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-border bg-surface-secondary text-[10px] font-bold text-text-primary">
-          Grade 8
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">Readability</p>
-          <p className="text-sm font-semibold text-text-primary">Good</p>
-          <p className="text-xs text-text-muted">
-            Easy to read and understand.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <ScoreRing
-          value="79"
-          ringClass="bg-[conic-gradient(var(--color-accent)_79%,var(--color-border-light)_0)]"
-        />
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">SEO Score</p>
-          <p className="text-sm font-semibold text-text-primary">Good</p>
-          <p className="text-xs text-text-muted">Some room for improvement.</p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-success-muted text-success">
-          <ShieldCheck className="size-5" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-text-muted">Version Safety</p>
-          <p className="text-sm font-semibold text-text-primary">On</p>
-          <button
-            type="button"
-            className="text-xs font-medium text-accent transition hover:text-accent-dark"
-          >
-            View Versions
-          </button>
-        </div>
-      </div>
+    <section className="flex shrink-0 flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-2 ">
+      <MetricPill label="Health" value={resolvedHealthScore} />
+      <MetricPill label="Readability" value={readabilityScore} />
+      <MetricPill label="SEO" value={seoScore} />
     </section>
   );
 }

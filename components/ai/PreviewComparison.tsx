@@ -21,6 +21,16 @@ type PreviewComparisonProps = {
   onProposedEditedChange: (edited: boolean) => void;
 };
 
+function getDocumentMetrics(markdown: string) {
+  const trimmed = markdown.trim();
+  const wordCount = trimmed ? trimmed.split(/\s+/).length : 0;
+
+  return {
+    wordCount,
+    characterCount: markdown.length,
+  };
+}
+
 function getScrollRatio(element: HTMLDivElement): number {
   const maxScroll = element.scrollHeight - element.clientHeight;
 
@@ -60,6 +70,8 @@ export function PreviewComparison({
   const currentPaneRef = useRef<HTMLDivElement | null>(null);
   const proposedPaneRef = useRef<HTMLDivElement | null>(null);
   const isSyncingRef = useRef(false);
+  const currentMetrics = getDocumentMetrics(currentMarkdown);
+  const proposedMetrics = getDocumentMetrics(currentProposedMarkdown);
 
   const syncPaneScroll = (source: "current" | "proposed") => {
     if (!syncScroll || mode !== "side-by-side" || isSyncingRef.current) {
@@ -119,13 +131,15 @@ export function PreviewComparison({
   return (
     <section className="min-h-[540px] min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
       <div
-        className={`grid h-full min-h-[540px] xl:min-h-0 xl:overflow-hidden ${
+        className={`grid h-full min-h-[540px] gap-3 xl:min-h-0 xl:overflow-hidden ${
           mode === "side-by-side" ? "lg:grid-cols-2" : "grid-cols-1"
         }`}
       >
         <ReadOnlyCurrentDocument
           ref={currentPaneRef}
           markdown={currentMarkdown}
+          wordCount={currentMetrics.wordCount}
+          characterCount={currentMetrics.characterCount}
           hidden={mode === "proposed-only"}
           onScroll={() => syncPaneScroll("current")}
         />
@@ -134,6 +148,8 @@ export function PreviewComparison({
           initialMarkdown={initialProposedMarkdown}
           emptyText={emptyProposedText}
           edited={edited}
+          wordCount={proposedMetrics.wordCount}
+          characterCount={proposedMetrics.characterCount}
           onMarkdownChange={onProposedMarkdownChange}
           onEditedChange={onProposedEditedChange}
           onScroll={() => syncPaneScroll("proposed")}

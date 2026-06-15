@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
+  ChevronDown,
   CheckCircle2,
   FileText,
   Globe,
@@ -12,6 +13,7 @@ import {
   MessageSquareText,
   PenLine,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Type,
   Wand2,
@@ -35,7 +37,7 @@ type AIActionDefinition = {
 };
 
 type AIActionsPanelProps = {
-  onBack: () => void;
+  onBack?: () => void;
   onClose?: () => void;
   onRunAction: (input: {
     action: AIActionKey;
@@ -131,7 +133,7 @@ const AI_ACTIONS: AIActionDefinition[] = [
 ];
 
 const selectClass =
-  "h-8 w-full cursor-pointer appearance-none rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-accent";
+  "h-8 w-full cursor-pointer appearance-none rounded-md border border-border bg-surface py-1 pl-2.5 pr-8 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-accent";
 
 export function AIActionsPanel({
   onBack,
@@ -145,6 +147,7 @@ export function AIActionsPanel({
     language: "en",
     preserveStructure: true,
   });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [status, setStatus] = useState<AIActionStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [readyResult, setReadyResult] = useState<{
@@ -156,6 +159,13 @@ export function AIActionsPanel({
   const selectedActionDef = AI_ACTIONS.find((action) => action.key === selectedAction);
   const isProcessing = status === "processing";
   const isDisabled = isProcessing;
+  const settingsSummary = `${TONE_OPTIONS.find((option) => option.value === settings.tone)?.label ?? "Professional"} · ${
+    AUDIENCE_OPTIONS.find((option) => option.value === settings.audience)?.label ??
+    "General audience"
+  } · ${
+    LANGUAGE_OPTIONS.find((option) => option.value === settings.language)?.label ??
+    "English"
+  } · ${settings.preserveStructure ? "Preserve structure" : "Flexible structure"}`;
 
   const handleRunAction = async () => {
     if (isProcessing) {
@@ -203,26 +213,28 @@ export function AIActionsPanel({
   return (
     <div className="flex flex-col xl:h-full xl:min-h-0">
       <section className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border-light p-3">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border-light px-3 py-2.5">
           <div className="flex min-w-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={isProcessing}
-              className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
-              title="Back to suggestions"
-            >
-              <ArrowLeft className="size-4" />
-            </button>
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={isProcessing}
+                className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                title="Back to suggestions"
+              >
+                <ArrowLeft className="size-4" />
+              </button>
+            ) : null}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 shrink-0 text-ai" />
                 <h2 className="truncate text-sm font-semibold text-text-primary">
-                  AI Assistant
+                  AI Actions
                 </h2>
               </div>
               <p className="mt-0.5 text-[11px] leading-4 text-text-muted">
-                Preview-first. Nothing changes until you apply.
+                Preview-first document improvements.
               </p>
             </div>
           </div>
@@ -238,21 +250,6 @@ export function AIActionsPanel({
             </button>
           ) : null}
         </header>
-
-        <div className="flex shrink-0 flex-col gap-2 border-b border-border-light bg-ai-muted/40 p-3">
-          <div className="flex items-start gap-2">
-            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-ai-light text-ai-dark">
-              <Sparkles className="size-4" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-ai-dark">AI Summary</p>
-              <p className="mt-1 text-xs leading-5 text-text-secondary">
-                Choose an action to improve your document. Results open as a
-                preview before anything is applied.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {status === "error" && errorMessage ? (
           <div className="shrink-0 border-b border-border-light p-3">
@@ -295,74 +292,106 @@ export function AIActionsPanel({
           </div>
         ) : null}
 
-        <div className="flex shrink-0 flex-col gap-2 border-b border-border-light p-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-            Action settings
-          </p>
-          <div className="grid gap-2">
+        <div className="shrink-0 border-b border-border-light p-2.5">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((current) => !current)}
+            disabled={isProcessing}
+            aria-expanded={settingsOpen}
+            className="flex w-full items-center justify-between gap-2 rounded-lg border border-border-light bg-surface-secondary px-3 py-2 text-left transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <SlidersHorizontal className="size-4 shrink-0 text-text-muted" />
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-text-primary">
+                  Action settings
+                </span>
+                <span className="block truncate text-[11px] leading-4 text-text-muted">
+                  {settingsSummary}
+                </span>
+              </span>
+            </span>
+            <ChevronDown
+              className={`size-4 shrink-0 text-text-muted transition ${
+                settingsOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {settingsOpen ? (
+            <div className="mt-2 grid gap-2">
             <label className="grid gap-1">
               <span className="text-[11px] font-medium text-text-muted">Tone</span>
-              <select
-                className={selectClass}
-                value={settings.tone}
-                disabled={isDisabled}
-                onChange={(event) =>
-                  setSettings((current) => ({
-                    ...current,
-                    tone: event.target.value as AIActionOptions["tone"],
-                  }))
-                }
-              >
-                {TONE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <span className="relative">
+                <select
+                  className={selectClass}
+                  value={settings.tone}
+                  disabled={isDisabled}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      tone: event.target.value as AIActionOptions["tone"],
+                    }))
+                  }
+                >
+                  {TONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-muted" />
+              </span>
             </label>
             <label className="grid gap-1">
               <span className="text-[11px] font-medium text-text-muted">
                 Audience
               </span>
-              <select
-                className={selectClass}
-                value={settings.audience}
-                disabled={isDisabled}
-                onChange={(event) =>
-                  setSettings((current) => ({
-                    ...current,
-                    audience: event.target.value as AIActionOptions["audience"],
-                  }))
-                }
-              >
-                {AUDIENCE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <span className="relative">
+                <select
+                  className={selectClass}
+                  value={settings.audience}
+                  disabled={isDisabled}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      audience: event.target.value as AIActionOptions["audience"],
+                    }))
+                  }
+                >
+                  {AUDIENCE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-muted" />
+              </span>
             </label>
             <label className="grid gap-1">
               <span className="text-[11px] font-medium text-text-muted">
                 Language
               </span>
-              <select
-                className={selectClass}
-                value={settings.language}
-                disabled={isDisabled}
-                onChange={(event) =>
-                  setSettings((current) => ({
-                    ...current,
-                    language: event.target.value as AIActionOptions["language"],
-                  }))
-                }
-              >
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <span className="relative">
+                <select
+                  className={selectClass}
+                  value={settings.language}
+                  disabled={isDisabled}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      language: event.target.value as AIActionOptions["language"],
+                    }))
+                  }
+                >
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-muted" />
+              </span>
             </label>
             <label className="flex items-center justify-between gap-3 rounded-lg border border-border-light bg-surface-secondary px-3 py-2">
               <span className="text-xs font-medium text-text-secondary">
@@ -390,7 +419,8 @@ export function AIActionsPanel({
                 />
               </button>
             </label>
-          </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex min-h-0 flex-col xl:flex-1">
@@ -410,14 +440,15 @@ export function AIActionsPanel({
                   type="button"
                   disabled={isDisabled}
                   onClick={() => handleSelectAction(action.key)}
-                  className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  title={action.description}
+                  className={`flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                     isSelected
                       ? "border-ai bg-ai-muted shadow-card-soft"
                       : "border-border bg-surface hover:border-border-strong hover:bg-surface-secondary"
                   }`}
                 >
                   <span
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${action.accentClass}`}
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${action.accentClass}`}
                   >
                     <Icon className="size-4" />
                   </span>
@@ -425,7 +456,7 @@ export function AIActionsPanel({
                     <span className="block text-xs font-semibold text-text-primary">
                       {action.label}
                     </span>
-                    <span className="mt-1 block text-[11px] leading-4 text-text-secondary">
+                    <span className="mt-0.5 block truncate text-[11px] leading-4 text-text-secondary">
                       {action.description}
                     </span>
                   </span>
@@ -449,8 +480,7 @@ export function AIActionsPanel({
             </span>
           </LoadingButton>
           <p className="mt-2 text-center text-[11px] leading-4 text-text-muted">
-            AI output opens as a preview. Your document stays unchanged until
-            you apply it.
+            Opens as preview. The document stays unchanged until apply.
           </p>
         </div>
       </section>

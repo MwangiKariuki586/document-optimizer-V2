@@ -78,6 +78,19 @@ type IgnoreSuggestionResponse = {
   };
 };
 
+type ApplySuggestionResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    documentId: string;
+    suggestionId: string;
+    versionNumber: number;
+    currentMarkdown: string;
+    editorJson: JSONContent;
+    wordCount: number;
+  };
+};
+
 const FORMATTING_WARNING: Record<string, string> = {
   "Limited Formatting":
     "Some original formatting could not be fully converted for editing. Your original file is preserved and can be exported.",
@@ -104,14 +117,16 @@ export function EditorWorkspace({
   const [versionNumber, setVersionNumber] = useState(document.versionNumber);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [rightPanel, setRightPanel] = useState<RightPanelMode>("suggestions");
+  const [rightPanel, setRightPanel] = useState<RightPanelMode>(() =>
+    initialSuggestions.length > 0 ? "suggestions" : "ai-actions",
+  );
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
   const [suggestions, setSuggestions] = useState<EditorSuggestion[]>(() =>
     mapDocumentSuggestionsToEditorSuggestions(initialSuggestions),
   );
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(
+  const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(
     null,
   );
   const [ignoringSuggestionId, setIgnoringSuggestionId] = useState<string | null>(
@@ -218,7 +233,7 @@ export function EditorWorkspace({
     editor.commands.setActiveSuggestionHighlight(activeSuggestionId);
   }, [activeSuggestionId, editor]);
 
-  const loadSuggestions = useCallback(async () => {
+  const loadSuggestions = useCallback(async (): Promise<EditorSuggestion[]> => {
     setIsLoadingSuggestions(true);
 
     try {
@@ -227,7 +242,7 @@ export function EditorWorkspace({
 
       if (!response.ok || !data.success || !data.data) {
         appToast.error(data.error ?? "Could not load suggestions.");
-        return;
+        return [];
       }
 
       const mappedSuggestions = mapDocumentSuggestionsToEditorSuggestions(data.data);
@@ -239,8 +254,10 @@ export function EditorWorkspace({
           ),
         ),
       );
+      return mappedSuggestions;
     } catch {
       appToast.error("Could not load suggestions. Please try again.");
+      return [];
     } finally {
       setIsLoadingSuggestions(false);
     }
@@ -350,9 +367,18 @@ export function EditorWorkspace({
       throw new Error(data.error ?? "Could not run AI action.");
     }
 
-    await loadSuggestions();
-    setRightPanel("suggestions");
-    setSuggestionsOpen(true);
+    const nextSuggestions = await loadSuggestions();
+    const nextPendingSuggestions = nextSuggestions.filter(
+      (suggestion) => suggestion.status === "pending",
+    );
+
+    if (nextPendingSuggestions.length > 0) {
+      setRightPanel("suggestions");
+      setSuggestionsOpen(true);
+    } else {
+      setRightPanel("ai-actions");
+    }
+
     appToast.success("AI result is ready for review.");
 
     return {
@@ -395,10 +421,51 @@ export function EditorWorkspace({
   const pendingSuggestionCount = suggestions.filter(
     (suggestion) => suggestion.status === "pending",
   ).length;
+  const hasSuggestions = suggestions.length > 0;
 
-  const handleReviewSuggestion = (id: string) => {
-    setReviewingSuggestionId(id);
-    router.push(`/documents/${document.id}/preview?suggestionId=${id}`);
+  const handleApplySuggestion = async (id: string) => {
+    if (!editor) {
+      appToast.error("The editor is still loading. Please try again.");
+      return;
+    }
+
+    setApplyingSuggestionId(id);
+
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/suggestions/${id}/apply`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      const data: ApplySuggestionResponse = await response.json();
+
+      if (!response.ok || !data.success || !data.data) {
+        appToast.error(data.error ?? "Could not apply suggestion.");
+        return;
+      }
+
+      editor.commands.setContent(data.data.editorJson);
+      setCounts({
+        words: data.data.wordCount,
+        characters: data.data.currentMarkdown.length,
+      });
+      setVersionNumber(data.data.versionNumber);
+      setSaveState("saved");
+      setSelectedSuggestionIds((current) =>
+        current.filter((suggestionId) => suggestionId !== id),
+      );
+      setActiveSuggestionId(null);
+      await loadSuggestions();
+      router.refresh();
+      appToast.success("Suggestion applied. A version snapshot was created first.");
+    } catch {
+      appToast.error("Could not apply suggestion. Please try again.");
+    } finally {
+      setApplyingSuggestionId(null);
+    }
   };
 
   const handleIgnoreSuggestion = async (id: string) => {
@@ -554,16 +621,21 @@ export function EditorWorkspace({
               wordCount={counts.words}
               characterCount={counts.characters}
             />
+            <EditorStatusBar fidelityStatus={fidelityStatus} />
           </div>
 
           <div className="order-3 min-h-0 lg:order-3 lg:col-span-2 xl:col-span-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
             {rightPanel === "ai-actions" ? (
               <AIActionsPanel
-                onBack={() => setRightPanel("suggestions")}
-                onClose={() => {
-                  setRightPanel("suggestions");
-                  setSuggestionsOpen(false);
-                }}
+                onBack={hasSuggestions ? () => setRightPanel("suggestions") : undefined}
+                onClose={
+                  hasSuggestions
+                    ? () => {
+                        setRightPanel("suggestions");
+                        setSuggestionsOpen(false);
+                      }
+                    : undefined
+                }
                 onRunAction={handleRunAIAction}
               />
             ) : (
@@ -571,24 +643,20 @@ export function EditorWorkspace({
                 open={suggestionsOpen}
                 onClose={() => setSuggestionsOpen(false)}
                 onReopen={() => setSuggestionsOpen(true)}
-                onOpenAIActions={() => {
-                  setSuggestionsOpen(true);
-                  setRightPanel("ai-actions");
-                }}
+                onOpenAIActions={() => setRightPanel("ai-actions")}
                 suggestions={filteredSuggestions}
                 filters={filters}
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
                 selectedSuggestionIds={selectedSuggestionIds}
                 onSelectionChange={setSelectedSuggestionIds}
-                onReviewSuggestion={handleReviewSuggestion}
+                onApplySuggestion={handleApplySuggestion}
                 onReviewSelectedSuggestions={handleReviewSelectedSuggestions}
                 onReviewAllSuggestions={handleReviewAllSuggestions}
                 onIgnoreSuggestion={handleIgnoreSuggestion}
-                totalCount={suggestions.length}
                 pendingCount={pendingSuggestionCount}
                 isLoading={isLoadingSuggestions}
-                reviewingSuggestionId={reviewingSuggestionId}
+                applyingSuggestionId={applyingSuggestionId}
                 ignoringSuggestionId={ignoringSuggestionId}
                 isReviewingAll={isReviewingAll}
                 isReviewingSelected={isReviewingSelected}
@@ -599,7 +667,6 @@ export function EditorWorkspace({
           </div>
         </div>
 
-        <EditorStatusBar />
       </div>
     </main>
   );

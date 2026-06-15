@@ -29,9 +29,9 @@ export function EditorCanvas({
 
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
-      <div className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary px-4 py-4 xl:min-h-0">
+      <div className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0">
         <div
-          className="document-editor mx-auto min-h-[320px] w-full max-w-[720px] origin-top rounded-lg border border-border-light bg-surface px-6 py-7 shadow-card-soft transition-transform md:min-h-[480px] md:px-10 md:py-9 xl:min-h-0"
+          className="document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 transition-transform md:min-h-[480px] md:px-7 md:py-6 xl:min-h-0"
           // Zoom is a dynamic scale factor and cannot be a static token class.
           style={{ transform: `scale(${zoom / 100})` }}
         >

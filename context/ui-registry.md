@@ -844,7 +844,7 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 - Formatting fidelity warnings stay visible: below `xl` they use the full `InlineAlert`; at `xl` they become a compact one-line warning banner with truncated copy to preserve editor canvas height.
 - Sidebar collapse is owned here via `sidebarCollapsed`; expanded desktop grid uses a 224px left rail and collapsed desktop grid uses a 64px icon rail so the editor canvas gains horizontal space.
 - On mobile the canvas column comes first (`order-1`), then suggestions, then the sidebar rail.
-- Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. AI Assistant in suggestions opens `AIActionsPanel`; back returns to suggestions; close collapses the rail.
+- Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. Documents that load with no server-side suggestions default to `AIActionsPanel` so users immediately see available AI actions after upload/create; documents with existing suggestions default to the suggestions rail. The suggestions rail does not include Export or a prominent AI Assistant CTA; AI actions are the primary panel when there are no suggestions and cannot collapse back into the empty suggestions placeholder. Back/close controls appear on AI actions only when there are existing suggestions to return to.
 - Suggestion Review / Review Selected / Review All route users to `/documents/[id]/preview`; final document mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs and suggestion ignore actions.
 - Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
 
@@ -963,14 +963,15 @@ Document canvas hosting the live TipTap `<EditorContent>` (real `editor_json`) p
 
 ```txt
 className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
-className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary px-4 py-4 xl:min-h-0"
-className="document-editor mx-auto min-h-[320px] w-full max-w-[720px] ... xl:min-h-0"
+className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0"
+className="document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 ... xl:min-h-0"
 ```
 
 **Rules:**
 
 - The document area scrolls internally (`overflow-y-auto`). At `xl` the canvas grows to fill the column (`xl:flex-1 xl:min-h-0`) and the document paper drops its fixed minimum height (`xl:min-h-0`) so long content scrolls inside the canvas instead of expanding the page. Below `xl` it keeps `min-h-[320px]` / `md:min-h-[480px]` and grows with content.
 - The `.document-editor` wrapper applies token-based `.ProseMirror` styles defined in `app/globals.css` (headings, lists, code, blockquote, links).
+- The canvas body intentionally has no outer padding and the document wrapper fills the available width; preserve only a smaller inner text inset to maximize usable editing space.
 - Word/character counts are passed in from the workspace.
 - This is a client component: zoom is functional (50%–200%, step 10, reset) via local state and a `transform: scale()` on the content wrapper.
 
@@ -980,7 +981,7 @@ className="document-editor mx-auto min-h-[320px] w-full max-w-[720px] ... xl:min
 
 **Purpose:**
 
-Right-rail AI Suggestions panel: internal Export + AI Assistant action row, panel header with total and pending counts, filter tabs (All/Clarity/Grammar/Tone/Structure/SEO), suggestion cards with original text, suggested text, explanation, type badge, pending/applied/ignored status, Apply/Ignore actions, Apply All pending action, and an empty state. Collapses to a "Show AI Suggestions" button when closed.
+Right-rail AI Suggestions panel: panel header with total and pending counts, filter tabs (All/Clarity/Grammar/Tone/Structure/SEO), suggestion cards with original text, suggested text, explanation, type badge, pending/applied/ignored status, direct Apply/Ignore actions, selected/all review actions only when pending suggestions exist, and a compact empty state. Collapses to a "Show AI Suggestions" button when closed.
 
 **Used on:**
 
@@ -996,9 +997,9 @@ Right-rail AI Suggestions panel: internal Export + AI Assistant action row, pane
 
 - Exports `EditorSuggestion`, `SuggestionType`, `SuggestionStatus`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
-- Preview-first: Review, Review Selected, and Review All only open `/documents/[id]/preview`; final document mutation happens from the preview page after ownership and safety checks. Ignore still calls the owned route because it only changes suggestion status.
-- Export is non-functional until Phase 8. AI Assistant opens `AIActionsPanel` via `onOpenAIActions`.
-- Export and AI Assistant actions sit inside the suggestions panel card as a two-column row with `gap-3`, `p-3`, and a bottom separator.
+- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply` and updates the editor content, counts, version number, save state, selected IDs, and suggestion list in place after the server creates a version snapshot. Review Selected and Review All still open `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned route because it only changes suggestion status.
+- Export is not rendered in this rail; export belongs to the later preview/export flow.
+- The selected/all review footer is hidden when there are no pending suggestions so disabled review controls do not consume panel space.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
 
 ### EditorStatusBar
@@ -1007,7 +1008,7 @@ Right-rail AI Suggestions panel: internal Export + AI Assistant action row, pane
 
 **Purpose:**
 
-Full-width metrics bar: AI Status, Document Health, Readability, SEO Score, and Version Safety with score rings and short context lines.
+Compact center-column editor metric strip: Health, Readability, and SEO as small name + percentage pills.
 
 **Used on:**
 
@@ -1016,14 +1017,17 @@ Full-width metrics bar: AI Status, Document Health, Readability, SEO Score, and 
 **Core classes:**
 
 ```txt
-className="grid shrink-0 gap-4 rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:grid-cols-2 xl:grid-cols-5"
-className="bg-[conic-gradient(var(--color-success)_86%,var(--color-border-light)_0)]"
+className="flex shrink-0 flex-wrap items-center justify-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 shadow-card-soft"
+className="inline-flex min-w-0 items-center gap-2 rounded-full border border-border-light bg-surface px-3 py-1.5 shadow-card-soft"
 ```
 
 **Rules:**
 
-- Score rings use token-based conic gradients (matches the dashboard chart pattern).
-- Metrics are mock; real quality/readability/SEO scoring is out of MVP scope unless requested.
+- AI and version status are intentionally not shown in this strip.
+- Render inside the center editor column only, not across the full workspace width, so the sidebar and suggestions rail keep their own vertical space.
+- Each pill shows only name + percentage.
+- Percentage color threshold: red below 65, yellow from 65 to 79, green from 80 and above.
+- Health derives its fallback score from `fidelityStatus`; readability and SEO remain estimated placeholders until real scoring exists.
 
 ---
 
@@ -1035,7 +1039,7 @@ className="bg-[conic-gradient(var(--color-success)_86%,var(--color-border-light)
 
 **Purpose:**
 
-Right-rail AI action picker for the document editor. Shows nine AI actions, optional settings (tone, audience, language, preserve-structure), processing/ready/error states, and preview-first reassurance. Wired in Phase 5 / 18 to run the selected action through `POST /api/documents/[id]/ai`.
+Right-rail AI action picker for the document editor. Shows nine compact AI action rows, collapsed optional settings (tone, audience, language, preserve-structure), processing/ready/error states, and preview-first reassurance. Wired in Phase 5 / 18 to run the selected action through `POST /api/documents/[id]/ai`.
 
 **Used on:**
 
@@ -1046,7 +1050,7 @@ Right-rail AI action picker for the document editor. Shows nine AI actions, opti
 ```txt
 className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
 className="rounded-xl border p-3 ... border-ai bg-ai-muted" (selected action card)
-className="bg-ai-muted/40" (AI Summary strip)
+className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2" (collapsed settings disclosure)
 ```
 
 **Variants:**
@@ -1057,8 +1061,9 @@ className="bg-ai-muted/40" (AI Summary strip)
 **Rules:**
 
 - `"use client"`. Exports `AIActionSettings`, `AIActionStatus`.
-- Props: `onBack` (return to suggestions), optional `onClose` (collapse right rail), `onRunAction` (provided by `EditorWorkspace`).
+- Props: optional `onBack` (return to suggestions when suggestions exist), optional `onClose` (collapse right rail when suggestions exist), `onRunAction` (provided by `EditorWorkspace`).
 - `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`; the panel shows returned summary/id on success.
+- Action settings are collapsed by default behind a settings disclosure with a one-line summary. Expanding exposes tone, audience, language, and preserve-structure controls; select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
 
 ### AIResultPreview
@@ -1067,7 +1072,7 @@ className="bg-ai-muted/40" (AI Summary strip)
 
 **Purpose:**
 
-Client preview orchestrator for AI-generated document changes. Composes the premium review workflow: current vs proposed comparison, editable proposed result, side-by-side/proposed-only modes, sync scrolling, change summary, change navigator, summary rail, and preview-only Apply to Document.
+Client preview orchestrator for AI-generated document changes. Composes the premium review workflow as a full-width result workspace: editor-style document rail, top preview controls, metrics strip, current vs proposed comparison, editable proposed result, right insight rail, and preview-only Apply to Document.
 
 **Used on:**
 
@@ -1079,10 +1084,12 @@ Client preview orchestrator for AI-generated document changes. Composes the prem
 
 ```txt
 className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
-className="mx-auto flex h-full min-h-0 w-full max-w-[1280px] flex-col gap-3 xl:overflow-hidden"
-className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[224px_minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
-className="order-1 min-w-0 rounded-xl border border-border bg-surface shadow-card-soft xl:order-2 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
-className="grid min-h-[540px] lg:grid-cols-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden"
+className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-cols-[252px_minmax(0,1fr)] xl:overflow-hidden"
+className="order-2 rounded-xl border border-border bg-surface p-4 shadow-card-soft xl:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
+className="order-1 min-w-0 xl:order-2 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
+className="mt-3 grid min-h-0 gap-3 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:overflow-hidden"
+className="grid min-h-0 gap-3 rounded-xl border border-accent-light bg-accent-muted p-3 shadow-card-soft xl:flex xl:h-full xl:flex-col xl:overflow-hidden"
+className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow-hidden"
 ```
 
 **Variants:**
@@ -1090,15 +1097,14 @@ className="grid min-h-[540px] lg:grid-cols-2 xl:min-h-0 xl:flex-1 xl:overflow-hi
 - Full AI action output preview via `requestId`.
 - Single suggestion preview via `suggestionId`.
 - Multi-suggestion preview via server-backed `selectionId`.
-- Suggestion/category chips for clarity, grammar, tone, structure, and SEO.
-- Document score panel with token-based conic gradient and metric bars.
+- Summary metric strip for total proposed changes, category counts, and preview-only safety copy.
+- Right insight rail with AI Summary, Change Navigator, and Document Safety cards.
 - Empty revised result branch for analysis-only outputs.
 - Formatting/fidelity warning branch when selected suggestions no longer match safely.
 
 **Rules:**
 
 - `"use client"`. Receives a discriminated preview payload from the server page.
-- Copy uses `navigator.clipboard` and `appToast`.
 - Apply sends `{ editedMarkdown }` to the relevant apply endpoint so the edited proposed result is what gets persisted.
 - AI request apply calls `POST /api/documents/[id]/ai/[requestId]/apply`.
 - Single suggestion apply calls `POST /api/documents/[id]/suggestions/[suggestionId]/apply`.
@@ -1108,7 +1114,11 @@ className="grid min-h-[540px] lg:grid-cols-2 xl:min-h-0 xl:flex-1 xl:overflow-hi
 - View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on in side-by-side mode and uses proportional scroll syncing.
 - The proposed pane is a TipTap editor seeded from Markdown and marks `Edited preview` when changed.
 - Desktop layout follows the editor workspace viewport pattern: fixed app-height shell below the header, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in side rails plus original/proposed panes.
-- The right summary rail itself should not scroll on desktop; keep score and safety cards visible with `shrink-0`, and let only the suggestion list inside the summary card consume remaining space.
+- Top and bottom Apply buttons share `canApply`, `isApplying`, and `handleApply`; both must stay disabled/loading together.
+- Preview chrome is intentionally compact: view/sync controls live in a collapsed Comparison settings disclosure in the right AI rail, not above the document panes; warning strip and comparison gaps are reduced; and the bottom action bar stays short so the document panes get maximum vertical space. Change-count context belongs in the right AI Summary rail, not above the document panes.
+- The right insight rail uses a tinted accent container to separate AI Summary, Changes, and Document Safety from the document comparison panes.
+- The right insight rail order is Comparison settings, Changes, AI Summary. Changes is collapsed by default and shows a subtle count badge in the header so proposed edits remain visible without consuming rail height. Document Safety belongs in the bottom action bar, not the rail.
+- The right insight rail itself should not scroll on desktop; let only long AI Summary content consume remaining space while Document Safety stays visible.
 
 ### PreviewComparison
 
@@ -1127,6 +1137,7 @@ Comparison workspace body for AI Result Preview. Hosts the read-only current pan
 - `"use client"`. Owns pane scroll refs and feedback-loop protection for sync scroll.
 - Side-by-side is the default desktop review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
 - Change navigator anchors use approximate scroll ratios when exact section mapping is unavailable.
+- Current and proposed pane bodies avoid outer padding so document content gets maximum horizontal space; keep a smaller readable inset inside the document surface itself.
 
 ### ReadOnlyCurrentDocument
 
@@ -1161,6 +1172,7 @@ Editable TipTap proposed result pane. Seeds content from Markdown, serializes ed
 
 - `"use client"`. Uses shared `editorExtensions` with `contentType: "markdown"`.
 - Shows `Edited preview` when the proposed result differs from the initial AI output.
+- Header includes functional undo/redo controls wired to the TipTap editor history; controls are disabled when no undo/redo step is available.
 - Apply must use this edited markdown.
 
 ### ChangeSummary / ChangeNavigator
@@ -1177,8 +1189,8 @@ Compact summary and lightweight change navigation for AI Result Preview.
 
 **Rules:**
 
-- `ChangeSummary` shows proposed change count, per-type chips, and preview-only safety copy.
-- `ChangeNavigator` only renders when useful text anchors are available; it should not block preview if exact mapping is unavailable.
+- `ChangeSummary` remains available as a standalone component, but AI Result Preview does not render it above the document panes; preview change-count context is summarized inside the right AI Summary rail.
+- `ChangeNavigator` is a collapsed-by-default disclosure with a subtle change-count badge; it only renders when useful text anchors are available and should not block preview if exact mapping is unavailable.
 
 ### PreviewModeToggle / SyncScrollToggle / PreviewActionBar
 
@@ -1196,7 +1208,7 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 - `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
 - `SyncScrollToggle` displays `Sync scrolling: On / Off`.
-- `PreviewActionBar` is the only place the final `Apply to Document` action is rendered for AI-generated changes.
+- `PreviewActionBar` renders the compact bottom action bar with Regenerate, Return to Editor, Apply to Document, and a `Safety checks passed` popover. The safety popover is absolutely positioned above the button so opening it does not increase footer height. It is scoped to the document comparison column only, not below the AI rail, so the AI rail keeps independent vertical space.
 
 ### SuggestionHighlight
 
@@ -1222,14 +1234,16 @@ TipTap/ProseMirror extension for inline AI suggestion highlights in the editor.
 
 ### SuggestionsList (service-backed editor rail)
 
-The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `EditorWorkspace`. Reusable suggestion domain logic lives in `lib/suggestions/` and is consumed by the editor page, API routes, dashboard pending-suggestions query, AI persistence flow, and preview-gated suggestion apply flow.
+The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `EditorWorkspace`. Reusable suggestion domain logic lives in `lib/suggestions/` and is consumed by the editor page, API routes, dashboard pending-suggestions query, AI persistence flow, direct single-suggestion apply, and preview-gated batch suggestion apply flow.
 
 **Rules:**
 
-- The rail launches review only; it must not directly mutate document content.
-- Single Review navigates to `/documents/[id]/preview?suggestionId=...`.
+- Single-card Apply mutates the document through the owned server apply route, then refreshes editor content and suggestion state in place.
+- Single suggestion preview remains supported by `/documents/[id]/preview?suggestionId=...`, but the editor rail no longer uses it for the default card action.
 - Review Selected and Review All create a short-lived server-backed selection, then navigate to `/documents/[id]/preview?selectionId=...`.
 - Ignore remains available in the rail because it only marks suggestion status and does not change document content.
+- Empty suggestions state must not strand users: show a compact `Choose AI Action` control that switches the right rail back to `AIActionsPanel`.
+- After an AI action, `EditorWorkspace` reloads suggestions and only switches to the suggestions rail when fresh pending suggestions exist; otherwise it keeps the AI Actions panel visible with the preview-ready result.
 
 ---
 

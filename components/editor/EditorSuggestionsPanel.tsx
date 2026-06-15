@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import {
   CheckCircle2,
-  Download,
   FileText,
   MoreVertical,
   Sparkles,
@@ -50,12 +49,11 @@ type EditorSuggestionsPanelProps = {
   onSelectionChange: (ids: string[]) => void;
   onReviewAllSuggestions: () => void;
   onReviewSelectedSuggestions: () => void;
-  onReviewSuggestion: (id: string) => void;
-  totalCount: number;
+  onApplySuggestion: (id: string) => void;
   pendingCount: number;
   onIgnoreSuggestion: (id: string) => void;
   isLoading?: boolean;
-  reviewingSuggestionId?: string | null;
+  applyingSuggestionId?: string | null;
   ignoringSuggestionId?: string | null;
   isReviewingAll?: boolean;
   isReviewingSelected?: boolean;
@@ -102,12 +100,11 @@ export function EditorSuggestionsPanel({
   onSelectionChange,
   onReviewAllSuggestions,
   onReviewSelectedSuggestions,
-  onReviewSuggestion,
-  totalCount,
+  onApplySuggestion,
   pendingCount,
   onIgnoreSuggestion,
   isLoading = false,
-  reviewingSuggestionId = null,
+  applyingSuggestionId = null,
   ignoringSuggestionId = null,
   isReviewingAll = false,
   isReviewingSelected = false,
@@ -142,33 +139,13 @@ export function EditorSuggestionsPanel({
     <div className="flex flex-col xl:h-full xl:min-h-0">
       {open ? (
         <section className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
-          <div className="grid shrink-0 grid-cols-2 gap-3 border-b border-border-light p-3">
-            <button
-              type="button"
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 text-xs font-medium text-accent transition hover:bg-surface-secondary"
-            >
-              <Download className="size-4" />
-              Export
-            </button>
-            <button
-              type="button"
-              onClick={onOpenAIActions}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-accent px-4 text-xs font-semibold text-accent-foreground shadow-card-soft transition hover:bg-accent-dark"
-            >
-              <Sparkles className="size-4" />
-              AI Assistant
-            </button>
-          </div>
-
           <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border-light p-3">
             <div className="flex items-center gap-2">
               <Sparkles className="size-4 text-ai" />
               <h2 className="text-sm font-semibold text-text-primary">
                 AI Suggestions
               </h2>
-              <span className="rounded-full bg-ai-light px-2 py-0.5 text-xs font-semibold text-ai-dark">
-                {totalCount}
-              </span>
+
               <span className="rounded-full bg-accent-light px-2 py-0.5 text-xs font-medium text-accent">
                 {pendingCount} pending
               </span>
@@ -207,19 +184,23 @@ export function EditorSuggestionsPanel({
           <div className="flex flex-col gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1">
             {isLoading ? (
               <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-5 text-center">
-                <p className="text-xs text-text-secondary">Loading suggestions…</p>
+                <p className="text-xs text-text-secondary">
+                  Loading suggestions…
+                </p>
               </div>
             ) : hasSuggestions ? (
               suggestions.map((suggestion) => {
                 const isReviewed = suggestion.status !== "pending";
-                const isReviewingThis = reviewingSuggestionId === suggestion.id;
+                const isApplyingThis = applyingSuggestionId === suggestion.id;
                 const isIgnoringThis = ignoringSuggestionId === suggestion.id;
-                const isSelected = selectedSuggestionIds.includes(suggestion.id);
+                const isSelected = selectedSuggestionIds.includes(
+                  suggestion.id,
+                );
                 const isActive = activeSuggestionId === suggestion.id;
                 const isBusy =
                   isReviewingAll ||
                   isReviewingSelected ||
-                  isReviewingThis ||
+                  isApplyingThis ||
                   isIgnoringThis;
 
                 return (
@@ -301,13 +282,13 @@ export function EditorSuggestionsPanel({
 
                     <div className="mt-3 flex items-center gap-2">
                       <LoadingButton
-                        onClick={() => onReviewSuggestion(suggestion.id)}
+                        onClick={() => onApplySuggestion(suggestion.id)}
                         disabled={isReviewed || isBusy}
-                        isLoading={isReviewingThis}
-                        loadingText="Opening…"
+                        isLoading={isApplyingThis}
+                        loadingText="Applying..."
                         className="h-8 px-3 py-1.5 text-xs"
                       >
-                        {suggestion.status === "applied" ? "Applied" : "Review"}
+                        {suggestion.status === "applied" ? "Applied" : "Apply"}
                       </LoadingButton>
                       <LoadingButton
                         onClick={() => onIgnoreSuggestion(suggestion.id)}
@@ -323,64 +304,73 @@ export function EditorSuggestionsPanel({
                 );
               })
             ) : (
-              <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-5 text-center">
+              <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-4 text-center">
                 <div>
-                  <div className="mx-auto flex size-10 items-center justify-center rounded-xl bg-accent-lighter text-accent">
-                    <FileText className="size-5" />
+                  <div className="mx-auto flex size-9 items-center justify-center rounded-lg bg-accent-lighter text-accent">
+                    <FileText className="size-4" />
                   </div>
-                  <h3 className="mt-4 text-sm font-semibold text-text-primary">
+                  <h3 className="mt-3 text-sm font-semibold text-text-primary">
                     No suggestions yet
                   </h3>
-                  <p className="mx-auto mt-2 max-w-[220px] text-xs leading-5 text-text-secondary">
-                    Run an AI action to generate document improvement
-                    suggestions, then review each change before applying it.
+                  <p className="mx-auto mt-1.5 max-w-[190px] text-xs leading-5 text-text-secondary">
+                    Run an AI action to generate reviewable suggestions.
                   </p>
+                  <button
+                    type="button"
+                    onClick={onOpenAIActions}
+                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
+                  >
+                    <Sparkles className="size-3.5" />
+                    Choose AI Action
+                  </button>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="shrink-0 border-t border-border-light p-3">
-            <LoadingButton
-              onClick={onReviewSelectedSuggestions}
-              disabled={
-                selectedCount === 0 ||
-                isReviewingSelected ||
-                isReviewingAll ||
-                Boolean(reviewingSuggestionId) ||
-                Boolean(ignoringSuggestionId)
-              }
-              isLoading={isReviewingSelected}
-              loadingText="Opening review…"
-              className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
-            >
-              <Sparkles className="size-4" />
-              {selectedCount > 0
-                ? `Review Selected ${selectedCount}`
-                : "Select Suggestions to Review"}
-            </LoadingButton>
-            <LoadingButton
-              onClick={onReviewAllSuggestions}
-              disabled={
-                !canReviewAll ||
-                isReviewingAll ||
-                isReviewingSelected ||
-                Boolean(reviewingSuggestionId) ||
-                Boolean(ignoringSuggestionId)
-              }
-              isLoading={isReviewingAll}
-              loadingText="Opening review…"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent! bg-surface! px-4 py-2 text-sm font-semibold text-accent! hover:bg-accent-light! disabled:border-border! disabled:bg-surface! disabled:text-text-muted!"
-            >
-              <Sparkles className="size-4" />
-              {canReviewAll
-                ? `Review All ${pendingCount} Pending Suggestions`
-                : "All Suggestions Reviewed"}
-            </LoadingButton>
-            <p className="mt-2 text-center text-[11px] leading-4 text-text-muted">
-              Suggestions can only be applied after preview review.
-            </p>
-          </div>
+          {pendingCount > 0 ? (
+            <div className="shrink-0 border-t border-border-light p-3">
+              <LoadingButton
+                onClick={onReviewSelectedSuggestions}
+                disabled={
+                  selectedCount === 0 ||
+                  isReviewingSelected ||
+                  isReviewingAll ||
+                  Boolean(applyingSuggestionId) ||
+                  Boolean(ignoringSuggestionId)
+                }
+                isLoading={isReviewingSelected}
+                loadingText="Opening review…"
+                className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
+              >
+                <Sparkles className="size-4" />
+                {selectedCount > 0
+                  ? `Review Selected ${selectedCount}`
+                  : "Select Suggestions to Review"}
+              </LoadingButton>
+              <LoadingButton
+                onClick={onReviewAllSuggestions}
+                disabled={
+                  !canReviewAll ||
+                  isReviewingAll ||
+                  isReviewingSelected ||
+                  Boolean(applyingSuggestionId) ||
+                  Boolean(ignoringSuggestionId)
+                }
+                isLoading={isReviewingAll}
+                loadingText="Opening review…"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent! bg-surface! px-4 py-2 text-sm font-semibold text-accent! hover:bg-accent-light! disabled:border-border! disabled:bg-surface! disabled:text-text-muted!"
+              >
+                <Sparkles className="size-4" />
+                {canReviewAll
+                  ? `Review All Suggestions`
+                  : "All Suggestions Reviewed"}
+              </LoadingButton>
+              <p className="mt-2 text-center text-[11px] leading-4 text-text-muted">
+                Use Review Selected or Review All for a preview page check.
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : (
         <button

@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 6 - Suggestions (refinements pending)
-**Last completed:** Phase 6 refinement tracker and cleanup pass
+**Last completed:** Direct Single Suggestion Apply
 **Next:** Phase 6 / 21a signed-in live verification
 
 ---
@@ -86,6 +86,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated document change. Future AI action and suggestion review flows must route to this page before document mutation; final `Apply to Document` belongs only on the preview page.
 - Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
 - Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
+- Decision: Single suggestion cards now use direct Apply in the editor for faster review. Review Selected and Review All remain routed through `/documents/[id]/preview` using server-backed selections.
 
 ---
 
@@ -100,6 +101,76 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-15
+Feature: Direct Single Suggestion Apply
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Changed individual suggestion cards from Review to Apply. Single-card Apply now posts to the existing owned suggestion apply route, which creates a version snapshot server-side, then updates the TipTap editor content, word/character counts, version number, save state, selected suggestion IDs, active highlight, and refreshed suggestion list without navigating away. Review Selected and Review All still create a server-backed selection and redirect to the preview page.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Signed-in browser verification should confirm single-card Apply updates the editor immediately while selected/all review still opens the result preview page.
+```
+
+```txt
+Date: 2026-06-15
+Feature: No-Stranded Empty Suggestions State
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a compact Choose AI Action control to the empty suggestions state so users can switch back to optimization actions when no suggestions exist. Updated the AI action completion flow so EditorWorkspace uses freshly reloaded suggestions and only switches to the suggestions rail when pending suggestions exist; otherwise the AI Actions panel remains visible with its preview-ready result.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Signed-in browser verification should confirm no-suggestion documents and AI results with zero persisted suggestions never leave the user in an empty dead-end rail.
+```
+
+```txt
+Date: 2026-06-15
+Feature: Compact Dynamic Editor Status Bar
+Status: Completed
+Files changed: components/editor/EditorStatusBar.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorCanvas.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the tall static five-card editor status bar with a compact metric-pill strip scoped to the center editor column. The strip now only shows Health, Readability, and SEO as name + percentage pills, removes AI and Version sections, derives the fallback health score from fidelity status, keeps readability/SEO as estimated placeholders, colors percentages red/yellow/green by increasing score threshold, and no longer spans beneath the sidebar or suggestions rail. Removed the editor canvas outer gutter and centered max-width paper constraint so the editable document fills the center column with only a smaller inner text inset.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Signed-in browser verification still needed to confirm desktop height gain, mobile wrapping, save-state transitions, and the versions link in the live editor workspace.
+```
+
+```txt
+Date: 2026-06-15
+Feature: Results Page Desktop Refinement
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/ChangeSummary.tsx, components/ai/PreviewComparison.tsx, components/ai/ReadOnlyCurrentDocument.tsx, components/ai/EditableProposedResult.tsx, components/ai/PreviewActionBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined /documents/[id]/preview into the screenshot-style result workspace while preserving the existing preview-gated apply flow. The page now uses a wider app-height shell with an editor-style document rail, carded current/proposed panes with internal scrolling and footer metrics, a compact right insight rail, and a minimized bottom action bar scoped to the document comparison column. Top and bottom Apply to Document controls share the same canApply/isApplying/apply handler. Follow-up styling tightened the Proposed result pane so it uses the same rounded border, surface, shadow, and stable document-paper height as the Current document pane, removed wasteful outer padding from the current/proposed pane bodies, replaced the Proposed result info icon with functional TipTap undo/redo controls, gave the right insight rail a distinct accent-tinted container to separate it from the comparison section, removed the main-column ChangeSummary strip and top preview controls strip, moved review count/context into the AI rail, collapsed view/sync controls behind Comparison settings in the AI rail, moved Changes above AI Summary as a collapsed-by-default section with a subtle count badge, moved Document Safety into a bottom action-bar safety popover that does not resize the footer when opened, scoped the PreviewActionBar below the comparison column only, and reduced vertical chrome around warnings, comparison gap, and preview action bar so document editing gets more space.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings. Browser navigation to /documents/test/preview?requestId=test redirected to Clerk sign-in, so signed-in visual verification remains pending.
+Follow-up: In a signed-in browser session, verify AI request, single suggestion, and multi-suggestion preview routes; side-by-side/proposed-only modes; sync scroll; edited proposed apply; shared top/bottom apply loading state; desktop full-page visibility with long documents; and mobile/tablet wrapping.
+```
+
+```txt
+Date: 2026-06-15
+Feature: No-Suggestion AI Actions Persistence
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Prevented the AI Actions panel from collapsing into the empty suggestions placeholder when a document has no suggestions. Back/close controls are now only provided when there are existing suggestions to return to, so no-suggestion documents keep AI actions visible until an action is run and suggestions/preview state can take over.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Signed-in visual verification still needed for no-suggestion documents because unauthenticated local editor routes redirect to Clerk sign-in.
+```
+
+```txt
+Date: 2026-06-15
+Feature: AI Action Settings Dropdown Affordance
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added explicit right-side chevrons to the Tone, Audience, and Language selects in the collapsed AI Action Settings panel so users can immediately recognize them as dropdown controls, while preserving native select behavior and existing disabled/focus states.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Signed-in visual verification still needed for the right rail because unauthenticated local editor routes redirect to Clerk sign-in.
+```
+
+```txt
+Date: 2026-06-15
+Feature: Editor Right-Rail Space Refinement
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the Export and prominent AI Assistant action row from the suggestions rail, kept no-suggestion documents defaulting directly to AI Actions, collapsed AI action settings behind a compact disclosure with a one-line summary, tightened AI action rows so the action list owns the main panel space, and hid selected/all review controls when no pending suggestions exist.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings; rg confirmed Export/AI Assistant/onOpenAIActions/Download are gone from EditorSuggestionsPanel and EditorWorkspace. Local browser navigation to /documents/test redirected to Clerk sign-in, so signed-in visual right-rail verification remains pending.
+Follow-up: In a signed-in browser session, verify no-suggestion documents show AI actions immediately, settings expand/collapse cleanly, pending-suggestion documents prioritize suggestion review, and the right rail has no text/button overflow on desktop and mobile.
+```
 
 ```txt
 Date: 2026-06-15
