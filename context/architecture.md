@@ -258,18 +258,24 @@ Preview is shown to user
 ### Applying AI Result
 
 ```txt
-User applies AI result
+User reviews and optionally edits AI result in /documents/[id]/preview
         ↓
 Ownership is verified
         ↓
 Current document state is saved as version
         ↓
-AI output is applied
+Edited proposed result is applied
         ↓
-Document content is updated
+Document current_markdown, editor_json, and word_count are updated
         ↓
 Usage/activity is recorded
 ```
+
+AI-generated changes can only be finally applied from `/documents/[id]/preview`.
+The preview workspace compares current vs proposed content, supports editable
+proposed results, and supports synchronous proportional scrolling. If the user
+edits the proposed result before applying, that edited markdown is the source of
+truth for the document update.
 
 ### Export
 
@@ -378,6 +384,22 @@ Versioning model: versions are created (1) automatically at document creation (`
 | status         | text        | pending / applied / ignored                |
 | created_at     | timestamptz | Created timestamp                          |
 | updated_at     | timestamptz | Updated timestamp                          |
+
+### `suggestion_preview_selections`
+
+Short-lived server-backed selections for multi-suggestion preview. This table prevents storing large or client-trusted suggestion payloads in preview URLs.
+
+| Column         | Type        | Notes                                           |
+| -------------- | ----------- | ----------------------------------------------- |
+| id             | uuid        | Primary key / compact preview `selectionId`     |
+| user_id        | text        | Clerk user ID                                   |
+| document_id    | uuid        | References documents                            |
+| suggestion_ids | uuid[]      | Pending suggestions selected for preview        |
+| expires_at     | timestamptz | Selection expiry, default 30 minutes            |
+| consumed_at    | timestamptz | Set after successful preview apply              |
+| created_at     | timestamptz | Created timestamp                               |
+
+RLS is enabled. Owner-scoped select/insert/update/delete policies require Clerk JWT `sub` to match `user_id`.
 
 ### `exports`
 
@@ -563,6 +585,11 @@ Rules the AI agent must never violate:
 - Raw uploaded files are stored in private storage, not Postgres.
 - AI providers are only called through the AI router.
 - AI output never overwrites document content automatically.
+- AI-generated changes can only be finally applied from AI Result Preview.
+- AI Result Preview must support current vs proposed comparison before apply.
+- The proposed AI result must be editable before applying.
+- The edited proposed result is what gets applied.
+- Comparison view supports synchronous proportional scrolling.
 - Applying AI output creates a version snapshot first.
 - Applying a suggestion creates a version snapshot where needed.
 - Restoring a version preserves the current state first.

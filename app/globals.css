@@ -194,3 +194,17 @@ body {
   color: var(--color-accent);
   text-decoration: underline;
 }
+
+.document-editor .ProseMirror .suggestion-highlight {
+  border-radius: var(--radius-sm);
+  background: var(--color-ai-muted);
+  box-shadow: inset 0 -2px 0 var(--color-ai);
+  cursor: pointer;
+}
+
+.document-editor .ProseMirror .suggestion-highlight.is-active {
+  background: var(--color-ai-light);
+  box-shadow:
+    inset 0 -2px 0 var(--color-ai-dark),
+    0 0 0 2px var(--color-ai-light);
+}

@@ -1,12 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
-import { applyAIRequestResult } from "@/lib/ai/ai.service";
-import { applyEditedResultSchema } from "@/lib/suggestions/suggestions.validators";
+import {
+  applySelectedSuggestions,
+  SuggestionReplacementError,
+} from "@/lib/suggestions/suggestions.service";
+import {
+  applyEditedResultSchema,
+  selectionIdParamSchema,
+} from "@/lib/suggestions/suggestions.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
-  params: Promise<{ id: string; requestId: string }>;
+  params: Promise<{ id: string; selectionId: string }>;
 };
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
@@ -20,7 +26,19 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id, requestId } = await params;
+    const { id, selectionId } = await params;
+    const parsed = selectionIdParamSchema.safeParse({ selectionId });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: parsed.error.issues[0]?.message ?? "Invalid selection id.",
+        },
+        { status: 400 },
+      );
+    }
+
     let body: unknown = {};
 
     try {
@@ -47,26 +65,36 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const supabase = createSupabaseServerClient();
-    const result = await applyAIRequestResult(supabase, {
+    const result = await applySelectedSuggestions(supabase, {
       userId,
       documentId: id,
-      requestId,
+      selectionId: parsed.data.selectionId,
       editedMarkdown: parsedBody.data.editedMarkdown,
     });
 
     if (!result) {
       return NextResponse.json(
-        { success: false, error: "AI result not found." },
+        { success: false, error: "Suggestion selection not found." },
         { status: 404 },
       );
     }
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error("[api/documents/[id]/ai/[requestId]/apply]", error);
+    console.error(
+      "[api/documents/[id]/suggestions/selections/[selectionId]/apply]",
+      error,
+    );
+
+    if (error instanceof SuggestionReplacementError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 },
+      );
+    }
 
     return NextResponse.json(
-      { success: false, error: "Could not apply AI result." },
+      { success: false, error: "Could not apply suggestions." },
       { status: 500 },
     );
   }

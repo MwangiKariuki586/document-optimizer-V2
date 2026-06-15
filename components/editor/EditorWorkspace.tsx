@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEditor, type JSONContent } from "@tiptap/react";
+import { TriangleAlert } from "lucide-react";
 
 import { editorExtensions } from "@/lib/editor/editor-extensions";
 
@@ -26,9 +28,17 @@ import type {
   AIActionOptions,
   AIActionResult,
 } from "@/lib/ai/ai.types";
+import { mapDocumentSuggestionsToEditorSuggestions } from "@/lib/suggestions/suggestions.mapper";
+import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
+import {
+  findSuggestionHighlightRanges,
+  SuggestionHighlight,
+  suggestionHighlightPluginKey,
+} from "@/lib/editor/suggestion-highlight";
 
 type EditorWorkspaceProps = {
   document: EditorDocument;
+  initialSuggestions: DocumentSuggestion[];
 };
 
 export type SaveState = "saved" | "dirty" | "saving";
@@ -45,38 +55,28 @@ type RunAIActionResponse = {
   };
 };
 
-const SUGGESTIONS: EditorSuggestion[] = [
-  {
-    id: "s1",
-    index: 1,
-    type: "Clarity",
-    current:
-      "increasing revenue through data-driven campaigns and strategic partnerships.",
-    suggested:
-      "driving revenue growth through data-driven campaigns and strategic partnerships.",
-  },
-  {
-    id: "s2",
-    index: 2,
-    type: "Tone",
-    current: "strengthen brand loyalty.",
-    suggested: "build stronger brand loyalty.",
-  },
-  {
-    id: "s3",
-    index: 3,
-    type: "Structure",
-    note: "Consider adding a brief key takeaway at the end of this section to summarize the main objectives.",
-  },
-];
+type SuggestionsResponse = {
+  success: boolean;
+  error?: string;
+  data?: DocumentSuggestion[];
+};
 
-const FILTERS: SuggestionFilter[] = [
-  { key: "all", label: "All", count: 6 },
-  { key: "clarity", label: "Clarity", count: 2 },
-  { key: "tone", label: "Tone", count: 2 },
-  { key: "structure", label: "Structure", count: 1 },
-  { key: "seo", label: "SEO", count: 1 },
-];
+type CreateSuggestionSelectionResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    selectionId: string;
+    expiresAt: string;
+  };
+};
+
+type IgnoreSuggestionResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    suggestionId: string;
+  };
+};
 
 const FORMATTING_WARNING: Record<string, string> = {
   "Limited Formatting":
@@ -85,9 +85,11 @@ const FORMATTING_WARNING: Record<string, string> = {
     "This document may need a formatting review before export. Your original file is preserved.",
 };
 
-export function EditorWorkspace({ document }: EditorWorkspaceProps) {
-  // editor_json is always stored as a TipTap document, but typed as the broad Json
-  // union in the DB types, so we narrow it for the editor here.
+export function EditorWorkspace({
+  document,
+  initialSuggestions,
+}: EditorWorkspaceProps) {
+  const router = useRouter();
   const initialContent = useMemo<JSONContent>(
     () =>
       (document.editorJson as JSONContent | null) ?? {
@@ -101,18 +103,48 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [versionNumber, setVersionNumber] = useState(document.versionNumber);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState<RightPanelMode>("suggestions");
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
+  const [suggestions, setSuggestions] = useState<EditorSuggestion[]>(() =>
+    mapDocumentSuggestionsToEditorSuggestions(initialSuggestions),
+  );
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [reviewingSuggestionId, setReviewingSuggestionId] = useState<string | null>(
+    null,
+  );
+  const [ignoringSuggestionId, setIgnoringSuggestionId] = useState<string | null>(
+    null,
+  );
+  const [isReviewingAll, setIsReviewingAll] = useState(false);
+  const [isReviewingSelected, setIsReviewingSelected] = useState(false);
+  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
+  const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(
+    null,
+  );
   const [counts, setCounts] = useState({
     words: document.wordCount,
     characters: document.currentMarkdown.length,
   });
-  // Bumped on selection changes so toolbar active states re-render on cursor moves.
   const [, setSelectionTick] = useState(0);
 
+  const handleHighlightClick = useCallback((suggestionId: string) => {
+    setActiveSuggestionId(suggestionId);
+    setSuggestionsOpen(true);
+    setRightPanel("suggestions");
+  }, []);
+
+  const workspaceEditorExtensions = useMemo(
+    () => [
+      ...editorExtensions,
+      SuggestionHighlight.configure({ onHighlightClick: handleHighlightClick }),
+    ],
+    [handleHighlightClick],
+  );
+
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions: workspaceEditorExtensions,
     content: initialContent,
     immediatelyRender: false,
     editorProps: {
@@ -129,6 +161,90 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
       setSelectionTick((tick) => tick + 1);
     },
   });
+
+  const focusSuggestionInEditor = useCallback(
+    (suggestionId: string) => {
+      setActiveSuggestionId(suggestionId);
+      setSuggestionsOpen(true);
+      setRightPanel("suggestions");
+
+      if (!editor) {
+        return;
+      }
+
+      const highlightState = suggestionHighlightPluginKey.getState(editor.state);
+      const range = highlightState?.ranges.find(
+        (item) => item.id === suggestionId,
+      );
+
+      if (!range) {
+        return;
+      }
+
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: range.from, to: range.to })
+        .scrollIntoView()
+        .run();
+    },
+    [editor],
+  );
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const pendingSuggestions = suggestions
+      .filter((suggestion) => suggestion.status === "pending")
+      .map((suggestion) => ({
+        id: suggestion.id,
+        originalText: suggestion.originalText,
+      }));
+    const ranges = findSuggestionHighlightRanges(
+      editor.state.doc,
+      pendingSuggestions,
+    );
+
+    editor.commands.setSuggestionHighlights(ranges);
+  }, [editor, suggestions]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.commands.setActiveSuggestionHighlight(activeSuggestionId);
+  }, [activeSuggestionId, editor]);
+
+  const loadSuggestions = useCallback(async () => {
+    setIsLoadingSuggestions(true);
+
+    try {
+      const response = await fetch(`/api/documents/${document.id}/suggestions`);
+      const data: SuggestionsResponse = await response.json();
+
+      if (!response.ok || !data.success || !data.data) {
+        appToast.error(data.error ?? "Could not load suggestions.");
+        return;
+      }
+
+      const mappedSuggestions = mapDocumentSuggestionsToEditorSuggestions(data.data);
+      setSuggestions(mappedSuggestions);
+      setSelectedSuggestionIds((current) =>
+        current.filter((id) =>
+          mappedSuggestions.some(
+            (suggestion) => suggestion.id === id && suggestion.status === "pending",
+          ),
+        ),
+      );
+    } catch {
+      appToast.error("Could not load suggestions. Please try again.");
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, [document.id]);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -198,8 +314,6 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
         return;
       }
 
-      // The version endpoint also persists the current content, so the document
-      // is now in sync. Reflect the new version number in the label.
       if (data.data) {
         setVersionNumber(data.data.versionNumber);
       }
@@ -236,6 +350,9 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
       throw new Error(data.error ?? "Could not run AI action.");
     }
 
+    await loadSuggestions();
+    setRightPanel("suggestions");
+    setSuggestionsOpen(true);
     appToast.success("AI result is ready for review.");
 
     return {
@@ -245,21 +362,148 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
     };
   };
 
+  const filters = useMemo<SuggestionFilter[]>(() => {
+    const typeCounts = suggestions.reduce<Record<string, number>>(
+      (countsByType, suggestion) => {
+        const key = suggestion.type.toLowerCase();
+        countsByType[key] = (countsByType[key] ?? 0) + 1;
+        return countsByType;
+      },
+      {},
+    );
+
+    return [
+      { key: "all", label: "All", count: suggestions.length },
+      { key: "clarity", label: "Clarity", count: typeCounts.clarity ?? 0 },
+      { key: "grammar", label: "Grammar", count: typeCounts.grammar ?? 0 },
+      { key: "tone", label: "Tone", count: typeCounts.tone ?? 0 },
+      { key: "structure", label: "Structure", count: typeCounts.structure ?? 0 },
+      { key: "seo", label: "SEO", count: typeCounts.seo ?? 0 },
+    ];
+  }, [suggestions]);
+
+  const filteredSuggestions = useMemo(
+    () =>
+      activeFilter === "all"
+        ? suggestions
+        : suggestions.filter(
+            (suggestion) => suggestion.type.toLowerCase() === activeFilter,
+          ),
+    [activeFilter, suggestions],
+  );
+
+  const pendingSuggestionCount = suggestions.filter(
+    (suggestion) => suggestion.status === "pending",
+  ).length;
+
+  const handleReviewSuggestion = (id: string) => {
+    setReviewingSuggestionId(id);
+    router.push(`/documents/${document.id}/preview?suggestionId=${id}`);
+  };
+
+  const handleIgnoreSuggestion = async (id: string) => {
+    setIgnoringSuggestionId(id);
+
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/suggestions/${id}/ignore`,
+        { method: "POST" },
+      );
+      const data: IgnoreSuggestionResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        appToast.error(data.error ?? "Could not ignore suggestion.");
+        return;
+      }
+
+      await loadSuggestions();
+      appToast.info("Suggestion ignored.");
+    } catch {
+      appToast.error("Could not ignore suggestion. Please try again.");
+    } finally {
+      setIgnoringSuggestionId(null);
+    }
+  };
+
+  const openSelectionPreview = async (suggestionIds: string[]) => {
+    const response = await fetch(
+      `/api/documents/${document.id}/suggestions/selections`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestionIds }),
+      },
+    );
+    const data: CreateSuggestionSelectionResponse = await response.json();
+
+    if (!response.ok || !data.success || !data.data) {
+      throw new Error(data.error ?? "Could not open suggestion review.");
+    }
+
+    router.push(
+      `/documents/${document.id}/preview?selectionId=${data.data.selectionId}`,
+    );
+  };
+
+  const handleReviewSelectedSuggestions = async () => {
+    if (selectedSuggestionIds.length === 0) {
+      return;
+    }
+
+    setIsReviewingSelected(true);
+
+    try {
+      await openSelectionPreview(selectedSuggestionIds);
+    } catch {
+      appToast.error("Could not open selected suggestions for review.");
+    } finally {
+      setIsReviewingSelected(false);
+    }
+  };
+
+  const handleReviewAllSuggestions = async () => {
+    const pendingIds = suggestions
+      .filter((suggestion) => suggestion.status === "pending")
+      .map((suggestion) => suggestion.id);
+
+    if (pendingIds.length === 0) {
+      return;
+    }
+
+    setIsReviewingAll(true);
+
+    try {
+      await openSelectionPreview(pendingIds);
+    } catch {
+      appToast.error("Could not open suggestions for review.");
+    } finally {
+      setIsReviewingAll(false);
+    }
+  };
+
   const fidelityStatus = document.fidelityStatus as FidelityStatus;
   const formattingWarning = FORMATTING_WARNING[document.fidelityStatus];
 
   return (
-    <main className="flex-1 bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:overflow-hidden">
-      <div className="mx-auto flex h-full max-w-[1280px] flex-col gap-3">
-        <div className="grid gap-3 lg:grid-cols-[224px_minmax(0,1fr)] xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:grid-cols-[224px_minmax(0,1fr)_300px]">
-          <div className="order-2 lg:order-1 xl:min-h-0">
+    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:max-h-[calc(100vh-73px)] xl:h-[calc(100vh-73px)] xl:overflow-hidden">
+      <div className="mx-auto flex h-full min-h-0 max-w-[1280px] flex-col gap-3 xl:overflow-hidden">
+        <div
+          className={`grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:overflow-hidden ${
+            sidebarCollapsed
+              ? "lg:grid-cols-[64px_minmax(0,1fr)] xl:grid-cols-[64px_minmax(0,1fr)_300px]"
+              : "lg:grid-cols-[224px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)_300px]"
+          }`}
+        >
+          <div className="order-2 min-h-0 lg:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:overflow-x-hidden">
             <EditorSidebar
               fileName={document.title}
               fileType={document.fileType}
               saveState={saveState}
               activeNav="editor"
-              suggestionCount={6}
+              suggestionCount={pendingSuggestionCount}
               versionCount={12}
+              collapsed={sidebarCollapsed}
+              onCollapsedChange={setSidebarCollapsed}
               aiUsage={{
                 used: 7200,
                 total: 10000,
@@ -269,7 +513,7 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
             />
           </div>
 
-          <div className="order-1 flex min-h-0 flex-col gap-2 lg:order-2">
+          <div className="order-1 flex min-h-0 flex-col gap-2 lg:order-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
             <div className="relative z-20 flex shrink-0 flex-col rounded-xl border border-border bg-surface shadow-card-soft">
               <EditorTopBar
                 title={title}
@@ -287,9 +531,23 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
               <EditorToolbar editor={editor} />
             </div>
             {formattingWarning ? (
-              <InlineAlert title="Formatting may be limited" variant="warning">
-                {formattingWarning}
-              </InlineAlert>
+              <div className="shrink-0">
+                <div className="xl:hidden">
+                  <InlineAlert title="Formatting may be limited" variant="warning">
+                    {formattingWarning}
+                  </InlineAlert>
+                </div>
+                <div
+                  className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 text-xs text-warning-foreground xl:flex"
+                  title={formattingWarning}
+                >
+                  <TriangleAlert className="size-3.5 shrink-0 text-warning" />
+                  <span className="shrink-0 font-semibold">
+                    Formatting may be limited
+                  </span>
+                  <span className="min-w-0 truncate">{formattingWarning}</span>
+                </div>
+              </div>
             ) : null}
             <EditorCanvas
               editor={editor}
@@ -298,7 +556,7 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
             />
           </div>
 
-          <div className="order-3 lg:order-3 lg:col-span-2 xl:col-span-1 xl:min-h-0">
+          <div className="order-3 min-h-0 lg:order-3 lg:col-span-2 xl:col-span-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
             {rightPanel === "ai-actions" ? (
               <AIActionsPanel
                 onBack={() => setRightPanel("suggestions")}
@@ -317,11 +575,25 @@ export function EditorWorkspace({ document }: EditorWorkspaceProps) {
                   setSuggestionsOpen(true);
                   setRightPanel("ai-actions");
                 }}
-                suggestions={SUGGESTIONS}
-                filters={FILTERS}
+                suggestions={filteredSuggestions}
+                filters={filters}
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                totalCount={6}
+                selectedSuggestionIds={selectedSuggestionIds}
+                onSelectionChange={setSelectedSuggestionIds}
+                onReviewSuggestion={handleReviewSuggestion}
+                onReviewSelectedSuggestions={handleReviewSelectedSuggestions}
+                onReviewAllSuggestions={handleReviewAllSuggestions}
+                onIgnoreSuggestion={handleIgnoreSuggestion}
+                totalCount={suggestions.length}
+                pendingCount={pendingSuggestionCount}
+                isLoading={isLoadingSuggestions}
+                reviewingSuggestionId={reviewingSuggestionId}
+                ignoringSuggestionId={ignoringSuggestionId}
+                isReviewingAll={isReviewingAll}
+                isReviewingSelected={isReviewingSelected}
+                activeSuggestionId={activeSuggestionId}
+                onFocusSuggestion={focusSuggestionInEditor}
               />
             )}
           </div>

@@ -422,37 +422,82 @@ Wire AI actions to real backend execution.
 - Run AI action through AI router
 - Save normalized result
 - Record usage
-- Return preview result
+- Return the saved AI request id and preview route:
+
+```txt
+/documents/[id]/preview?requestId={aiRequestId}
+```
+
+- Redirect or link users to the preview page before any document mutation
+- Do not expose a final Apply to Document action from the editor or AI actions panel
 - Show success/error toast
 
 ---
 
 ### 19 AI Result Preview
 
-Build and wire the AI result preview page.
+Create or confirm the AI result preview page before wiring preview-first AI flows, referencing `context/designs/results preview.png`.
+
+Required route:
+
+```txt
+app/(app)/documents/[id]/preview/page.tsx
+```
+
+Purpose: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated change before it can be applied to the document.
+
+**Implementation rules:**
+
+- If the preview page already exists, reuse and enhance it instead of creating a duplicate page.
+- If it does not exist, create it at `/documents/[id]/preview`.
+- Before creating any new preview-related component, check `context/ui-registry.md` for an existing similar component.
+- Reuse existing components wherever possible.
+- If a new reusable component is required, add it to `context/ui-registry.md` after implementation.
 
 **UI:**
 
-- Original content panel
-- AI result panel
-- Improvement summary
-- Formatting preservation notice
-- Apply changes button
+- Full AI action output preview
+- Single suggestion preview
+- Multi-suggestion preview
+- Current document read-only pane
+- Editable proposed result pane
+- Side-by-side comparison mode
+- Proposed-only mode
+- Sync scrolling toggle, default on
+- Original vs proposed content comparison
+- AI improvement summary
+- Lightweight change summary and navigator where exact anchors are available
+- Formatting/fidelity warnings where needed
+- Apply to Document action
 - Copy result button
-- Regenerate button
-- Discard button
+- Regenerate action where applicable
+- Discard / Return to Editor action
 - Loading and error states
 
 **Logic:**
 
-- Load AI result from `ai_requests`
-- Ensure result belongs to authenticated user
-- Applying result creates a version snapshot first
-- Apply result to document
+- Load full AI action previews from `ai_requests`:
+
+```txt
+/documents/[id]/preview?requestId={aiRequestId}
+```
+
+- Load single suggestion previews from `suggestions`:
+
+```txt
+/documents/[id]/preview?suggestionId={suggestionId}
+```
+
+- For multi-suggestion preview, use a safe server-backed selection instead of storing large payloads in the URL.
+- Ensure the AI request, suggestion, or server-backed selection belongs to the authenticated user and document.
+- AI actions and suggestion reviews must redirect to this page before any document mutation.
+- Applying a result or suggestion creates a version snapshot first.
+- Applying uses the edited proposed result from the preview page, not necessarily the raw AI response.
 - Update document content
 - Record usage/activity
 - Redirect back to editor after apply
 - Show success toast
+- Critical rule: no AI-generated change should be applied directly from the editor or suggestions panel. The preview page is the only place where the final `Apply to Document` action should exist.
 
 ---
 
@@ -486,17 +531,87 @@ Wire suggestions to real data.
 - Generate suggestions from AI result where applicable
 - Save suggestions to `suggestions`
 - Fetch suggestions for document
-- Apply suggestion:
+- Review/apply suggestion:
   - verify ownership
+  - send the user to `/documents/[id]/preview?suggestionId={suggestionId}` before document mutation
   - create version snapshot where needed
   - update document content
   - mark suggestion as applied
+- Review/apply multiple suggestions:
+  - store the selected suggestion ids server-side
+  - send the user to `/documents/[id]/preview` with a compact server-backed selection reference
+  - do not store large payloads in the URL
+  - apply the selected suggestions only from the preview page
 
 - Ignore suggestion:
   - verify ownership
   - mark suggestion as ignored
 
 - Show success/error feedback
+
+---
+
+### 21a Preview-Gated Suggestion Apply
+
+Update the completed suggestions flow so it fully obeys the preview checkpoint rule before continuing to Version History.
+
+This is required because the editor suggestions rail may show AI-generated changes, but the final document mutation must happen only from `/documents/[id]/preview`.
+
+**UI:**
+
+- Reuse and enhance `AIResultPreview` instead of creating a duplicate preview screen.
+- Support preview mode labels for:
+  - full AI action output
+  - single suggestion
+  - multi-suggestion batch
+
+- Keep original vs proposed comparison visible for every applyable AI change.
+- Show AI improvement summary and formatting/fidelity warnings where applicable.
+- Move final `Apply to Document` for suggestions to the preview page.
+- Replace editor rail apply actions with review actions:
+  - `Review`
+  - `Review selected`
+  - `Review all`
+
+- Keep `Ignore` available from the suggestions rail when it does not mutate document content.
+- Keep `Discard / Return to Editor` available on preview.
+- Keep `Regenerate` available only where the source supports regeneration.
+
+**Logic:**
+
+- Single suggestion review route:
+
+```txt
+/documents/[id]/preview?suggestionId={suggestionId}
+```
+
+- Multi-suggestion review must use a safe server-backed selection:
+  - store authenticated user id
+  - store document id
+  - store selected suggestion ids
+  - store short expiry if persistence is required
+  - pass only a compact selection reference in the URL
+
+- Do not store large suggestion payloads in the URL.
+- Ensure the suggestion or selection belongs to the authenticated Clerk user and document.
+- Remove direct document mutation from editor/suggestions panel apply actions.
+- Final apply from preview must:
+  - verify ownership
+  - snapshot the current document first
+  - apply the selected suggestion or suggestion batch
+  - mark applied suggestions as applied
+  - record `suggestion_apply` usage
+  - redirect back to the editor
+  - show success/error feedback
+
+**Verification:**
+
+- Run typecheck, lint, and focused tests for suggestion replacement/apply behavior.
+- Manually verify:
+  - single suggestion review opens preview and applies only from preview
+  - multi-suggestion review opens preview through server-backed selection
+  - editor rail no longer mutates document content directly
+  - AI action previews still work with `requestId`
 
 ---
 

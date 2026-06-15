@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { getDocumentForUser } from "@/lib/documents/document.service";
+import { listDocumentSuggestions } from "@/lib/suggestions/suggestions.service";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 
 type DocumentEditorPageProps = {
@@ -24,5 +26,14 @@ export default async function DocumentEditorPage({
     notFound();
   }
 
-  return <EditorWorkspace document={document} />;
+  const supabase = createSupabaseServerClient();
+  const initialSuggestions =
+    (await listDocumentSuggestions(supabase, userId, id)) ?? [];
+
+  return (
+    <EditorWorkspace
+      document={document}
+      initialSuggestions={initialSuggestions}
+    />
+  );
 }

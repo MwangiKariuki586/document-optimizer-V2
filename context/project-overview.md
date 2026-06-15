@@ -142,15 +142,17 @@ No heavy sidebar for the first MVP unless a specific workspace screen benefits f
 ### AI Result Preview
 
 - User reviews AI output before applying
-- Preview shows original content and optimized result
+- Preview shows current document content beside the proposed result
+- Proposed result is editable before applying
+- Side-by-side comparison supports synchronous scrolling
 - User can:
   - Apply changes
   - Copy result
-  - Save as version
   - Regenerate
   - Discard
 
 - Applying changes creates a version snapshot first
+- Applying changes uses the edited proposed result, not necessarily the raw AI output
 
 ### Suggestions Flow
 
@@ -161,8 +163,9 @@ No heavy sidebar for the first MVP unless a specific workspace screen benefits f
   - suggested text
   - explanation
 
-- User can apply or ignore each suggestion
-- Applying a suggestion creates a version snapshot where needed
+- User can review or ignore each suggestion
+- Suggestion cards visually connect to matching document text where possible
+- Applying a suggestion happens only from AI Result Preview and creates a version snapshot where needed
 
 ### Version History
 

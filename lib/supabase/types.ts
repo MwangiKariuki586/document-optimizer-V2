@@ -251,6 +251,44 @@ export type Database = {
         }
         Relationships: []
       }
+      suggestion_preview_selections: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          document_id: string
+          expires_at: string
+          id: string
+          suggestion_ids: string[]
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          document_id: string
+          expires_at?: string
+          id?: string
+          suggestion_ids: string[]
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          document_id?: string
+          expires_at?: string
+          id?: string
+          suggestion_ids?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_preview_selections_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suggestions: {
         Row: {
           ai_request_id: string | null

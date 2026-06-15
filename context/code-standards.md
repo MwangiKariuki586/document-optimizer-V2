@@ -403,6 +403,11 @@ Rules:
 
 - Never overwrite document content without explicit user action
 - AI output must be previewed before applying
+- AI-generated changes must only be finally applied from `/documents/[id]/preview`
+- AI Result Preview must compare current vs proposed content before mutation
+- The proposed result must be editable before applying
+- Apply must persist the edited proposed result, not necessarily the raw AI output
+- Comparison view should support synchronous proportional scrolling
 - Applying AI output must create a version snapshot first
 - Applying a suggestion must create a version snapshot where needed
 - Restoring a version must preserve the current state first

@@ -13,6 +13,7 @@ import { aiActionSchema, parseAIActionOutput } from "@/lib/ai/ai.validators";
 import { countWords, plainTextToEditorJson } from "@/lib/documents/text-to-editor";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
+import { saveSuggestionsFromAIResult } from "@/lib/suggestions/suggestions.service";
 import { snapshotDocumentVersion } from "@/lib/versions/versions.service";
 
 type RunDocumentAIActionInput = {
@@ -197,6 +198,12 @@ export async function runDocumentAIAction(
   }
 
   const requestId = await createAIRequest(supabase, input, document);
+  console.log("[ai/run-document-action] request created", {
+    documentId: input.documentId,
+    requestId,
+    action: input.action,
+  });
+
   const aiInput: AIActionInput = {
     action: input.action,
     title: document.title,
@@ -208,7 +215,32 @@ export async function runDocumentAIAction(
 
   try {
     const result = await runAIAction(aiInput);
+    console.log("[ai/run-document-action] provider response", {
+      documentId: input.documentId,
+      requestId,
+      action: input.action,
+      mode: result.mode,
+      suggestionCount: result.output.suggestions.length,
+      hasRevisedMarkdown: Boolean(result.output.revisedMarkdown),
+      provider: result.provider,
+      model: result.model,
+    });
+
     await markAIRequestCompleted(supabase, requestId, result);
+    const savedSuggestionCount = await saveSuggestionsFromAIResult(supabase, {
+      userId: input.userId,
+      documentId: input.documentId,
+      aiRequestId: requestId,
+      action: input.action,
+      originalMarkdown: input.contentMarkdown,
+      output: result.output,
+    });
+    console.log("[ai/run-document-action] suggestions saved", {
+      documentId: input.documentId,
+      requestId,
+      savedSuggestionCount,
+    });
+
     await recordUsageEvent(supabase, {
       userId: input.userId,
       eventType: "ai_action",
@@ -300,6 +332,7 @@ export async function applyAIRequestResult(
     userId: string;
     documentId: string;
     requestId: string;
+    editedMarkdown?: string;
   },
 ): Promise<ApplyAIRequestResult | null> {
   const preview = await getAIRequestPreview(supabase, input);
@@ -308,17 +341,23 @@ export async function applyAIRequestResult(
     return null;
   }
 
-  const revisedMarkdown = preview.output.revisedMarkdown?.trim();
+  const editedMarkdown = input.editedMarkdown?.trim();
+  const revisedMarkdown =
+    editedMarkdown || preview.output.revisedMarkdown?.trim();
 
   if (!revisedMarkdown) {
     throw new Error("AI result has no document changes to apply");
   }
 
+  const editedBeforeApply = Boolean(editedMarkdown);
+
   const snapshot = await snapshotDocumentVersion(supabase, {
     userId: input.userId,
     documentId: input.documentId,
     source: "ai_apply",
-    notes: `Before applying AI request ${input.requestId}`,
+    notes: editedBeforeApply
+      ? "AI result edited before apply"
+      : `Before applying AI request ${input.requestId}`,
   });
 
   if (!snapshot) {
@@ -357,6 +396,7 @@ export async function applyAIRequestResult(
       aiRequestId: input.requestId,
       action: preview.action,
       applied: true,
+      editedBeforeApply,
       versionNumber: snapshot.versionNumber,
     },
   });

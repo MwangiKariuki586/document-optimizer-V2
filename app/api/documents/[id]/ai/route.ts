@@ -45,6 +45,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const supabase = createSupabaseServerClient();
+    console.log("[api/documents/[id]/ai] request", {
+      documentId: id,
+      action: parsed.data.action,
+      contentLength: parsed.data.contentMarkdown.length,
+    });
+
     const result = await runDocumentAIAction(supabase, {
       userId,
       documentId: id,
@@ -63,6 +69,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     if (result.status === "failed") {
+      console.log("[api/documents/[id]/ai] failed", {
+        documentId: id,
+        requestId: result.id,
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -72,6 +83,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         { status: 502 },
       );
     }
+
+    console.log("[api/documents/[id]/ai] completed", {
+      documentId: id,
+      requestId: result.id,
+      mode: result.result.mode,
+      suggestionCount: result.result.output.suggestions.length,
+      hasRevisedMarkdown: Boolean(result.result.output.revisedMarkdown),
+    });
 
     return NextResponse.json({
       success: true,

@@ -21,6 +21,27 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
     "Simplify the document language for easier reading while preserving important details.",
 };
 
+const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
+  optimize:
+    "Return mode \"preview\" with revisedMarkdown and 3-6 targeted suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+  improve_clarity:
+    "Return mode \"suggestions\" with 3-6 clarity suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+  fix_grammar:
+    "Return mode \"suggestions\" with 3-6 grammar suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+  rewrite:
+    "Return mode \"preview\" with revisedMarkdown and 3-6 wording suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+  summarize:
+    "Return mode \"preview\" with revisedMarkdown as the summary. Only include suggestions if there are specific source passages worth changing.",
+  translate:
+    "Return mode \"preview\" with revisedMarkdown as the translated document. Do not include suggestions unless there are source text issues that block a clean translation.",
+  tone_analyze:
+    "Return mode \"suggestions\" with 3-6 tone suggestions and analysis notes. Each suggestion.originalText must be an exact substring from the original document.",
+  seo_analyze:
+    "Return mode \"suggestions\" with 3-6 SEO suggestions and analysis notes. Each suggestion.originalText must be an exact substring from the original document.",
+  simplify_language:
+    "Return mode \"suggestions\" with 3-6 simplification suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+};
+
 const LANGUAGE_LABELS: Record<AIActionInput["options"]["language"], string> = {
   en: "English",
   es: "Spanish",
@@ -67,6 +88,7 @@ Tone: ${input.options.tone}
 Audience: ${input.options.audience}
 Language: ${language}
 Structure: ${preserveStructure}
+Output guidance: ${ACTION_OUTPUT_GUIDANCE[input.action]}
 
 Document Markdown:
 ${input.contentMarkdown}`;

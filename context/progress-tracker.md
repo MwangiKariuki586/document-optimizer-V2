@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 5 - AI Actions and Preview
-**Last completed:** 19 AI Result Preview
-**Next:** Phase 6 / 20 Suggestions UI
+**Phase:** Phase 6 - Suggestions (refinements pending)
+**Last completed:** Phase 6 refinement tracker and cleanup pass
+**Next:** Phase 6 / 21a signed-in live verification
 
 ---
 
@@ -50,8 +50,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 6 - Suggestions
 
-- [ ] 20 Suggestions UI
-- [ ] 21 Suggestions Logic
+- [x] 20 Suggestions UI
+- [x] 21 Suggestions Logic
+- [x] 21a Preview-Gated Suggestion Apply
 
 ### Phase 7 - Version History
 
@@ -82,6 +83,9 @@ Update this file after every completed feature. Any AI agent reading this should
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
 - Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
 - Decision: Gemini is the primary MVP AI provider because the Gemini API test works and the project is avoiding separate OpenAI API billing for MVP. OpenAI remains optional/future through the provider abstraction.
+- Decision: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated document change. Future AI action and suggestion review flows must route to this page before document mutation; final `Apply to Document` belongs only on the preview page.
+- Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
+- Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
 
 ---
 
@@ -89,11 +93,114 @@ Update this file after every completed feature. Any AI agent reading this should
 
 _Add notes here as the build progresses: workarounds, patterns, anything that differs from the context files._
 
+- 2026-06-14: Suggestions did not show because the connected Supabase project had no `suggestions` rows and no `ai_requests` rows; the real-data rail correctly renders only persisted suggestions. Tightened AI prompt output guidance so suggestion-friendly actions request 3-6 exact-substring suggestions, and added a fallback in `saveSuggestionsFromAIResult()` that creates a full-document pending suggestion when an AI result has `revisedMarkdown` but no granular `suggestions`.
+
 ---
 
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-15
+Feature: Phase 6 refinement tracker and cleanup pass
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Corrected the tracker so Phase 6 refinements remain ahead of Phase 7, removed leftover client debug logging from the editor suggestion/AI request flow, and updated the EditorSuggestionsPanel registry rule so it describes the current preview-gated Review behavior instead of stale direct Apply behavior.
+Verification: rg confirmed no matching debug logs/stale registry phrase in the touched files; npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings.
+Follow-up: Complete the signed-in live verification pass for AI preview apply, suggestion preview/apply variants, suggestion card/highlight focus, and long-result desktop layout before starting Phase 7 / 22 Version History Page - Full UI.
+```
+
+```txt
+Date: 2026-06-15
+Feature: Premium AI Review Workflow
+Status: Completed
+Files changed: app/globals.css, app/api/documents/[id]/ai/[requestId]/apply/route.ts, app/api/documents/[id]/suggestions/[suggestionId]/apply/route.ts, app/api/documents/[id]/suggestions/selections/[selectionId]/apply/route.ts, components/ai/AIResultPreview.tsx, components/ai/ChangeNavigator.tsx, components/ai/ChangeSummary.tsx, components/ai/EditableProposedResult.tsx, components/ai/PreviewActionBar.tsx, components/ai/PreviewComparison.tsx, components/ai/PreviewModeToggle.tsx, components/ai/ReadOnlyCurrentDocument.tsx, components/ai/SyncScrollToggle.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, lib/ai/ai.service.ts, lib/editor/suggestion-highlight.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.validators.ts, context/architecture.md, context/build-plan.md, context/code-standards.md, context/project-overview.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Refactored AI Result Preview into a comparison workspace with current document and editable proposed TipTap panes, side-by-side/proposed-only modes, sync scrolling default on, change summary, change navigator, preview action bar, and apply behavior that submits edited proposed markdown. Updated AI and suggestion apply services/routes to validate and persist edited preview content while preserving ownership checks and pre-apply version snapshots. Added full inline suggestion highlighting in the editor via a ProseMirror decoration extension, with bidirectional card-to-highlight focus. Updated context files with the preview-only apply rules and component registry entries.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (6 files, 40 tests); ReadLints reported no errors on changed files.
+Follow-up: Live-verify a signed-in AI action preview with a long document, edit the proposed pane, apply, and confirm the edited content plus version snapshot. Also live-verify suggestion card/highlight focus in a document with pending suggestions.
+```
+
+```txt
+Date: 2026-06-14
+Feature: AI Result Preview Viewport Refinement
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Applied the editor workspace desktop viewport pattern to the AI Result Preview page. The preview now uses a fixed app-height shell below the header, `min-h-0` propagation, hidden outer overflow, and internal scrolling for the left rail, right summary rail, and original/proposed comparison panes so the full page chrome and Apply to Document footer remain viewable on desktop.
+Follow-up refinement: Adjusted the right summary rail so the rail itself no longer scrolls on desktop. The AI Summary card fills the available space, only its suggestion list can scroll internally, and the Document Score plus formatting/version-safety cards remain visible.
+Verification: Focused typecheck/lint recorded in this chat.
+Follow-up: Live-verify with a long AI result and long suggestion batch at desktop width.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 21a Preview-Gated Suggestion Apply
+Status: Completed
+Files changed: supabase/schema/phase-6-suggestion-preview-selections.sql (new), lib/supabase/types.ts, lib/suggestions/suggestions.types.ts, lib/suggestions/suggestions.validators.ts, lib/suggestions/suggestions.service.ts, app/(app)/documents/[id]/preview/page.tsx, app/api/documents/[id]/suggestions/selections/route.ts (new), app/api/documents/[id]/suggestions/selections/[selectionId]/apply/route.ts (new), components/ai/AIResultPreview.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/architecture.md, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Implemented preview-gated suggestion apply. Added the approved Supabase `suggestion_preview_selections` table with RLS, policies, indexes, grants, local schema record, and generated TypeScript type. Added suggestion preview DTOs, validators, single suggestion preview loading, short-lived selection creation/loading, and selected-batch apply with ownership checks, current-document replacement safety, one pre-apply version snapshot, selected suggestion status updates, usage metadata, and consumed selection marking. Generalized `/documents/[id]/preview` and `AIResultPreview` to support `requestId`, `suggestionId`, and `selectionId` payloads. Replaced editor rail Apply/Apply All with Review, Review Selected, and Review All; final Apply to Document now lives on the preview page. Ignore remains in the rail because it does not mutate document content.
+Verification: Supabase MCP migration applied and verified table/RLS/policies; npx tsc --noEmit passed before docs updates. Final lint/test verification recorded in this chat.
+Follow-up: Live-verify single, selected, and all suggestion preview/apply in a signed-in browser session with pending suggestions.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 21a Preview-Gated Suggestion Apply Plan
+Status: Completed
+Files changed: context/build-plan.md, context/progress-tracker.md
+What was completed: Added a concrete Phase 6 follow-up task before Version History to align existing suggestion apply behavior with the required `/documents/[id]/preview` approval checkpoint. The new plan requires reusing/enhancing `AIResultPreview`, replacing editor rail apply actions with review actions, supporting single and multi-suggestion preview, using server-backed multi-selection, and keeping final `Apply to Document` only on the preview page.
+Verification: Documentation-only change; no code tests run.
+Follow-up: Implement Phase 6 / 21a before starting Phase 7 / 22 Version History Page - Full UI.
+```
+
+```txt
+Date: 2026-06-14
+Feature: AI Result Preview Plan Guardrail
+Status: Completed
+Files changed: context/build-plan.md, context/progress-tracker.md
+What was completed: Updated the implementation plan to confirm `app/(app)/documents/[id]/preview/page.tsx` as the required AI Result Preview route and approval checkpoint, referencing `context/designs/results preview.png`. The plan now requires reuse/enhancement of an existing preview page, `context/ui-registry.md` review before new preview components, support for full AI action output, single suggestion, and multi-suggestion previews, original/proposed comparison, AI summary, formatting/fidelity warnings, Apply to Document, Regenerate, and Discard/Return to Editor actions. It also documents `requestId` and `suggestionId` routing plus server-backed multi-suggestion selection, and states that no AI-generated change should be applied directly from the editor or suggestions panel.
+Verification: Documentation-only change; no code tests run.
+Follow-up: Existing suggestion apply endpoints currently mutate from the suggestions rail. When implementing this guardrail, reroute single and multi-suggestion apply flows through the preview page and move final Apply to Document there.
+```
+
+```txt
+Date: 2026-06-14
+Feature: Editor Sidebar Collapse
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorSidebar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a collapsible editor sidebar. EditorWorkspace now owns `sidebarCollapsed` and switches the desktop grid between a 224px expanded left rail and a 64px collapsed icon rail, giving the editor canvas more horizontal space when collapsed. EditorSidebar now accepts controlled collapse props, adds collapse/expand controls, renders icon-only nav with accessible labels and count bubbles in collapsed mode, and keeps compact AI usage/user controls pinned at the bottom. Removed the stale commented document-card block while preserving file/save context through accessible labels/tooltips.
+Verification: npx tsc --noEmit; npm run lint; ReadLints on changed files.
+Follow-up: Live-verify the collapse/expand interaction at desktop width and confirm the compact rail remains comfortable with long suggestion/version counts.
+```
+
+```txt
+Date: 2026-06-14
+Feature: Editor Desktop Viewport Fix
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorCanvas.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Fixed desktop editor viewport overflow so long uploaded documents no longer push the page and hide the bottom status bar. Hardened the `xl` height chain in EditorWorkspace with `min-h-0`, `max-h`, and `overflow-hidden` on the main shell, workspace wrapper, grid row, and column wrappers. Center column and canvas now pass flex shrink constraints through to EditorCanvas; formatting warning is `shrink-0`. EditorCanvas drops the fixed `min-h-[620px]` paper height at `xl` so document content scrolls inside the canvas body while the canvas footer and EditorStatusBar stay visible. Sidebar and right rail keep internal scrolling on overflow. Follow-up refinement: the desktop formatting warning now renders as a compact one-line banner with truncated copy while preserving the full InlineAlert below `xl`.
+Verification: npx tsc --noEmit; npm run lint; ReadLints on changed files.
+Follow-up: Live-verify at desktop width with a long document. If laptop widths below `xl` should also avoid page scroll, that requires a separate breakpoint decision.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 21 Suggestions Logic
+Status: Completed
+Files changed: lib/suggestions/suggestions.validators.ts (new), lib/suggestions/suggestions.types.ts (new), lib/suggestions/suggestion-replace.ts (new), lib/suggestions/suggestion-replace.test.ts (new), lib/suggestions/suggestions.service.ts (new), lib/suggestions/suggestions.mapper.ts (new), lib/ai/ai.service.ts, app/api/documents/[id]/suggestions/route.ts (new), app/api/documents/[id]/suggestions/apply-all/route.ts (new), app/api/documents/[id]/suggestions/[suggestionId]/apply/route.ts (new), app/api/documents/[id]/suggestions/[suggestionId]/ignore/route.ts (new), app/(app)/documents/[id]/page.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired Phase 6 / 21 suggestions logic end to end. Added suggestions validators/service with list, persist-from-AI, apply, ignore, and apply-all flows. Completed AI actions now save normalized output suggestions into the owned `suggestions` table. Added GET suggestions plus apply/ignore/apply-all routes with Clerk auth and ownership checks. Apply flows call `snapshotDocumentVersion(source=suggestion_apply)` first, fail safely when original text is missing or ambiguous, update document markdown/editor_json/word_count, mark suggestion status, and record `suggestion_apply` usage. Apply All uses one pre-batch snapshot per user decision. Replaced editor mock suggestion state with server-loaded initial suggestions and client refetch after AI/apply/ignore actions; editor content and version number sync after apply. Added loading states to suggestion actions and removed preview-only footer copy.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings; npm test passed (6 files, 40 tests). ReadLints reported no errors on changed files.
+Follow-up: Start Phase 7 / 22 Version History Page - Full UI. Live-verify suggestion generation/apply/ignore with a signed-in session and a Gemini AI action that returns suggestions.
+```
+
+```txt
+Date: 2026-06-14
+Feature: 20 Suggestions UI
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Upgraded the editor right-rail suggestions UI for Phase 6 using mock data only. Added richer suggestion cards with type badges (Clarity, Grammar, Tone, Structure, SEO), original/suggested text blocks, explanation copy, visible pending/applied/ignored status pills, disabled reviewed actions, local mock Apply/Ignore/Apply All state, dynamic filter counts, sidebar pending count sync, and a calm empty state when the filtered/list data is empty. Kept Export and AI Assistant entry points intact. No suggestion generation, persistence, document mutation, version snapshotting, or Supabase/API wiring was added.
+Verification: npx tsc --noEmit passed; npm run lint passed with only pre-existing EditorTopBar unused-import warnings. ReadLints reported no errors on edited files.
+Follow-up: Continue Phase 6 / 21 Suggestions Logic: generate/save suggestions from AI output where applicable, fetch owned suggestions for the document, apply suggestions with a pre-apply version snapshot, mark applied/ignored in Supabase, record usage, and show success/error feedback.
+```
 
 ```txt
 Date: 2026-06-14
@@ -514,9 +621,11 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Verify one Gemini AI action end-to-end with `GEMINI_API_KEY`
-2. Start Phase 6 / 20 Suggestions UI
-3. Build the suggestions UI with mock data, referencing context/designs/editor workspace.png
-4. Include suggestion list/cards, type badges, original/suggested text, explanation, Apply/Ignore buttons, applied/ignored state, and empty state
-5. Keep suggestion generation/apply/ignore logic deferred to Phase 6 / 21
+1. Finish Phase 6 / 21a refinement pass before Phase 7.
+2. Live-verify a signed-in AI action preview with a long document, edit the proposed pane, apply, and confirm the edited content plus version snapshot.
+3. Live-verify single, selected, and all suggestion preview/apply in a signed-in browser session with pending suggestions.
+4. Live-verify suggestion card/highlight focus in a document with pending suggestions.
+5. Live-verify the long AI result and long suggestion batch desktop layout.
+6. Then start Phase 7 / 22 Version History Page - Full UI with mock data referencing context/designs/version history.png.
+7. Keep export and sidebar nav switching deferred to later phases.
 ```

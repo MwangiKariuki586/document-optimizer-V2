@@ -525,6 +525,19 @@ Task 19 preview/apply flow:
   → ownership-scoped ai_requests + documents lookup
   → render original/current document content beside saved AI output
 
+/documents/[id]/preview?suggestionId=...
+  → authenticate with Clerk in the server page
+  → getSuggestionPreview()
+  → ownership-scoped pending suggestion + document lookup
+  → compute proposed markdown without persisting
+
+/documents/[id]/preview?selectionId=...
+  → authenticate with Clerk in the server page
+  → getSuggestionSelectionPreview()
+  → resolve owned, unexpired suggestion_preview_selections row
+  → load selected owned pending suggestions
+  → compute proposed markdown without persisting
+
 POST /api/documents/[id]/ai/[requestId]/apply
   → authenticate with Clerk
   → applyAIRequestResult()
@@ -534,6 +547,56 @@ POST /api/documents/[id]/ai/[requestId]/apply
   → update documents.current_markdown/editor_json/word_count
   → record usage metadata
   → redirect client back to editor
+```
+
+Task 21 suggestions flow:
+
+```txt
+runDocumentAIAction()
+  → on completed AI result with output.suggestions[]
+  → saveSuggestionsFromAIResult() inserts pending suggestions rows
+
+GET /api/documents/[id]/suggestions
+  → authenticate with Clerk
+  → listDocumentSuggestions() scoped by user_id + document_id
+
+POST /api/documents/[id]/suggestions/[suggestionId]/apply
+  → authenticate with Clerk
+  → applySuggestion()
+  → verify owned pending suggestion
+  → fail safely if original text is missing or ambiguous
+  → snapshotDocumentVersion(source=suggestion_apply)
+  → replace original_text with suggested_text in current_markdown
+  → update documents.current_markdown/editor_json/word_count
+  → mark suggestion applied
+  → record suggestion_apply usage
+
+POST /api/documents/[id]/suggestions/selections
+  → authenticate with Clerk
+  → validate suggestionIds with createSuggestionSelectionSchema
+  → createSuggestionPreviewSelection()
+  → verify selected suggestions are owned, pending, and belong to document
+  → store short-lived suggestion_preview_selections row
+  → return selectionId for /documents/[id]/preview?selectionId=...
+
+POST /api/documents/[id]/suggestions/selections/[selectionId]/apply
+  → authenticate with Clerk
+  → applySelectedSuggestions()
+  → resolve owned, unexpired selection
+  → revalidate selected suggestions against current document
+  → create one pre-batch snapshot
+  → apply all safe replacements and mark selected suggestions applied
+  → mark selection consumed
+  → record suggestion_apply usage with appliedCount metadata
+
+POST /api/documents/[id]/suggestions/[suggestionId]/ignore
+  → authenticate with Clerk
+  → ignoreSuggestion()
+  → mark owned pending suggestion ignored (no document mutation)
+
+POST /api/documents/[id]/suggestions/apply-all
+  → legacy backend helper route retained for service reuse/testing
+  → editor rail must not call this directly
 ```
 
 ### Normalized Result Shape

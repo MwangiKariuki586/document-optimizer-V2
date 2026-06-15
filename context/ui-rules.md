@@ -325,6 +325,9 @@ Rules:
 - Avoid dashboard-like clutter inside the editor
 - On smaller screens, secondary panels should collapse below, into drawers, or into tabs
 - AI output must appear as preview or suggestions before applying
+- AI suggestions should visually connect to document text where practical
+- Suggestion cards and highlighted document text should focus each other
+- The editor may show AI suggestions, highlights, and review controls, but it must not directly apply AI-generated content
 
 Editor canvas:
 
@@ -348,6 +351,11 @@ Rules:
 - AI actions should be clear buttons or cards
 - AI actions should explain what they do
 - AI results should be preview-first
+- AI Result Preview is the only page where AI-generated changes can be finally applied
+- AI Result Preview should compare current document content with the proposed result
+- The proposed result should be editable before applying
+- Synchronous scrolling should be available in side-by-side comparison view
+- Apply to Document must use the edited proposed result
 - Suggestions should be individually reviewable
 - Applying AI output must feel intentional
 - Use AI tokens for AI-specific elements

@@ -811,7 +811,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 ## Editor Components
 
-> Task 13 built the editor workspace UI; Task 14 wired the center column to real document data. Task 16 added the AI Actions panel in the right rail (opened from AI Assistant). Still mock until later phases: suggestions Apply/Ignore (Phase 6), sidebar nav switching, export, AI usage/user card, and bottom metrics bar.
+> Task 13 built the editor workspace UI; Task 14 wired the center column to real document data. Task 16 added the AI Actions panel in the right rail (opened from AI Assistant). Task 20 upgraded the right-rail suggestions UI; Task 21 wired suggestions to Supabase with apply/ignore/apply-all logic. Still mock until later phases: sidebar nav switching, export, AI usage/user card, and bottom metrics bar.
 
 ### EditorWorkspace
 
@@ -819,7 +819,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 **Purpose:**
 
-Client orchestrator for the document editor workspace. Receives a real `EditorDocument`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
+Client orchestrator for the document editor workspace. Receives a real `EditorDocument` plus server-loaded `initialSuggestions`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter, suggestion action loading), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
 
 **Used on:**
 
@@ -828,19 +828,25 @@ Client orchestrator for the document editor workspace. Receives a real `EditorDo
 **Core classes:**
 
 ```txt
-className="flex-1 bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:overflow-hidden"
-className="mx-auto flex h-full max-w-[1280px] flex-col gap-3"
-className="grid gap-3 lg:grid-cols-[224px_minmax(0,1fr)] xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:grid-cols-[224px_minmax(0,1fr)_300px]"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:max-h-[calc(100vh-73px)] xl:h-[calc(100vh-73px)] xl:overflow-hidden"
+className="mx-auto flex h-full min-h-0 max-w-[1280px] flex-col gap-3 xl:overflow-hidden"
+className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:overflow-hidden"
+className="lg:grid-cols-[224px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)_300px]"
+className="lg:grid-cols-[64px_minmax(0,1fr)] xl:grid-cols-[64px_minmax(0,1fr)_300px]"
+className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 text-xs text-warning-foreground xl:flex"
 ```
 
 **Rules:**
 
 - Only this file carries `"use client"`; it owns the editor and passes the `editor` instance + handlers down.
 - TipTap uses `immediatelyRender: false` (required for Next SSR). Content comes from `editor_json`; save PATCHes `/api/documents/[id]` with `{ title, editorJson, currentMarkdown }` (server recomputes word count).
-- Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh - 73px` (compact app header) with `overflow-hidden`; the column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`) and the metrics bar is `shrink-0`. Each column passes `min-h-0` so the canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
+- Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh - 73px` (compact app header) with `max-h`, `overflow-hidden`, and `min-h-0` on every flex/grid ancestor. The column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`); the metrics bar is `shrink-0`. Each column passes `xl:min-h-0` and `xl:overflow-hidden` (sidebar may use `xl:overflow-y-auto`) so the canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
+- Formatting fidelity warnings stay visible: below `xl` they use the full `InlineAlert`; at `xl` they become a compact one-line warning banner with truncated copy to preserve editor canvas height.
+- Sidebar collapse is owned here via `sidebarCollapsed`; expanded desktop grid uses a 224px left rail and collapsed desktop grid uses a 64px icon rail so the editor canvas gains horizontal space.
 - On mobile the canvas column comes first (`order-1`), then suggestions, then the sidebar rail.
 - Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. AI Assistant in suggestions opens `AIActionsPanel`; back returns to suggestions; close collapses the rail.
-- Suggestions Apply/Ignore, AI usage, user card, and metrics bar are still mock (later phases).
+- Suggestion Review / Review Selected / Review All route users to `/documents/[id]/preview`; final document mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs and suggestion ignore actions.
+- Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
 
 ### EditorSidebar
 
@@ -848,7 +854,7 @@ className="grid gap-3 lg:grid-cols-[224px_minmax(0,1fr)] xl:min-h-0 xl:flex-1 xl
 
 **Purpose:**
 
-Left workspace rail: back-to-documents link, document file card (real file name + file-type letter tile + saved-state subtitle) with a save-state pill, vertical workspace nav (Editor, AI Suggestions, Versions, Export, Document Info), AI usage card, and user card. Fills column height (`h-full flex-col`) with usage + user cards pinned to the bottom via `mt-auto`.
+Left workspace rail: back-to-documents link, vertical workspace nav (Editor, AI Suggestions, Versions, Export, Document Info), AI usage card, and user card. Supports an expanded text rail and a collapsed icon rail. Fills column height (`h-full flex-col`) with usage + user controls pinned to the bottom via `mt-auto`.
 
 **Used on:**
 
@@ -857,12 +863,13 @@ Left workspace rail: back-to-documents link, document file card (real file name 
 **Variants:**
 
 - Active nav item — `bg-accent-light text-accent`; inactive — `text-text-secondary hover:bg-surface-secondary`.
-- Save pill: `saved` → success; `dirty`/`saving` → `bg-surface-tertiary text-text-secondary`.
+- Expanded rail — text labels, count badges, full AI usage card, and user card.
+- Collapsed rail — 64px icon rail with expand/back buttons, icon-only nav, count bubbles, compact AI usage and user controls.
 
 **Rules:**
 
-- Takes `fileName`, `fileType`, and `saveState` from real document data; AI usage and user card remain mock until Phase 9.
-- File tile shows a type letter (`docx`→W, `pdf`→P, `markdown`→M, `txt`→T) in an info-tinted square, falling back to the `FileText` icon. The card subtitle reflects `saveState` ("Saved just now" / "Saving…" / "Unsaved changes").
+- Takes `fileName`, `fileType`, and `saveState` from real document data for accessible labels/tooltips; AI usage and user card remain mock until Phase 9.
+- Controlled by `collapsed` / `onCollapsedChange` from `EditorWorkspace`; collapsed icon buttons must keep `aria-label` and `title` values because visible labels are hidden.
 - Exports `EditorNavKey`. Nav buttons are non-functional until later phases.
 
 ### EditorTopBar
@@ -955,14 +962,14 @@ Document canvas hosting the live TipTap `<EditorContent>` (real `editor_json`) p
 **Core classes:**
 
 ```txt
-className="flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
+className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
 className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary px-4 py-4 xl:min-h-0"
-className="document-editor mx-auto min-h-[620px] w-full max-w-[720px] origin-top rounded-lg border border-border-light bg-surface px-6 py-7 shadow-card-soft transition-transform md:px-10 md:py-9"
+className="document-editor mx-auto min-h-[320px] w-full max-w-[720px] ... xl:min-h-0"
 ```
 
 **Rules:**
 
-- The document area scrolls internally (`overflow-y-auto`). At `xl` the canvas grows to fill the column (`xl:flex-1 xl:min-h-0`) so its height is driven by the viewport-fit layout; below `xl` it keeps `min-h-[320px]` and grows with content. The inner document paper is centered on a subtle workspace surface. The `.ProseMirror` min-height is 240px (in `globals.css`).
+- The document area scrolls internally (`overflow-y-auto`). At `xl` the canvas grows to fill the column (`xl:flex-1 xl:min-h-0`) and the document paper drops its fixed minimum height (`xl:min-h-0`) so long content scrolls inside the canvas instead of expanding the page. Below `xl` it keeps `min-h-[320px]` / `md:min-h-[480px]` and grows with content.
 - The `.document-editor` wrapper applies token-based `.ProseMirror` styles defined in `app/globals.css` (headings, lists, code, blockquote, links).
 - Word/character counts are passed in from the workspace.
 - This is a client component: zoom is functional (50%–200%, step 10, reset) via local state and a `transform: scale()` on the content wrapper.
@@ -973,7 +980,7 @@ className="document-editor mx-auto min-h-[620px] w-full max-w-[720px] origin-top
 
 **Purpose:**
 
-Right-rail AI Suggestions panel: internal Export + AI Assistant action row, panel header with count and close, filter tabs (All/Clarity/Tone/Structure/SEO), suggestion cards (current vs suggested, Apply/Ignore), and an Apply All action. Collapses to a "Show AI Suggestions" button when closed.
+Right-rail AI Suggestions panel: internal Export + AI Assistant action row, panel header with total and pending counts, filter tabs (All/Clarity/Grammar/Tone/Structure/SEO), suggestion cards with original text, suggested text, explanation, type badge, pending/applied/ignored status, Apply/Ignore actions, Apply All pending action, and an empty state. Collapses to a "Show AI Suggestions" button when closed.
 
 **Used on:**
 
@@ -981,16 +988,18 @@ Right-rail AI Suggestions panel: internal Export + AI Assistant action row, pane
 
 **Variants:**
 
-- Type badges: `Clarity` → info, `Tone` → ai, `Structure` → warning, `SEO` → success.
-- Suggestion card with current/suggested pair, or a recommendation `note` only.
+- Type badges: `Clarity` → info, `Grammar` → success, `Tone` → ai, `Structure` → warning, `SEO` → accent.
+- Suggestion card status: `pending` → AI muted card, `applied` → success muted card, `ignored` → secondary surface card.
+- Empty state: dashed bordered surface with a document icon and guidance to run an AI action.
 
 **Rules:**
 
-- Exports `EditorSuggestion`, `SuggestionType`, `SuggestionFilter`.
+- Exports `EditorSuggestion`, `SuggestionType`, `SuggestionStatus`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
-- Preview-first: Apply/Ignore/Apply All are non-functional until Phase 6 (Suggestions) wiring.
+- Preview-first: Review, Review Selected, and Review All only open `/documents/[id]/preview`; final document mutation happens from the preview page after ownership and safety checks. Ignore still calls the owned route because it only changes suggestion status.
 - Export is non-functional until Phase 8. AI Assistant opens `AIActionsPanel` via `onOpenAIActions`.
 - Export and AI Assistant actions sit inside the suggestions panel card as a two-column row with `gap-3`, `p-3`, and a bottom separator.
+- Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
 
 ### EditorStatusBar
 
@@ -1058,38 +1067,169 @@ className="bg-ai-muted/40" (AI Summary strip)
 
 **Purpose:**
 
-Client preview screen for a completed AI request. Compares original document content with AI output, shows AI summary, score/metric cards, formatting/version-safety notice, and lets the user copy, discard, regenerate/edit preferences, or explicitly apply the result.
+Client preview orchestrator for AI-generated document changes. Composes the premium review workflow: current vs proposed comparison, editable proposed result, side-by-side/proposed-only modes, sync scrolling, change summary, change navigator, summary rail, and preview-only Apply to Document.
 
 **Used on:**
 
 - `/documents/[id]/preview?requestId=...`
+- `/documents/[id]/preview?suggestionId=...`
+- `/documents/[id]/preview?selectionId=...`
 
 **Core classes:**
 
 ```txt
-className="mx-auto grid max-w-[1280px] gap-3 xl:grid-cols-[224px_minmax(0,1fr)_300px]"
-className="order-1 min-w-0 rounded-xl border border-border bg-surface shadow-card-soft xl:order-2"
-className="grid min-h-[540px] lg:grid-cols-2"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
+className="mx-auto flex h-full min-h-0 w-full max-w-[1280px] flex-col gap-3 xl:overflow-hidden"
+className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[224px_minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
+className="order-1 min-w-0 rounded-xl border border-border bg-surface shadow-card-soft xl:order-2 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
+className="grid min-h-[540px] lg:grid-cols-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden"
 ```
 
 **Variants:**
 
+- Full AI action output preview via `requestId`.
+- Single suggestion preview via `suggestionId`.
+- Multi-suggestion preview via server-backed `selectionId`.
 - Suggestion/category chips for clarity, grammar, tone, structure, and SEO.
 - Document score panel with token-based conic gradient and metric bars.
 - Empty revised result branch for analysis-only outputs.
+- Formatting/fidelity warning branch when selected suggestions no longer match safely.
 
 **Rules:**
 
-- `"use client"`. Receives an ownership-scoped `AIRequestPreview` from the server page.
+- `"use client"`. Receives a discriminated preview payload from the server page.
 - Copy uses `navigator.clipboard` and `appToast`.
-- Apply calls `POST /api/documents/[id]/ai/[requestId]/apply`; the service snapshots the current document before updating content.
-- Regenerate, Edit Preferences, and Discard return to the editor for now; richer regenerate behavior can be added later.
+- Apply sends `{ editedMarkdown }` to the relevant apply endpoint so the edited proposed result is what gets persisted.
+- AI request apply calls `POST /api/documents/[id]/ai/[requestId]/apply`.
+- Single suggestion apply calls `POST /api/documents/[id]/suggestions/[suggestionId]/apply`.
+- Multi-suggestion apply calls `POST /api/documents/[id]/suggestions/selections/[selectionId]/apply`.
+- Every apply path snapshots the current document before updating content.
+- Regenerate appears only for full AI request previews; suggestion previews return to the editor.
+- View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on in side-by-side mode and uses proportional scroll syncing.
+- The proposed pane is a TipTap editor seeded from Markdown and marks `Edited preview` when changed.
+- Desktop layout follows the editor workspace viewport pattern: fixed app-height shell below the header, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in side rails plus original/proposed panes.
+- The right summary rail itself should not scroll on desktop; keep score and safety cards visible with `shrink-0`, and let only the suggestion list inside the summary card consume remaining space.
+
+### PreviewComparison
+
+**Path:** `components/ai/PreviewComparison.tsx`
+
+**Purpose:**
+
+Comparison workspace body for AI Result Preview. Hosts the read-only current pane and editable proposed pane, supports side-by-side/proposed-only view modes, and synchronizes scrolling proportionally when enabled.
+
+**Used on:**
+
+- `/documents/[id]/preview`
+
+**Rules:**
+
+- `"use client"`. Owns pane scroll refs and feedback-loop protection for sync scroll.
+- Side-by-side is the default desktop review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
+- Change navigator anchors use approximate scroll ratios when exact section mapping is unavailable.
+
+### ReadOnlyCurrentDocument
+
+**Path:** `components/ai/ReadOnlyCurrentDocument.tsx`
+
+**Purpose:**
+
+Read-only current document pane for preview comparison.
+
+**Used on:**
+
+- `/documents/[id]/preview` via `PreviewComparison`
+
+**Rules:**
+
+- Uses the existing `.document-editor` surface pattern for document-like reading.
+- Never mutates document content.
+
+### EditableProposedResult
+
+**Path:** `components/ai/EditableProposedResult.tsx`
+
+**Purpose:**
+
+Editable TipTap proposed result pane. Seeds content from Markdown, serializes edited content with `editor.getMarkdown()`, and reports whether the preview was modified.
+
+**Used on:**
+
+- `/documents/[id]/preview` via `PreviewComparison`
+
+**Rules:**
+
+- `"use client"`. Uses shared `editorExtensions` with `contentType: "markdown"`.
+- Shows `Edited preview` when the proposed result differs from the initial AI output.
+- Apply must use this edited markdown.
+
+### ChangeSummary / ChangeNavigator
+
+**Path:** `components/ai/ChangeSummary.tsx`, `components/ai/ChangeNavigator.tsx`
+
+**Purpose:**
+
+Compact summary and lightweight change navigation for AI Result Preview.
+
+**Used on:**
+
+- `/documents/[id]/preview`
+
+**Rules:**
+
+- `ChangeSummary` shows proposed change count, per-type chips, and preview-only safety copy.
+- `ChangeNavigator` only renders when useful text anchors are available; it should not block preview if exact mapping is unavailable.
+
+### PreviewModeToggle / SyncScrollToggle / PreviewActionBar
+
+**Path:** `components/ai/PreviewModeToggle.tsx`, `components/ai/SyncScrollToggle.tsx`, `components/ai/PreviewActionBar.tsx`
+
+**Purpose:**
+
+Reusable preview controls for view mode, sync scrolling, and final preview actions.
+
+**Used on:**
+
+- `/documents/[id]/preview`
+
+**Rules:**
+
+- `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
+- `SyncScrollToggle` displays `Sync scrolling: On / Off`.
+- `PreviewActionBar` is the only place the final `Apply to Document` action is rendered for AI-generated changes.
+
+### SuggestionHighlight
+
+**Path:** `lib/editor/suggestion-highlight.ts`
+
+**Purpose:**
+
+TipTap/ProseMirror extension for inline AI suggestion highlights in the editor.
+
+**Used on:**
+
+- `/documents/[id]` via `EditorWorkspace`
+
+**Rules:**
+
+- This is an editor utility, not a visual component. Pending suggestions are matched by snippet and rendered as subtle `.suggestion-highlight` decorations.
+- Clicking a decoration reports the suggestion id to `EditorWorkspace`; active highlights use `.is-active`.
+- Multi-paragraph or missing snippets are skipped gracefully.
 
 ---
 
 ## Suggestion Components
 
-_Empty._
+### SuggestionsList (service-backed editor rail)
+
+The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `EditorWorkspace`. Reusable suggestion domain logic lives in `lib/suggestions/` and is consumed by the editor page, API routes, dashboard pending-suggestions query, AI persistence flow, and preview-gated suggestion apply flow.
+
+**Rules:**
+
+- The rail launches review only; it must not directly mutate document content.
+- Single Review navigates to `/documents/[id]/preview?suggestionId=...`.
+- Review Selected and Review All create a short-lived server-backed selection, then navigate to `/documents/[id]/preview?selectionId=...`.
+- Ignore remains available in the rail because it only marks suggestion status and does not change document content.
 
 ---
 
