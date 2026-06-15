@@ -347,7 +347,7 @@ Signed download URL is returned
 
 `version_number` is assigned automatically by the `set_document_version_number()` trigger (max+1 per `document_id`) and is unique per `(document_id, version_number)`. Application code never sets it. See `supabase/schema/phase-4-version-number.sql`.
 
-Versioning model: versions are created (1) automatically at document creation (`upload` / `paste` / `blank`), (2) automatically as pre-destructive safety snapshots before AI apply, suggestion apply, or restore via `snapshotDocumentVersion()` in `lib/versions/versions.service.ts`, and (3) on demand via the editor's "Save current version" dropdown action (`manual_save`, `createManualVersion()` + `POST /api/documents/[id]/versions`). The plain Save only overwrites the live document row (no snapshot).
+Versioning model: versions are created (1) automatically at document creation (`upload` / `paste` / `blank`), (2) automatically as pre-destructive safety snapshots before AI apply or suggestion apply via `snapshotDocumentVersion()` in `lib/versions/versions.service.ts`, and (3) on demand via the editor's "Save current version" dropdown action (`manual_save`, `createManualVersion()` + `POST /api/documents/[id]/versions`). Restore/switch updates the live document row to an existing saved version and does not create a new `document_versions` row. The editor resolves the current version label by preferring the latest validated `version_restore` usage metadata when the selected version content still matches the live document, then falling back to saved-version content matching. The plain Save only overwrites the live document row (no snapshot).
 
 ### `ai_requests`
 

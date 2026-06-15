@@ -29,6 +29,15 @@ import type {
 
 const EMPTY_EDITOR_JSON: Json = { type: "doc", content: [] };
 
+function getNumericMetadataValue(metadata: Json, key: string): number | null {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const value = metadata[key];
+  return typeof value === "number" ? value : null;
+}
+
 type DocumentCreationConfig = {
   userId: string;
   documentPayload: TablesInsert<"documents">;
@@ -107,20 +116,50 @@ export async function getDocumentForUser(
     return null;
   }
 
-  // Latest version number drives the editor's "Version N (Current)" label.
-  // Scoped to the owner; defaults to 0 when no versions exist yet.
-  const { data: latestVersion, error: versionError } = await supabase
+  // The editor's "Version N (Current)" label should point at the saved version
+  // whose content matches the live document. Restoring an existing version
+  // updates the live document without creating a new history row.
+  const { data: versions, error: versionError } = await supabase
     .from("document_versions")
-    .select("version_number")
+    .select("version_number,content_markdown")
     .eq("document_id", documentId)
     .eq("user_id", userId)
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("version_number", { ascending: false });
 
   if (versionError) {
     console.error("[documents/get/version]", versionError.message);
   }
+
+  const { data: latestRestoreEvent, error: restoreEventError } = await supabase
+    .from("usage_ledger")
+    .select("metadata")
+    .eq("document_id", documentId)
+    .eq("user_id", userId)
+    .eq("event_type", "version_restore")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (restoreEventError) {
+    console.error("[documents/get/restore-event]", restoreEventError.message);
+  }
+
+  const currentMarkdown = data.current_markdown ?? "";
+  const restoredVersionNumber = getNumericMetadataValue(
+    latestRestoreEvent?.metadata ?? null,
+    "selectedVersionNumber",
+  );
+  const restoredMatchingVersion = (versions ?? []).find(
+    (version) =>
+      version.version_number === restoredVersionNumber &&
+      (version.content_markdown ?? "") === currentMarkdown,
+  );
+  const matchingVersion =
+    restoredMatchingVersion ??
+    (versions ?? []).find(
+      (version) => (version.content_markdown ?? "") === currentMarkdown,
+    );
+  const latestVersion = versions?.[0];
 
   return {
     id: data.id,
@@ -129,10 +168,11 @@ export async function getDocumentForUser(
     fidelityStatus: data.fidelity_status,
     hasOriginalFile: Boolean(data.original_file_key),
     editorJson: data.editor_json,
-    currentMarkdown: data.current_markdown ?? "",
+    currentMarkdown,
     wordCount: data.word_count,
     updatedAt: data.updated_at,
-    versionNumber: latestVersion?.version_number ?? 0,
+    versionNumber:
+      matchingVersion?.version_number ?? latestVersion?.version_number ?? 0,
   };
 }
 

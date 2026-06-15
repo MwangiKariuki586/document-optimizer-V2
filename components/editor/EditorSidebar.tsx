@@ -29,6 +29,7 @@ type NavItem = {
 };
 
 type EditorSidebarProps = {
+  documentId: string;
   fileName: string;
   fileType: string;
   saveState: SaveState;
@@ -49,6 +50,7 @@ type EditorSidebarProps = {
 };
 
 export function EditorSidebar({
+  documentId,
   fileName,
   fileType,
   saveState,
@@ -78,6 +80,13 @@ export function EditorSidebar({
     { key: "export", label: "Export", icon: Download },
     { key: "info", label: "Document Info", icon: Info },
   ];
+  const navHref: Record<EditorNavKey, string> = {
+    editor: `/documents/${documentId}`,
+    suggestions: `/documents/${documentId}`,
+    versions: `/documents/${documentId}/versions`,
+    export: `/documents/${documentId}/export`,
+    info: `/documents/${documentId}`,
+  };
 
   const initials = user.name
     .split(" ")
@@ -140,24 +149,17 @@ export function EditorSidebar({
         {navItems.map((item) => {
           const isActive = item.key === activeNav;
           const Icon = item.icon;
-
-          return (
-            <button
-              key={item.key}
-              type="button"
-              aria-current={isActive ? "page" : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              title={collapsed ? item.label : undefined}
-              className={`${
-                collapsed
-                  ? "relative flex size-9 items-center justify-center rounded-md"
-                  : "flex items-center gap-3 rounded-md px-3 py-2"
-              } text-xs font-medium transition ${
-                isActive
-                  ? "bg-accent-light text-accent"
-                  : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-              }`}
-            >
+          const itemClass = `${
+            collapsed
+              ? "relative flex size-9 items-center justify-center rounded-md"
+              : "flex items-center gap-3 rounded-md px-3 py-2"
+          } text-xs font-medium transition ${
+            isActive
+              ? "bg-accent-light text-accent"
+              : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
+          }`;
+          const itemContent = (
+            <>
               <Icon className="size-3.5 shrink-0" />
               {collapsed ? null : (
                 <span className="flex-1 text-left">{item.label}</span>
@@ -178,7 +180,34 @@ export function EditorSidebar({
                   {item.count > 9 ? "9+" : item.count}
                 </span>
               ) : null}
-            </button>
+            </>
+          );
+
+          if (item.key === "export") {
+            return (
+              <button
+                key={item.key}
+                type="button"
+                aria-label={collapsed ? item.label : undefined}
+                title={collapsed ? item.label : undefined}
+                className={itemClass}
+              >
+                {itemContent}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={item.key}
+              href={navHref[item.key]}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={collapsed ? item.label : undefined}
+              title={collapsed ? item.label : undefined}
+              className={itemClass}
+            >
+              {itemContent}
+            </Link>
           );
         })}
       </nav>

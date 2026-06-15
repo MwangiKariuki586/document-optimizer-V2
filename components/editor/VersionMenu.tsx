@@ -18,6 +18,7 @@ type VersionMenuProps = {
   refreshKey: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRestoreVersion: (versionNumber: number) => Promise<void>;
 };
 
 const SOURCE_LABELS: Record<VersionSource, string> = {
@@ -65,10 +66,14 @@ export function VersionMenu({
   refreshKey,
   open,
   onOpenChange,
+  onRestoreVersion,
 }: VersionMenuProps) {
   const [versions, setVersions] = useState<VersionListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [restoringVersionNumber, setRestoringVersionNumber] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     if (!open) {
@@ -132,6 +137,21 @@ export function VersionMenu({
     };
   }, [open, documentId, refreshKey]);
 
+  const handleRestoreVersion = async (versionNumber: number) => {
+    if (restoringVersionNumber !== null) {
+      return;
+    }
+
+    setRestoringVersionNumber(versionNumber);
+
+    try {
+      await onRestoreVersion(versionNumber);
+      onOpenChange(false);
+    } finally {
+      setRestoringVersionNumber(null);
+    }
+  };
+
   return (
     <div className="relative">
       <button
@@ -176,14 +196,16 @@ export function VersionMenu({
                     version.versionNumber === currentVersionNumber;
 
                   return (
-                    <div
+                    <button
                       key={version.versionNumber}
+                      type="button"
                       role="menuitem"
-                      aria-disabled
-                      className={`rounded-md px-2.5 py-2 ${
+                      disabled={isCurrent || restoringVersionNumber !== null}
+                      onClick={() => handleRestoreVersion(version.versionNumber)}
+                      className={`w-full rounded-md px-2.5 py-2 text-left transition ${
                         isCurrent
                           ? "border-l-2 border-accent bg-accent-light/40 ring-1 ring-accent/20"
-                          : "text-text-primary"
+                          : "text-text-primary hover:bg-surface-secondary"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -198,22 +220,34 @@ export function VersionMenu({
                           ) : null}
                         </div>
                         <span className="shrink-0 text-xs text-text-muted">
-                          {formatRelativeDate(version.createdAt)}
+                          {restoringVersionNumber === version.versionNumber ? (
+                            <span className="inline-flex items-center gap-1.5 text-accent">
+                              <CometSpinner className="size-3" />
+                              Switching
+                            </span>
+                          ) : (
+                            formatRelativeDate(version.createdAt)
+                          )}
                         </span>
                       </div>
-                      <div className="mt-1">
+                      <div className="mt-1 flex items-center justify-between gap-2">
                         <span className="inline-flex rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
                           {SOURCE_LABELS[version.source]}
                         </span>
+                        {!isCurrent ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-accent">
+                            Switch
+                          </span>
+                        ) : null}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
             )}
 
             <EditorMenuFooter>
-              Restore and preview coming in a later update.
+              Switching updates the editor to that saved version.
             </EditorMenuFooter>
           </EditorMenuPanel>
         </>

@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 6 - Suggestions (refinements pending)
-**Last completed:** Auth Refresh Loading Stabilization
-**Next:** Phase 6 / 21a signed-in live verification
+**Phase:** Phase 8 - Export Flow
+**Last completed:** 23 Version History Logic
+**Next:** 24 Export Page - Full UI
 
 ---
 
@@ -56,8 +56,8 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 7 - Version History
 
-- [ ] 22 Version History Page - Full UI
-- [ ] 23 Version History Logic
+- [x] 22 Version History Page - Full UI
+- [x] 23 Version History Logic
 
 ### Phase 8 - Export Flow
 
@@ -101,6 +101,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-15
+Feature: Editor Version Selector Restore Alignment
+Status: Completed
+Files changed: components/editor/VersionMenu.tsx, components/editor/EditorTopBar.tsx, components/editor/EditorWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, lib/versions/versions.service.ts, lib/versions/versions.service.test.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Made the editor top-bar version selector interactive so non-current versions can be restored directly from the editor workspace. Corrected restore behavior so switching to an existing version updates the live document content without creating a new `document_versions` row. The editor updates TipTap content, word/character counts, save state, selected suggestion UI state, and route data immediately after restore. The document loader now resolves the current version label from the latest validated restore event before falling back to markdown content matching, so duplicate-content rows from earlier restore attempts do not make the selector jump back to the newest version.
+Verification: npx tsc --noEmit passed; npm test passed (7 files, 42 tests) with restore service coverage confirming no version row is inserted during restore; npm run lint passed cleanly; npm run build passed and registered /api/documents/[id]/versions/[versionNumber]/restore. Browser testing intentionally left to the user per request.
+Follow-up: Continue Phase 8 / 24 Export Page - Full UI with mock data referencing context/designs/export document.png.
+```
+
+```txt
+Date: 2026-06-15
+Feature: 23 Version History Logic
+Status: Completed
+Files changed: app/(app)/documents/[id]/versions/page.tsx, app/api/documents/[id]/versions/[versionNumber]/restore/route.ts, components/versions/VersionHistoryWorkspace.tsx, lib/versions/versions.service.ts, lib/versions/versions.validators.ts, lib/versions/versions.service.test.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced mock version history data with real document_versions rows loaded for the authenticated user and document. Added selected/current preview rendering from saved version content and the live document row. Added a restore endpoint and service flow that verifies ownership by user_id/document_id/version_number, restores selected version markdown/editor_json/formatting metadata without creating a new version row, updates word count, records version_restore usage metadata, and returns the user to the editor with toast feedback.
+Verification: npx tsc --noEmit passed; npm test passed (7 files, 42 tests) including focused restore service coverage; npm run lint passed with only the existing EditorTopBar unused-import warnings; npm run build passed and registered /api/documents/[id]/versions/[versionNumber]/restore. Supabase MCP query confirmed document_versions has the required content, editor_json, formatting_metadata, notes, source, ownership, and version_number columns. Browser testing intentionally left to the user per request.
+Follow-up: Continue Phase 8 / 24 Export Page - Full UI with mock data referencing context/designs/export document.png.
+```
+
+```txt
+Date: 2026-06-15
+Feature: 22 Version History Page - Full UI
+Status: Completed
+Files changed: app/(app)/documents/[id]/versions/page.tsx, components/versions/VersionHistoryWorkspace.tsx, components/editor/EditorSidebar.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Built the mock-data Version History workspace at /documents/[id]/versions using the version history design direction: editor-style left rail, version tabs, timeline, selected/current side-by-side preview, change legend, version details rail, restore confirmation dialog, and Exports empty state. Updated the editor sidebar so implemented destinations route to the editor or versions page while Export remains deferred.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings; npm run build passed and registered /documents/[id]/versions. Browser verification used a signed-in session and a temporary blank document, confirmed the editor Versions rail link opens /documents/[id]/versions, desktop route renders, mobile viewport has no horizontal overflow, restore confirmation opens and shows a non-mutating UI-phase notice, and the Exports tab shows its empty state.
+Follow-up: Continue Phase 7 / 23 Version History Logic. Wire real document_versions data, selected-version preview content, and restore behavior that snapshots the current document before applying the selected version.
+```
 
 ```txt
 Date: 2026-06-15
@@ -712,11 +742,9 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Finish Phase 6 / 21a refinement pass before Phase 7.
-2. Live-verify a signed-in AI action preview with a long document, edit the proposed pane, apply, and confirm the edited content plus version snapshot.
-3. Live-verify single, selected, and all suggestion preview/apply in a signed-in browser session with pending suggestions.
-4. Live-verify suggestion card/highlight focus in a document with pending suggestions.
-5. Live-verify the long AI result and long suggestion batch desktop layout.
-6. Then start Phase 7 / 22 Version History Page - Full UI with mock data referencing context/designs/version history.png.
-7. Keep export and sidebar nav switching deferred to later phases.
+1. Start Phase 8 / 24 Export Page - Full UI.
+2. Build the export page with mock data referencing context/designs/export document.png.
+3. Include export format cards for DOCX, PDF, Markdown, TXT, and HTML.
+4. Include export options, formatting warning area, export summary panel, generate export button, loading state, download-ready state, and error state.
+5. Keep real export generation, private storage writes, export records, and signed download URLs deferred to Phase 8 / 25 Export Logic.
 ```

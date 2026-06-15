@@ -91,6 +91,19 @@ type ApplySuggestionResponse = {
   };
 };
 
+type RestoreVersionResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    documentId: string;
+    selectedVersionNumber: number;
+    restoredVersionNumber: number;
+    currentMarkdown: string;
+    editorJson: JSONContent;
+    wordCount: number;
+  };
+};
+
 const FORMATTING_WARNING: Record<string, string> = {
   "Limited Formatting":
     "Some original formatting could not be fully converted for editing. Your original file is preserved and can be exported.",
@@ -468,6 +481,55 @@ export function EditorWorkspace({
     }
   };
 
+  const handleRestoreVersion = async (targetVersionNumber: number) => {
+    if (!editor) {
+      const message = "The editor is still loading. Please try again.";
+      appToast.error(message);
+      throw new Error(message);
+    }
+
+    let toastShown = false;
+
+    try {
+      const response = await fetch(
+        `/api/documents/${document.id}/versions/${targetVersionNumber}/restore`,
+        { method: "POST" },
+      );
+      const data: RestoreVersionResponse = await response.json();
+
+      if (!response.ok || !data.success || !data.data) {
+        const message = data.error ?? "Could not restore this version.";
+        appToast.error(message);
+        toastShown = true;
+        throw new Error(message);
+      }
+
+      editor.commands.setContent(data.data.editorJson);
+      setCounts({
+        words: data.data.wordCount,
+        characters: data.data.currentMarkdown.length,
+      });
+      setVersionNumber(data.data.restoredVersionNumber);
+      setSaveState("saved");
+      setSelectedSuggestionIds([]);
+      setActiveSuggestionId(null);
+      router.refresh();
+      appToast.success(
+        `Switched to version v${data.data.selectedVersionNumber}.`,
+      );
+    } catch (error) {
+      if (!toastShown) {
+        appToast.error("Could not restore this version. Please try again.");
+      }
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error("Could not restore this version.");
+    }
+  };
+
   const handleIgnoreSuggestion = async (id: string) => {
     setIgnoringSuggestionId(id);
 
@@ -563,6 +625,7 @@ export function EditorWorkspace({
         >
           <div className="order-2 min-h-0 lg:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:overflow-x-hidden">
             <EditorSidebar
+              documentId={document.id}
               fileName={document.title}
               fileType={document.fileType}
               saveState={saveState}
@@ -591,6 +654,7 @@ export function EditorWorkspace({
                 saveState={saveState}
                 onSave={handleSave}
                 onCreateVersion={handleCreateVersion}
+                onRestoreVersion={handleRestoreVersion}
                 isCreatingVersion={isCreatingVersion}
                 editor={editor}
                 indicators={<FidelityBadge status={fidelityStatus} />}

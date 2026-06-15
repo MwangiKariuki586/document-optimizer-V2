@@ -6,8 +6,6 @@ import {
   Check,
   ChevronDown,
   GitBranch,
-  MessageSquare,
-  MoreHorizontal,
   PencilLine,
   Redo2,
   Save,
@@ -32,6 +30,7 @@ type EditorTopBarProps = {
   saveState: SaveState;
   onSave: () => void;
   onCreateVersion: () => void;
+  onRestoreVersion: (versionNumber: number) => Promise<void>;
   isCreatingVersion: boolean;
   editor: Editor | null;
   indicators?: React.ReactNode;
@@ -63,6 +62,7 @@ export function EditorTopBar({
   saveState,
   onSave,
   onCreateVersion,
+  onRestoreVersion,
   isCreatingVersion,
   editor,
   indicators,
@@ -202,6 +202,7 @@ export function EditorTopBar({
           refreshKey={versionRefreshKey}
           open={versionMenuOpen}
           onOpenChange={(open) => setOpenMenu(open ? "version" : null)}
+          onRestoreVersion={onRestoreVersion}
         />
 
         <button

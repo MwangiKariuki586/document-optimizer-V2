@@ -871,7 +871,7 @@ Left workspace rail: back-to-documents link, vertical workspace nav (Editor, AI 
 
 - Takes `fileName`, `fileType`, and `saveState` from real document data for accessible labels/tooltips; AI usage and user card remain mock until Phase 9.
 - Controlled by `collapsed` / `onCollapsedChange` from `EditorWorkspace`; collapsed icon buttons must keep `aria-label` and `title` values because visible labels are hidden.
-- Exports `EditorNavKey`. Nav buttons are non-functional until later phases.
+- Exports `EditorNavKey`. Implemented destinations are route links: Editor, AI Suggestions, Versions, and Document Info route to the document workspace or version page. Export remains a non-navigating control until the export route is built.
 
 ### EditorTopBar
 
@@ -879,7 +879,7 @@ Left workspace rail: back-to-documents link, vertical workspace nav (Editor, AI 
 
 **Purpose:**
 
-Editor header row with an editable document title, a Save split button (primary Save + caret menu with Save / Save version), a fidelity indicator (via `indicators` slot), a version-history pill (`VersionMenu`), and undo/redo/comment/more controls.
+Editor header row with an editable document title, a Save split button (primary Save + caret menu with Save / Save version), a fidelity indicator (via `indicators` slot), a version-history pill (`VersionMenu`), and undo/redo controls.
 
 **Used on:**
 
@@ -889,8 +889,8 @@ Editor header row with an editable document title, a Save split button (primary 
 
 - `"use client"` (owns `openMenu: "save" | "version" | null` for mutual exclusion). Title is a controlled input (`title` + `onTitleChange`); changes mark the workspace dirty.
 - Save is always visible as a split button: primary action saves via `onSave` (PATCH `/api/documents/[id]` with `editor.getMarkdown()`); caret opens an `EditorMenuPanel` with two `EditorMenuItem`s — **Save** (*"Update the working copy"*) and **Save version** (*"Create a recoverable snapshot"*). When clean, primary shows "Saved" with check; when dirty, accent "Save" with unsaved dot; when saving, spinner + "Saving". Caret rotates when open; Escape closes. Opening Save closes Version menu and vice versa.
-- The version pill is delegated to `VersionMenu` (`currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`). Restore and preview remain Phase 7.
-- Undo/redo are wired to the TipTap `editor` (disabled via `editor.can()`). Comment and more-options controls are visual affordances only and remain unwired until their feature scope exists.
+- The version pill is delegated to `VersionMenu` (`currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`, `onRestoreVersion`). Version switches use the owned version restore endpoint and update the editor state in place without creating a new version row.
+- Undo/redo are wired to the TipTap `editor` (disabled via `editor.can()`).
 
 ### EditorMenu
 
@@ -914,7 +914,7 @@ Shared dropdown primitives for editor top-bar menus (Save and Version history).
 
 **Purpose:**
 
-Read-only version-history dropdown for the editor top bar. Shows the current version label and, on open, fetches and lists all versions for the document.
+Version-history dropdown for the editor top bar. Shows the current version label and, on open, fetches and lists all versions for the document with restore actions for non-current versions.
 
 **Used on:**
 
@@ -922,8 +922,9 @@ Read-only version-history dropdown for the editor top bar. Shows the current ver
 
 **Rules:**
 
-- `"use client"`. Props: `currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`.
-- Pill shows `Version N` + inline **Current** chip; chevron rotates when open. Lazy-fetches `GET /api/documents/[id]/versions` when opened. Current row uses subtle left accent border + light tint (not full block fill); source shown as a small pill badge; relative timestamp on the right. `EditorMenuSectionHeader` / `EditorMenuFooter` for consistent chrome. Escape and backdrop close. Rows are non-interactive; footer: *"Restore and preview coming in a later update."*
+- `"use client"`. Props: `currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`, `onRestoreVersion`.
+- Pill shows `Version N` + inline **Current** chip; chevron rotates when open. Lazy-fetches `GET /api/documents/[id]/versions` when opened. Current row uses subtle left accent border + light tint (not full block fill); source shown as a small pill badge; relative timestamp on the right. Non-current rows are restore buttons with a compact restore affordance and row-level `CometSpinner` while the restore runs. `EditorMenuSectionHeader` / `EditorMenuFooter` for consistent chrome. Escape and backdrop close.
+- Switching delegates to `EditorWorkspace`, which posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, updates TipTap content/counts/current version number from the response, clears selected suggestion UI state, refreshes the route, and keeps the selected/current version label aligned with the version history page.
 
 ### EditorToolbar
 
@@ -1250,7 +1251,40 @@ The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `E
 
 ## Version Components
 
-_Empty._
+### VersionHistoryWorkspace
+
+**Path:** `components/versions/VersionHistoryWorkspace.tsx`
+
+**Purpose:**
+
+Real-data Version History workspace with editor-style left rail, version tabs, timeline, side-by-side selected/current version preview, change summary, version details rail, restore confirmation dialog, and empty export-version state.
+
+**Used on:**
+
+- `/documents/[id]/versions`
+
+**Core classes:**
+
+```txt
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
+className="mx-auto grid h-full min-h-0 w-full max-w-[1480px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
+className="order-1 flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft lg:order-2 xl:h-full"
+className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[270px_minmax(0,1fr)_300px] xl:overflow-hidden"
+```
+
+**Variants:**
+
+- Tabs: All Versions, AI Versions, Manual Versions, Exports.
+- Timeline states: selected row uses `bg-accent-muted`; current version shows a small `Current` badge.
+- Restore confirmation: modal dialog with cancel and async restore action using `LoadingButton`.
+- Empty state: Exports tab shows `EmptyState` until export versions are wired.
+
+**Rules:**
+
+- Receives real `document_versions` rows from the server page and compares the selected saved version with the live document row.
+- Uses `EditorSidebar` with `activeNav="versions"` so this page stays visually aligned with the editor workspace.
+- Restore posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, shows Sonner feedback through `appToast`, and returns to the editor on success.
+- Restore/switch updates the live document row to the selected saved version and must not create a new `document_versions` row. The editor and version history derive the current version from the latest validated `version_restore` usage metadata when available, then from the saved version whose content matches the live document.
 
 ---
 

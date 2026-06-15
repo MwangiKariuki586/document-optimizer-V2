@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { countWords, plainTextToEditorJson } from "@/lib/documents/text-to-editor";
+import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, Json, TablesInsert } from "@/lib/supabase/types";
 
 export type VersionSource =
@@ -11,10 +13,24 @@ export type VersionSource =
   | "restore";
 
 export type VersionListItem = {
+  id: string;
   versionNumber: number;
   source: VersionSource;
   createdAt: string;
   title: string;
+  notes: string | null;
+  contentMarkdown: string;
+  editorJson: Json | null;
+  formattingMetadata: Json;
+};
+
+export type RestoreVersionResult = {
+  documentId: string;
+  selectedVersionNumber: number;
+  restoredVersionNumber: number;
+  currentMarkdown: string;
+  editorJson: Json;
+  wordCount: number;
 };
 
 type CreateVersionInput = {
@@ -65,7 +81,9 @@ export async function listDocumentVersions(
 ): Promise<VersionListItem[]> {
   const { data, error } = await supabase
     .from("document_versions")
-    .select("version_number,source,created_at,title")
+    .select(
+      "id,version_number,source,created_at,title,notes,content_markdown,editor_json,formatting_metadata",
+    )
     .eq("document_id", documentId)
     .eq("user_id", userId)
     .order("version_number", { ascending: false });
@@ -76,11 +94,89 @@ export async function listDocumentVersions(
   }
 
   return (data ?? []).map((row) => ({
+    id: row.id,
     versionNumber: row.version_number,
     source: row.source as VersionSource,
     createdAt: row.created_at,
     title: row.title,
+    notes: row.notes,
+    contentMarkdown: row.content_markdown ?? "",
+    editorJson: row.editor_json,
+    formattingMetadata: row.formatting_metadata,
   }));
+}
+
+export async function restoreDocumentVersion(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+    versionNumber: number;
+  },
+): Promise<RestoreVersionResult | null> {
+  const { data: version, error: versionError } = await supabase
+    .from("document_versions")
+    .select("version_number,content_markdown,editor_json,formatting_metadata,title")
+    .eq("document_id", input.documentId)
+    .eq("user_id", input.userId)
+    .eq("version_number", input.versionNumber)
+    .maybeSingle();
+
+  if (versionError) {
+    console.error("[versions/restore/load]", versionError.message);
+    throw new Error("Failed to load version");
+  }
+
+  if (!version) {
+    return null;
+  }
+
+  const restoredMarkdown = version.content_markdown ?? "";
+  const restoredEditorJson =
+    version.editor_json ?? plainTextToEditorJson(restoredMarkdown);
+  const wordCount = countWords(restoredMarkdown);
+
+  const { data: document, error: updateError } = await supabase
+    .from("documents")
+    .update({
+      current_markdown: restoredMarkdown,
+      editor_json: restoredEditorJson,
+      formatting_metadata: version.formatting_metadata,
+      word_count: wordCount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.documentId)
+    .eq("user_id", input.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (updateError) {
+    console.error("[versions/restore/update]", updateError.message);
+    throw new Error("Failed to restore version");
+  }
+
+  if (!document) {
+    return null;
+  }
+
+  await recordUsageEvent(supabase, {
+    userId: input.userId,
+    eventType: "version_restore",
+    documentId: document.id,
+    metadata: {
+      selectedVersionNumber: version.version_number,
+      restoredVersionNumber: version.version_number,
+    },
+  });
+
+  return {
+    documentId: document.id,
+    selectedVersionNumber: version.version_number,
+    restoredVersionNumber: version.version_number,
+    currentMarkdown: restoredMarkdown,
+    editorJson: restoredEditorJson,
+    wordCount,
+  };
 }
 
 type SnapshotVersionInput = {
@@ -92,12 +188,12 @@ type SnapshotVersionInput = {
 
 // Single entry point for "version safety": snapshots a document's CURRENT stored
 // state into document_versions before a destructive operation overwrites it (AI
-// apply, suggestion apply, restore, etc.). Ownership is enforced by scoping the
+// apply, suggestion apply, etc.). Ownership is enforced by scoping the
 // read to the user's row; returns null when no owned document matched.
 //
 // Call this BEFORE writing the new content so the snapshot captures the
 // pre-change state. Wired into the AI-apply (Phase 5), suggestion-apply
-// (Phase 6), and restore (Phase 7) flows.
+// (Phase 6), and other flows that intentionally create a recoverable snapshot.
 export async function snapshotDocumentVersion(
   supabase: SupabaseClient<Database>,
   input: SnapshotVersionInput,
