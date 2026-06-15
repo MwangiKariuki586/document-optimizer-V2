@@ -44,7 +44,6 @@ export function LoginPanel({ hasClerk }: LoginPanelProps) {
   return (
     <SignIn
       fallbackRedirectUrl="/dashboard"
-      forceRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/dashboard"
       appearance={{
         elements: {

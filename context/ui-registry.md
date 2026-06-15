@@ -143,7 +143,8 @@ className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shado
 
 **Rules:**
 
-- Redirects successful sign-in/sign-up to `/dashboard`.
+- Uses fallback redirects to `/dashboard` only when no Clerk `redirect_url` is present.
+- Do not force redirect from this component; protected-page refreshes should return to the originally requested route after sign-in.
 - Keep setup state visible until Clerk environment variables are configured.
 
 ---

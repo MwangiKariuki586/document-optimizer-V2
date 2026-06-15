@@ -92,10 +92,24 @@ import { SignIn } from "@clerk/nextjs";
 
 <SignIn
   fallbackRedirectUrl="/dashboard"
-  forceRedirectUrl="/dashboard"
   signUpFallbackRedirectUrl="/dashboard"
 />;
 ```
+
+Use `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login` and
+`NEXT_PUBLIC_CLERK_SIGN_UP_URL=/login` so middleware redirects protected route
+refreshes and the combined sign-in/sign-up flow to the local auth page. Do not
+use `forceRedirectUrl` for normal sign-in because it overrides Clerk's
+`redirect_url` and prevents users from returning to the protected page they
+originally requested.
+
+The `/login` page should also redirect already signed-in users server-side using
+a same-origin `redirect_url` value when present, falling back to `/dashboard`.
+Local development uses `npm run dev` with `next dev --webpack` because the
+Node/Next web-streaming `controller[kState].transformAlgorithm is not a
+function` failure can leave authenticated refreshes on the loading shell under
+the default dev server. Use `npm run dev:turbo` only when intentionally testing
+Turbopack behavior.
 
 ### Server-Side User Resolution
 

@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 6 - Suggestions (refinements pending)
-**Last completed:** Direct Single Suggestion Apply
+**Last completed:** Auth Refresh Loading Stabilization
 **Next:** Phase 6 / 21a signed-in live verification
 
 ---
@@ -101,6 +101,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-15
+Feature: Auth Refresh Loading Stabilization
+Status: Completed
+Files changed: package.json, .env.example, .env.local, context/library-docs.md, context/progress-tracker.md
+What was completed: Switched the default dev server to Webpack with npm run dev while keeping Turbopack available as npm run dev:turbo, added the missing Clerk sign-up URL for the combined /login flow, added the local app URL in .env.local, kept ClerkProvider on its default session behavior after moving away from the problematic dev streaming path, and cleaned generated local debug artifacts.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings; npm run build passed. Restarted port 3000 with npm run dev and confirmed Next.js 16.2.7 (webpack). curl confirmed signed-out /dashboard redirects to local /login with redirect_url. Browser verification confirmed signed-in /dashboard renders and hard refreshes without the loading skeleton, /login?redirect_url=http://localhost:3000/dashboard settles on /dashboard, and /documents/new hard refreshes successfully. Dev logs showed no new transformAlgorithm or ClerkJS network errors after switching to Webpack.
+Follow-up: Live-verify real /documents/[id] and /documents/[id]/preview refreshes once the signed-in user has an owned document and preview request/selection.
+```
+
+```txt
+Date: 2026-06-15
+Feature: Auth Redirect Refresh Fix
+Status: Completed
+Files changed: components/auth/LoginPanel.tsx, .env.example, .env.local, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Configured Clerk to use the local /login route for protected-route sign-in redirects, added fallback redirect environment variables, removed the forced SignIn redirect so Clerk can preserve the original protected redirect_url after refresh, added a server-side /login redirect for already signed-in users, and disabled Clerk session touch only in local development to avoid the dev Frontend API touch failure destabilizing client auth state.
+Verification: npx tsc --noEmit passed; npm run lint passed with only the existing EditorTopBar unused-import warnings. curl confirmed signed-out /dashboard now redirects to local /login with redirect_url. Browser verification confirmed an already signed-in visit to /login?redirect_url=http://localhost:3000/dashboard redirects immediately to /dashboard, and a hard refresh keeps Dashboard Workspace rendered with only the expected Clerk development-key warning.
+Follow-up: Live-verify /documents/[id] and /documents/[id]/preview refreshes in the user's signed-in browser session.
+```
 
 ```txt
 Date: 2026-06-15
