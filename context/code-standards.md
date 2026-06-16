@@ -19,6 +19,15 @@ The AI agent on this project operates as a senior engineer. This means:
 
 ---
 
+## Verification Ownership
+
+- Run code-level verification such as lint, build, typecheck, and focused tests when appropriate for the change.
+- Do not perform browser-based visual or interaction testing directly unless the user explicitly asks for it in that turn.
+- Browser verification is delegated to the user by default. When UI changes are made, state the exact route or flow that needs user browser review.
+- If a feature cannot be confidently accepted without browser review, record that browser verification remains user-owned instead of treating the task as visually verified.
+
+---
+
 ## TypeScript
 
 - Strict mode enabled in `tsconfig.json`

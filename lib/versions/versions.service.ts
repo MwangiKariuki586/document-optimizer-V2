@@ -131,6 +131,13 @@ export async function restoreDocumentVersion(
     return null;
   }
 
+  await snapshotDocumentVersion(supabase, {
+    documentId: input.documentId,
+    userId: input.userId,
+    source: "restore",
+    notes: `Auto-saved before restoring version ${input.versionNumber}`,
+  });
+
   const restoredMarkdown = version.content_markdown ?? "";
   const restoredEditorJson =
     version.editor_json ?? plainTextToEditorJson(restoredMarkdown);

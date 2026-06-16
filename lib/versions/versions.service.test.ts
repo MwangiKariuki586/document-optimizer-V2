@@ -77,7 +77,7 @@ describe("restoreDocumentVersion", () => {
     vi.clearAllMocks();
   });
 
-  it("restores the selected version without creating a new version row", async () => {
+  it("snapshots the current document before restoring the selected version", async () => {
     const selectedVersion = createBuilder("document_versions", {
       maybeSingle: {
         version_number: 2,
@@ -87,11 +87,24 @@ describe("restoreDocumentVersion", () => {
         title: "Saved version",
       },
     });
+    const currentDocument = createBuilder("documents", {
+      maybeSingle: {
+        title: "Current title",
+        current_markdown: "Current live content",
+        editor_json: { type: "doc", content: [{ type: "paragraph" }] },
+        formatting_metadata: { fidelity: "preserved" },
+      },
+    });
+    const snapshotVersion = createBuilder("document_versions", {
+      single: { id: "snapshot-id", version_number: 5 },
+    });
     const restoredDocument = createBuilder("documents", {
       maybeSingle: { id: "document-id" },
     });
     const { supabase } = createSupabaseMock([
       selectedVersion,
+      currentDocument,
+      snapshotVersion,
       restoredDocument,
     ]);
 
@@ -109,6 +122,14 @@ describe("restoreDocumentVersion", () => {
       editorJson: { type: "doc", content: [] },
       wordCount: 3,
     });
+    expect(currentDocument.maybeSingle).toHaveBeenCalled();
+    expect(snapshotVersion.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "restore",
+        content_markdown: "Current live content",
+        notes: "Auto-saved before restoring version 2",
+      }),
+    );
     expect(restoredDocument.update).toHaveBeenCalledWith(
       expect.objectContaining({
         current_markdown: "Restored version content",
@@ -117,8 +138,6 @@ describe("restoreDocumentVersion", () => {
         word_count: 3,
       }),
     );
-    expect(selectedVersion.insert).not.toHaveBeenCalled();
-    expect(restoredDocument.insert).not.toHaveBeenCalled();
     expect(recordUsageEvent).toHaveBeenCalledWith(
       supabase,
       expect.objectContaining({

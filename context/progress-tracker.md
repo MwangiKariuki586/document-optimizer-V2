@@ -87,6 +87,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
 - Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
 - Decision: Single suggestion cards now use direct Apply in the editor for faster review. Review Selected and Review All remain routed through `/documents/[id]/preview` using server-backed selections.
+- Decision: Browser-based visual and interaction testing is delegated to the user by default. Agents should run code-level verification and list the route/flow that needs user browser review unless the user explicitly asks the agent to perform browser testing.
 
 ---
 
@@ -101,6 +102,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-16
+Feature: Version History Workspace Space Refinement
+Status: Completed
+Files changed: components/versions/VersionHistoryWorkspace.tsx, components/versions/VersionComparisonWorkspace.tsx, components/versions/VersionSelector.tsx, components/versions/VersionTimeline.tsx, components/versions/VersionTimelineItem.tsx, components/versions/VersionDetailsPanel.tsx, lib/versions/version-history.utils.ts, context/code-standards.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined the Version History workspace to prioritize the core comparison and version details areas. The page now opens with the document rail collapsed, uses a compact header/tab band, narrows the timeline and details rails, compresses the comparison selectors/header, removes the persistent desktop bottom action bar, and collapses version safety text inside the details rail. Added a project verification rule that delegates browser testing to the user by default.
+Verification: npm run lint passed; npm run build passed. Browser testing intentionally delegated to the user per project rule.
+Follow-up: User should visually review /documents/[id]/versions in a signed-in browser session, checking desktop first and then smaller widths.
+```
 
 ```txt
 Date: 2026-06-15

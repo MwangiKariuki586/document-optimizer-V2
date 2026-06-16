@@ -1267,9 +1267,10 @@ Real-data Version History workspace with editor-style left rail, version tabs, t
 
 ```txt
 className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
-className="mx-auto grid h-full min-h-0 w-full max-w-[1480px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
-className="order-1 flex min-h-0 flex-col gap-3 overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft lg:order-2 xl:h-full"
-className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[270px_minmax(0,1fr)_300px] xl:overflow-hidden"
+className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
+className="order-1 flex min-h-0 flex-col gap-3 overflow-hidden lg:order-2 xl:h-full"
+className="flex shrink-0 flex-col gap-2 rounded-xl border border-border bg-surface px-3 py-2 shadow-card-soft"
+className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl:overflow-hidden"
 ```
 
 **Variants:**
@@ -1283,6 +1284,9 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[270px_minmax(0,1fr)_300px] xl
 
 - Receives real `document_versions` rows from the server page and compares the selected saved version with the live document row.
 - Uses `EditorSidebar` with `activeNav="versions"` so this page stays visually aligned with the editor workspace.
+- Defaults the document rail to collapsed and uses a compact header/tab band so the timeline, comparison panes, and details rail own the page space.
+- Desktop layout keeps supporting rails narrow: timeline around 240px, details around 288px, and the comparison column gets the remaining width.
+- Restore actions live in the comparison header/details rail; the previous persistent desktop bottom action bar is intentionally not rendered so preview panes keep more height.
 - Restore posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, shows Sonner feedback through `appToast`, and returns to the editor on success.
 - Restore/switch updates the live document row to the selected saved version and must not create a new `document_versions` row. The editor and version history derive the current version from the latest validated `version_restore` usage metadata when available, then from the saved version whose content matches the live document.
 
