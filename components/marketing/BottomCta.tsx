@@ -4,7 +4,7 @@ const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 export function BottomCta() {
   return (
-    <section id="pricing" className="px-4 py-12">
+    <section id="resources" className="px-4 py-12">
       <div className="mx-auto max-w-[1200px] rounded-2xl border border-border bg-surface p-8 text-center shadow-card md:p-10">
         <p className="text-sm font-medium text-accent">Document control first</p>
         <h2 className="mt-3 text-[28px] font-bold leading-9 text-text-primary md:text-[40px] md:leading-[48px]">

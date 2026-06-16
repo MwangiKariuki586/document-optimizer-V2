@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftRight, History, PanelRightOpen } from "lucide-react";
+import { ArrowLeftRight, PanelRightOpen } from "lucide-react";
 
-import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EmptyState } from "@/components/feedback/EmptyState";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { RestoreVersionDialog } from "@/components/versions/RestoreVersionDialog";
 import { VersionComparisonWorkspace } from "@/components/versions/VersionComparisonWorkspace";
 import { VersionDetailsPanel } from "@/components/versions/VersionDetailsPanel";
@@ -60,7 +60,6 @@ export function VersionHistoryWorkspace({
   const isXl = useMediaQuery("(min-width: 1280px)");
   const isLg = useMediaQuery("(min-width: 1024px)");
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState<VersionTab>("all");
   const [selectedVersionNumber, setSelectedVersionNumber] = useState(
     versions[0]?.versionNumber ?? document.versionNumber,
@@ -160,7 +159,10 @@ export function VersionHistoryWorkspace({
   };
 
   const scrollToComparison = () => {
-    comparisonRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    comparisonRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   };
 
   const openDetails = () => {
@@ -173,78 +175,17 @@ export function VersionHistoryWorkspace({
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden">
-      <div
-        className={`mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden ${
-          sidebarCollapsed
-            ? "lg:grid-cols-[64px_minmax(0,1fr)]"
-            : "lg:grid-cols-[224px_minmax(0,1fr)]"
-        }`}
-      >
-        <div className="order-2 min-h-0 lg:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:overflow-x-hidden">
-          <EditorSidebar
-            documentId={document.id}
-            fileName={document.title}
-            fileType={document.fileType}
-            saveState="saved"
-            activeNav="versions"
-            suggestionCount={0}
-            versionCount={versions.length}
-            collapsed={sidebarCollapsed}
-            onCollapsedChange={setSidebarCollapsed}
-            aiUsage={{
-              used: 7200,
-              total: 10000,
-              resetLabel: "Reset in 18 days",
-            }}
-            user={{ name: "Alex Johnson", email: "alex@example.com" }}
-          />
-        </div>
+    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+      <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden">
+        <div className="flex min-h-0 flex-col gap-3 overflow-hidden xl:h-full">
+          <div className="flex shrink-0 flex-col gap-2 rounded-xl ">
+            <PageHeader
+              eyebrow="Versions"
+              title="Version History"
+              description="Compare saved versions, inspect document changes, and restore a previous state when needed."
+            />
 
-        <div className="order-1 flex min-h-0 flex-col gap-3 overflow-hidden lg:order-2 xl:h-full">
-          <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-border bg-surface px-3 py-2 shadow-card-soft">
-            <header className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-light text-accent">
-                  <History className="size-4" />
-                </span>
-                <h1 className="truncate text-[22px] font-bold leading-7 text-text-primary md:text-[24px] md:leading-8">
-                  Version History
-                </h1>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {!showDetailsPanel && isLg ? (
-                  <button
-                    type="button"
-                    onClick={openDetails}
-                    className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-secondary"
-                  >
-                    <PanelRightOpen className="size-4 text-accent" />
-                    Version details
-                  </button>
-                ) : null}
-                {!isLg ? (
-                  <button
-                    type="button"
-                    onClick={() => setDetailsDrawerOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-secondary"
-                  >
-                    <PanelRightOpen className="size-4 text-accent" />
-                    Version details
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={scrollToComparison}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-secondary"
-                >
-                  <ArrowLeftRight className="size-4 text-accent" />
-                  Compare Versions
-                </button>
-              </div>
-            </header>
-
-            <div className="flex shrink-0 flex-wrap items-center gap-1 border-t border-border-light pt-1">
+            <div className="flex shrink-0 flex-wrap items-center gap-1  pt-1">
               {versionTabs.map((tab) => {
                 const isActive = tab.key === activeTab;
 
@@ -330,7 +271,6 @@ export function VersionHistoryWorkspace({
                   />
                 ) : null}
               </div>
-
             </div>
           )}
         </div>

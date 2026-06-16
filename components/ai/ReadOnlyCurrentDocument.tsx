@@ -18,7 +18,7 @@ export const ReadOnlyCurrentDocument = forwardRef<
 ) {
   return (
     <article
-      className={`min-w-0 rounded-xl border border-border bg-surface shadow-card-soft ${
+      className={`min-w-0 rounded-xl border border-border bg-surface  ${
         hidden ? "hidden" : "flex min-h-0 flex-col"
       }`}
     >

@@ -28,7 +28,7 @@ Build the complete homepage UI,reference context/designs/landingpage.png
 
 **UI:**
 
-- Top navbar — logo, Features, How It Works, Pricing, Resources, Log in, Get Started
+- Top navbar — logo, Features, How It Works, Resources, Log in, Get Started
 - Hero section — headline, subheadline, primary CTA that does not repeat “Get Started”
 - AI optimization process visual showing document suggestions users can choose from
 - Features section — document safety, AI suggestions, version history, export-ready workflow
@@ -79,17 +79,17 @@ Build authenticated workspace shell with mock content.
 
 **UI:**
 
-- Authenticated top navigation visually consistent with public navbar
+- Authenticated collapsed sidebar navigation based on the editor workspace rail pattern
 - Main app layout
 - Page container
 - Shared page header pattern
 - User/account menu
-- Mobile navigation behavior
+- Sidebar collapse and mobile behavior
 
 **Logic:**
 
 - Read Clerk session
-- Show authenticated navigation only for logged-in users
+- Show authenticated sidebar navigation only inside protected app routes
 - Redirect unauthenticated users away from protected routes
 
 ---
@@ -707,11 +707,12 @@ Build account and usage page with mock data,referencing context/designs/account 
 **UI:**
 
 - Profile summary
-- Current plan placeholder
+- Free workspace summary
 - Usage cards
 - AI usage summary
 - Document usage summary
 - Export usage summary
+- Storage usage summary
 - Recent usage activity
 - Sign out action
 
@@ -731,6 +732,7 @@ Wire account and usage page to real data.
 - Count suggestions applied
 - Count exports generated
 - Show empty usage state where needed
+- Do not add pricing, subscription, invoice, renewal, upgrade, or paid-plan controls
 
 ---
 

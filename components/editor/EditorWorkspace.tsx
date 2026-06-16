@@ -9,7 +9,6 @@ import { editorExtensions } from "@/lib/editor/editor-extensions";
 
 import { AIActionsPanel } from "@/components/ai/AIActionsPanel";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
-import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { EditorStatusBar } from "@/components/editor/EditorStatusBar";
 import {
   EditorSuggestion,
@@ -129,7 +128,6 @@ export function EditorWorkspace({
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [versionNumber, setVersionNumber] = useState(document.versionNumber);
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightPanel, setRightPanel] = useState<RightPanelMode>(() =>
     initialSuggestions.length > 0 ? "suggestions" : "ai-actions",
   );
@@ -614,36 +612,12 @@ export function EditorWorkspace({
   const formattingWarning = FORMATTING_WARNING[document.fidelityStatus];
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:max-h-[calc(100vh-73px)] xl:h-[calc(100vh-73px)] xl:overflow-hidden">
-      <div className="mx-auto flex h-full min-h-0 max-w-[1280px] flex-col gap-3 xl:overflow-hidden">
+    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden">
         <div
-          className={`grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:overflow-hidden ${
-            sidebarCollapsed
-              ? "lg:grid-cols-[64px_minmax(0,1fr)] xl:grid-cols-[64px_minmax(0,1fr)_300px]"
-              : "lg:grid-cols-[224px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)_300px]"
-          }`}
+          className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
         >
-          <div className="order-2 min-h-0 lg:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:overflow-x-hidden">
-            <EditorSidebar
-              documentId={document.id}
-              fileName={document.title}
-              fileType={document.fileType}
-              saveState={saveState}
-              activeNav="editor"
-              suggestionCount={pendingSuggestionCount}
-              versionCount={12}
-              collapsed={sidebarCollapsed}
-              onCollapsedChange={setSidebarCollapsed}
-              aiUsage={{
-                used: 7200,
-                total: 10000,
-                resetLabel: "Reset in 18 days",
-              }}
-              user={{ name: "Alex Johnson", email: "alex@example.com" }}
-            />
-          </div>
-
-          <div className="order-1 flex min-h-0 flex-col gap-2 lg:order-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
+          <div className="order-1 flex min-h-0 flex-col gap-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
             <div className="relative z-20 flex shrink-0 flex-col rounded-xl border border-border bg-surface shadow-card-soft">
               <EditorTopBar
                 title={title}
@@ -688,7 +662,7 @@ export function EditorWorkspace({
             <EditorStatusBar fidelityStatus={fidelityStatus} />
           </div>
 
-          <div className="order-3 min-h-0 lg:order-3 lg:col-span-2 xl:col-span-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
+          <div className="order-2 min-h-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
             {rightPanel === "ai-actions" ? (
               <AIActionsPanel
                 onBack={hasSuggestions ? () => setRightPanel("suggestions") : undefined}

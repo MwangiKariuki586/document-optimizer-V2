@@ -80,7 +80,7 @@ export const EditableProposedResult = forwardRef<
   }, [editor, normalizedInitial, onEditedChange, onMarkdownChange]);
 
   return (
-    <article className="flex min-h-0 min-w-0 flex-col rounded-xl border border-border bg-surface shadow-card-soft">
+    <article className="flex min-h-0 min-w-0 flex-col rounded-xl border border-border bg-surface">
       <div className="flex shrink-0 items-center justify-between border-b border-border-light px-4 py-3">
         <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
           <Sparkles className="size-4" />

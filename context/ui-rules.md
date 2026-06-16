@@ -35,7 +35,7 @@ Never use system fonts as the primary font.
 
 - Gap between page sections: 24px to 32px
 - Public navbar height: 72px
-- Authenticated navbar should remain visually consistent with the public navbar
+- Authenticated app navigation uses a collapsed-by-default sidebar based on the editor workspace rail pattern
 - Use full-width soft page backgrounds with centered content containers
 - Keep layouts spacious, calm, and document-focused
 
@@ -46,24 +46,23 @@ Never use system fonts as the primary font.
 Public navbar items:
 
 ```txt
-Features    How It Works    Pricing    Resources    Log in    Get Started
+Features    How It Works    Resources    Log in    Get Started
 ```
 
-Authenticated workspace navigation:
+Authenticated workspace sidebar navigation:
 
 ```txt
-Dashboard    Documents    Usage    Account
+Dashboard    Documents    New Document    Usage    Account
 ```
 
 Rules:
 
-- Public and authenticated navigation must feel visually connected
+- Public navigation and authenticated app navigation must use the same token system and product mark
 - Active item uses `text-accent`
 - Inactive items use `text-text-secondary`
-- Navbar uses clean spacing, no heavy borders, and no clutter
-- Avoid heavy sidebar navigation in the MVP
-- A document workspace may use secondary panels only where useful, such as editor navigation, AI tools, or version history
-- Do not introduce a completely different navbar style between pages
+- Authenticated sidebar is collapsed by default and expands on demand
+- Document routes may add contextual sidebar links for Editor, Versions, and Export
+- Do not reintroduce a top authenticated navbar
 
 ---
 
@@ -105,6 +104,8 @@ font-weight: 700
 color: text-text-primary
 line-height: tight
 ```
+
+Authenticated pages must use `components/layout/PageHeader.tsx` for the primary page title and actions, except full document editor and AI result preview workspaces.
 
 ### Section Heading
 
@@ -564,7 +565,7 @@ Rules:
 - Never make AI changes without preview
 - Never hide document fidelity warnings
 - Never imply formatting is preserved when it is not
-- Never create a completely different navbar style across screens
-- Never use heavy sidebars unless the screen specifically benefits from a secondary workspace panel
+- Never reintroduce a top authenticated navbar unless the app shell direction changes
+- Never add a second persistent navigation rail inside authenticated pages
 - Never stack more than two nested rounded card containers
 - Never use fixed positioning unless required for a modal, toast, or controlled overlay

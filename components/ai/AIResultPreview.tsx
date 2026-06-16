@@ -1,20 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  ChevronDown,
-  Download,
-  FileText,
-  History,
-  Info,
-  PencilLine,
-  Sparkles,
-  TriangleAlert,
-} from "lucide-react";
+import { ChevronDown, Sparkles, TriangleAlert } from "lucide-react";
 
 import { ChangeNavigator } from "@/components/ai/ChangeNavigator";
 import type { PreviewChangeAnchor } from "@/components/ai/ChangeNavigator";
@@ -53,33 +41,6 @@ const suggestionLabels: Record<SuggestionType, string> = {
   structure: "Structure",
   seo: "SEO",
 };
-
-const previewNavItems = [
-  {
-    label: "Editor",
-    icon: PencilLine,
-    href: (documentId: string) => `/documents/${documentId}`,
-  },
-  {
-    label: "AI Suggestions",
-    icon: Sparkles,
-    active: true,
-  },
-  {
-    label: "Versions",
-    icon: History,
-    href: (documentId: string) => `/documents/${documentId}/versions`,
-  },
-  {
-    label: "Export",
-    icon: Download,
-    href: (documentId: string) => `/documents/${documentId}/export`,
-  },
-  {
-    label: "Document Info",
-    icon: Info,
-  },
-];
 
 function countSuggestions(suggestions: { type: SuggestionType }[]) {
   return suggestions.reduce<Record<SuggestionType, number>>(
@@ -270,7 +231,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
       }
 
       appToast.success(display.applySuccess);
-      router.push(`/documents/${display.documentId}`);
+      router.push(`/documents/${display.documentId}/export`);
       router.refresh();
     } catch {
       appToast.error(`${display.applyError} Please try again.`);
@@ -280,129 +241,9 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden">
-      <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-cols-[252px_minmax(0,1fr)] xl:overflow-hidden">
-        <aside className="order-2 rounded-xl border border-border bg-surface p-4 shadow-card-soft xl:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1">
-            <Link
-              href="/documents"
-              className="inline-flex items-center gap-2 text-xs font-medium text-text-secondary transition hover:text-text-primary"
-            >
-              <ArrowLeft className="size-4" />
-              Back to Documents
-            </Link>
-
-            <div className="mt-4 rounded-xl border border-border-light bg-surface p-3 shadow-card-soft">
-              <div className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-info-muted text-info-foreground">
-                  <FileText className="size-4" />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-text-primary">
-                    {display.documentTitle}
-                  </p>
-                  <p className="mt-1 truncate text-[11px] text-text-muted">
-                    {display.sourceLabel}
-                  </p>
-                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2 py-0.5 text-[11px] font-medium text-success-foreground">
-                    <CheckCircle2 className="size-3" />
-                    Saved
-                  </span>
-                  <p className="mt-2 inline-flex rounded-md bg-success-muted px-2 py-1 text-[11px] font-medium text-success-foreground">
-                    {display.statusLabel}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <nav className="mt-5 grid gap-1 text-sm">
-              {previewNavItems.map((item) => {
-                const Icon = item.icon;
-                const content = (
-                  <>
-                    <Icon className="size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate text-left">
-                      {item.label}
-                    </span>
-                    {item.active ? (
-                      <span className="rounded-full bg-accent-lighter px-2 py-0.5 text-[11px] font-semibold text-accent">
-                        {changeTotal}
-                      </span>
-                    ) : null}
-                  </>
-                );
-                const className = `flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium transition ${
-                  item.active
-                    ? "bg-accent-light text-accent"
-                    : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
-                }`;
-
-                if (item.href) {
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href(display.documentId)}
-                      className={className}
-                    >
-                      {content}
-                    </Link>
-                  );
-                }
-
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    className={className}
-                    aria-current={item.active ? "page" : undefined}
-                  >
-                    {content}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-
-          <div className="mt-4 grid shrink-0 gap-3">
-            <div className="rounded-xl border border-border bg-surface p-3 shadow-card-soft">
-              <p className="text-xs font-semibold text-text-primary">
-                AI Usage{" "}
-                <span className="font-normal text-text-muted">
-                  (This month)
-                </span>
-              </p>
-              <p className="mt-2 text-xs leading-5 text-text-secondary">
-                {display.usageLabel}
-              </p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-tertiary">
-                <div className="h-full w-[72%] rounded-full bg-accent" />
-              </div>
-              <p className="mt-2 text-[11px] text-text-muted">
-                Resets in 18 days
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3 text-left shadow-card-soft transition hover:bg-surface-secondary"
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
-                AJ
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-text-primary">
-                  Alex Johnson
-                </span>
-                <span className="block truncate text-xs text-text-muted">
-                  alex@example.com
-                </span>
-              </span>
-              <ChevronDown className="size-4 shrink-0 text-text-muted" />
-            </button>
-          </div>
-        </aside>
-
-        <section className="order-1 min-w-0 xl:order-2 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
+    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+      <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:overflow-hidden">
+        <section className="min-w-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <h1 className="sr-only">{display.title}</h1>
 
           {display.warnings.length > 0 ? (
@@ -445,7 +286,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
               </div>
             </div>
 
-            <aside className="grid min-h-0 gap-3 rounded-xl border border-accent-light bg-accent-muted p-3 shadow-card-soft xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
+            <aside className="grid min-h-0 gap-3 rounded-xl bg-accent-muted  xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
               <section className="rounded-xl border border-border-light bg-surface p-3">
                 <button
                   type="button"
@@ -475,14 +316,14 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
 
                 {comparisonSettingsOpen ? (
                   <div className="mt-3 grid gap-2">
-                  <PreviewModeToggle
-                    value={previewMode}
-                    onChange={setPreviewMode}
-                  />
-                  <SyncScrollToggle
-                    enabled={syncScroll}
-                    onChange={setSyncScroll}
-                  />
+                    <PreviewModeToggle
+                      value={previewMode}
+                      onChange={setPreviewMode}
+                    />
+                    <SyncScrollToggle
+                      enabled={syncScroll}
+                      onChange={setSyncScroll}
+                    />
                   </div>
                 ) : null}
               </section>
@@ -511,11 +352,10 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                   </p>
                   <p className="mt-0.5 text-[11px] leading-4 text-text-secondary">
                     Across {changedCategoryCount} key area
-                    {changedCategoryCount === 1 ? "" : "s"}. Preview only -
-                    your document has not changed yet.
+                    {changedCategoryCount === 1 ? "" : "s"}. Preview only - your
+                    document has not changed yet.
                   </p>
                 </div>
-
               </section>
             </aside>
           </div>

@@ -206,13 +206,13 @@ className="mx-auto flex max-w-[1200px] flex-col gap-5 text-sm text-text-secondar
 
 - Use project navigation labels and token-based typography only.
 
-### AppHeader
+### AppSidebar
 
-**Path:** `components/layout/AppHeader.tsx`
+**Path:** `components/layout/AppSidebar.tsx`
 
 **Purpose:**
 
-Authenticated workspace header with product identity, primary app navigation, New Document action, user/account control, and mobile menu.
+Collapsed-by-default authenticated workspace sidebar with product identity, primary app navigation, contextual document links, usage shortcut, and Clerk account control.
 
 **Used on:**
 
@@ -226,24 +226,27 @@ Authenticated workspace header with product identity, primary app navigation, Ne
 **Core classes:**
 
 ```txt
-className="border-b border-border-light bg-background-soft/95 px-4 py-3 backdrop-blur"
-className="mx-auto flex min-h-[72px] max-w-[1200px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-6"
-className="hidden items-center gap-8 md:flex"
-className="mx-auto mt-3 max-w-[1200px] rounded-2xl border border-border-light bg-surface p-3 shadow-card-soft md:hidden"
-className="border-b border-border-light bg-background-soft/95 px-3 py-2 backdrop-blur md:px-5"
-className="mx-auto flex min-h-14 max-w-[1280px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-5"
+className="sticky top-0 flex h-screen shrink-0 flex-col border-r border-border-light bg-background-soft px-3 py-3 transition-[width]"
+className="w-[64px] items-center"
+className="w-[224px]"
+className="flex size-9 items-center justify-center rounded-md"
+className="flex items-center gap-3 rounded-md px-3 py-2"
 ```
 
 **Variants:**
 
-- Clerk enabled - shows Clerk `UserButton` for signed-in users and Log in for signed-out users.
+- Collapsed rail - 64px icon-only navigation with accessible labels and tooltips.
+- Expanded rail - 224px text navigation with section labels.
+- Document context - shows Editor, Versions, and Export links when the current route is a document workspace.
+- Clerk enabled - shows Clerk `UserButton` for signed-in users.
 - Clerk missing - shows a fallback account avatar.
 
 **Rules:**
 
-- Keep navigation visually consistent with `PublicNavbar`; the editor refinement uses the compact rounded header shell and circular logo mark from the editor design while preserving authenticated app links.
+- Used by `app/(app)/layout.tsx`; all authenticated gated pages inherit it.
+- Collapsed is the default state.
 - Active item uses `text-accent`.
-- Mobile navigation is a compact dropdown, not a sidebar.
+- Do not add a second persistent page-level navigation rail inside authenticated pages.
 
 ### PageShell
 
@@ -260,7 +263,7 @@ Shared authenticated page container with project max-width, page padding, and se
 **Core classes:**
 
 ```txt
-className="flex-1 bg-background px-4 py-6 md:px-6 md:py-8"
+className="flex-1 bg-background px-4 py-5 md:px-6 md:py-6"
 className="mx-auto flex max-w-[1200px] flex-col gap-6"
 ```
 
@@ -287,21 +290,28 @@ Shared authenticated page header with optional eyebrow and actions.
 - New document shell
 - Document placeholder shell
 - Account shell
+- Version history workspace
+- Export workspace
 
 **Core classes:**
 
 ```txt
-className="flex flex-col gap-5 rounded-2xl border border-border bg-surface p-6 shadow-card-soft md:flex-row md:items-end md:justify-between"
+className="flex flex-col gap-5 rounded-2xl md:flex-row md:items-end md:justify-between"
+className="text-xs font-semibold uppercase tracking-normal text-text-muted"
+className="mt-2 text-[28px] font-bold leading-9 text-text-primary md:text-[40px] md:leading-[48px]"
+className="mt-3 text-base leading-[26px] text-text-secondary"
 ```
 
 **Variants:**
 
+- With eyebrow - renders compact uppercase context label above the title.
 - With actions - displays right-aligned action group on desktop.
 - Without actions - title and description only.
 
 **Rules:**
 
 - Use for authenticated workspace pages that need a consistent page title pattern.
+- Required for authenticated pages except the full document editor and AI result preview workspaces.
 
 ---
 
@@ -820,7 +830,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 **Purpose:**
 
-Client orchestrator for the document editor workspace. Receives a real `EditorDocument` plus server-loaded `initialSuggestions`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter, suggestion action loading), and the save handler. Composes the three-pane layout with a full-width metrics bar. Exports the `SaveState` type.
+Client orchestrator for the document editor workspace. Receives a real `EditorDocument` plus server-loaded `initialSuggestions`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter, suggestion action loading), and the save handler. Uses the global app sidebar from the authenticated layout, then composes the editor canvas and right AI rail. Exports the `SaveState` type.
 
 **Used on:**
 
@@ -829,11 +839,9 @@ Client orchestrator for the document editor workspace. Receives a real `EditorDo
 **Core classes:**
 
 ```txt
-className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:max-h-[calc(100vh-73px)] xl:h-[calc(100vh-73px)] xl:overflow-hidden"
-className="mx-auto flex h-full min-h-0 max-w-[1280px] flex-col gap-3 xl:overflow-hidden"
-className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-rows-1 xl:overflow-hidden"
-className="lg:grid-cols-[224px_minmax(0,1fr)] xl:grid-cols-[224px_minmax(0,1fr)_300px]"
-className="lg:grid-cols-[64px_minmax(0,1fr)] xl:grid-cols-[64px_minmax(0,1fr)_300px]"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden"
+className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden"
+className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
 className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 text-xs text-warning-foreground xl:flex"
 ```
 
@@ -841,10 +849,10 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 
 - Only this file carries `"use client"`; it owns the editor and passes the `editor` instance + handlers down.
 - TipTap uses `immediatelyRender: false` (required for Next SSR). Content comes from `editor_json`; save PATCHes `/api/documents/[id]` with `{ title, editorJson, currentMarkdown }` (server recomputes word count).
-- Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh - 73px` (compact app header) with `max-h`, `overflow-hidden`, and `min-h-0` on every flex/grid ancestor. The column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`); the metrics bar is `shrink-0`. Each column passes `xl:min-h-0` and `xl:overflow-hidden` (sidebar may use `xl:overflow-y-auto`) so the canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
+- Desktop single-viewport rule: at `xl` the workspace is height-capped to `100vh` because authenticated navigation is handled by the global sidebar. Use `max-h`, `overflow-hidden`, and `min-h-0` on every flex/grid ancestor. The column grid is the flex-grow row (`xl:flex-1 xl:min-h-0 xl:grid-rows-1`); the metrics bar is `shrink-0`. The canvas and suggestions list scroll internally instead of the page. Below `xl` the layout stacks and the page scrolls normally.
 - Formatting fidelity warnings stay visible: below `xl` they use the full `InlineAlert`; at `xl` they become a compact one-line warning banner with truncated copy to preserve editor canvas height.
-- Sidebar collapse is owned here via `sidebarCollapsed`; expanded desktop grid uses a 224px left rail and collapsed desktop grid uses a 64px icon rail so the editor canvas gains horizontal space.
-- On mobile the canvas column comes first (`order-1`), then suggestions, then the sidebar rail.
+- The editor does not render its own persistent navigation rail; document navigation comes from `AppSidebar`.
+- On mobile the canvas column comes first, then suggestions.
 - Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. Documents that load with no server-side suggestions default to `AIActionsPanel` so users immediately see available AI actions after upload/create; documents with existing suggestions default to the suggestions rail. The suggestions rail does not include Export or a prominent AI Assistant CTA; AI actions are the primary panel when there are no suggestions and cannot collapse back into the empty suggestions placeholder. Back/close controls appear on AI actions only when there are existing suggestions to return to.
 - Suggestion Review / Review Selected / Review All route users to `/documents/[id]/preview`; final document mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs and suggestion ignore actions.
 - Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
@@ -855,11 +863,11 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 
 **Purpose:**
 
-Left workspace rail: back-to-documents link, vertical workspace nav (Editor, AI Suggestions, Versions, Export, Document Info), AI usage card, and user card. Supports an expanded text rail and a collapsed icon rail. Fills column height (`h-full flex-col`) with usage + user controls pinned to the bottom via `mt-auto`.
+Legacy document workspace rail used as the visual reference for `AppSidebar`. Current authenticated pages use `AppSidebar` from the app layout instead of rendering this as a persistent page-level rail.
 
 **Used on:**
 
-- `/documents/[id]`
+- Not rendered by the current authenticated shell
 
 **Variants:**
 
@@ -869,9 +877,8 @@ Left workspace rail: back-to-documents link, vertical workspace nav (Editor, AI 
 
 **Rules:**
 
-- Takes `fileName`, `fileType`, and `saveState` from real document data for accessible labels/tooltips; AI usage and user card remain mock until Phase 9.
-- Controlled by `collapsed` / `onCollapsedChange` from `EditorWorkspace`; collapsed icon buttons must keep `aria-label` and `title` values because visible labels are hidden.
-- Exports `EditorNavKey`. Implemented destinations are route links: Editor, AI Suggestions, Versions, and Document Info route to the document workspace or version page. Export remains a non-navigating control until the export route is built.
+- Do not add this back as a second persistent rail unless the app shell direction changes.
+- Keep it available only as a reference for document-specific navigation density and collapsed/expanded behavior.
 
 ### EditorTopBar
 
@@ -1085,10 +1092,9 @@ Client preview orchestrator for AI-generated document changes. Composes the prem
 **Core classes:**
 
 ```txt
-className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
-className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-cols-[252px_minmax(0,1fr)] xl:overflow-hidden"
-className="order-2 rounded-xl border border-border bg-surface p-4 shadow-card-soft xl:order-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
-className="order-1 min-w-0 xl:order-2 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden"
+className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:overflow-hidden"
+className="min-w-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden"
 className="mt-3 grid min-h-0 gap-3 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:overflow-hidden"
 className="grid min-h-0 gap-3 rounded-xl border border-accent-light bg-accent-muted p-3 shadow-card-soft xl:flex xl:h-full xl:flex-col xl:overflow-hidden"
 className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow-hidden"
@@ -1115,7 +1121,8 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 - Regenerate appears only for full AI request previews; suggestion previews return to the editor.
 - View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on in side-by-side mode and uses proportional scroll syncing.
 - The proposed pane is a TipTap editor seeded from Markdown and marks `Edited preview` when changed.
-- Desktop layout follows the editor workspace viewport pattern: fixed app-height shell below the header, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in side rails plus original/proposed panes.
+- Desktop layout follows the editor workspace viewport pattern: fixed app-height shell beside the global sidebar, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in the right summary rail plus original/proposed comparison panes.
+- Uses the global `AppSidebar`; the preview workspace does not render its own left navigation rail.
 - Top and bottom Apply buttons share `canApply`, `isApplying`, and `handleApply`; both must stay disabled/loading together.
 - Preview chrome is intentionally compact: view/sync controls live in a collapsed Comparison settings disclosure in the right AI rail, not above the document panes; warning strip and comparison gaps are reduced; and the bottom action bar stays short so the document panes get maximum vertical space. Change-count context belongs in the right AI Summary rail, not above the document panes.
 - The right insight rail uses a tinted accent container to separate AI Summary, Changes, and Document Safety from the document comparison panes.
@@ -1257,7 +1264,7 @@ The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `E
 
 **Purpose:**
 
-Real-data Version History workspace with editor-style left rail, version tabs, timeline, side-by-side selected/current version preview, change summary, version details rail, restore confirmation dialog, and empty export-version state.
+Real-data Version History workspace with shared `PageHeader`, version tabs, timeline, side-by-side selected/current version preview, change summary, version details rail, restore confirmation dialog, and empty export-version state.
 
 **Used on:**
 
@@ -1266,9 +1273,9 @@ Real-data Version History workspace with editor-style left rail, version tabs, t
 **Core classes:**
 
 ```txt
-className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden"
 className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
-className="order-1 flex min-h-0 flex-col gap-3 overflow-hidden lg:order-2 xl:h-full"
+className="flex min-h-0 flex-col gap-3 overflow-hidden xl:h-full"
 className="flex shrink-0 flex-col gap-2 rounded-xl border border-border bg-surface px-3 py-2 shadow-card-soft"
 className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl:overflow-hidden"
 ```
@@ -1283,8 +1290,8 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 **Rules:**
 
 - Receives real `document_versions` rows from the server page and compares the selected saved version with the live document row.
-- Uses `EditorSidebar` with `activeNav="versions"` so this page stays visually aligned with the editor workspace.
-- Defaults the document rail to collapsed and uses a compact header/tab band so the timeline, comparison panes, and details rail own the page space.
+- Uses the global `AppSidebar`; the page itself starts with a compact header/tab band so the timeline, comparison panes, and details rail own the page space.
+- Uses `PageHeader` for the primary title and actions.
 - Desktop layout keeps supporting rails narrow: timeline around 240px, details around 288px, and the comparison column gets the remaining width.
 - Restore actions live in the comparison header/details rail; the previous persistent desktop bottom action bar is intentionally not rendered so preview panes keep more height.
 - Restore posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, shows Sonner feedback through `appToast`, and returns to the editor on success.
@@ -1300,7 +1307,7 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 
 **Purpose:**
 
-Real export workspace with editor-style left rail, export format selection, export options, preview/status area, formatting warning, API-backed generation, automatic same-origin download, and sticky export summary rail.
+Real export workspace with shared `PageHeader`, export format selection, export options, preview/status area, formatting warning, API-backed generation, automatic same-origin download, and sticky export summary rail. Document navigation comes from the global `AppSidebar`.
 
 **Used on:**
 
@@ -1309,9 +1316,9 @@ Real export workspace with editor-style left rail, export format selection, expo
 **Core classes:**
 
 ```txt
-className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden"
 className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
-className="order-1 grid min-h-0 gap-3 overflow-hidden lg:order-2 xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]"
+className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]"
 className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-5 shadow-card-soft"
 ```
 
@@ -1325,7 +1332,8 @@ className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-
 - Export calls `POST /api/documents/[id]/export` with the selected format and options.
 - The API verifies ownership, generates the file server-side, uploads to the private `exports` bucket, creates an `exports` row, records export usage, and returns a download route.
 - Successful export automatically triggers the same-origin download route so DOCX, PDF, Markdown, TXT, and HTML download without navigating away from the export page.
-- Uses `EditorSidebar` with `activeNav="export"` so export is reachable from the document workspace.
+- Uses the global `AppSidebar` document context links so export is reachable from the document workspace.
+- Uses `PageHeader` for the primary title and secure export action chip.
 - Summary rail stays narrow on desktop while the format/options workspace gets the remaining width.
 
 ### ExportFormatCard
@@ -1350,7 +1358,77 @@ Right-side export summary rail with selected document, format, options, document
 
 ## Usage Components
 
-_Empty._
+### AccountUsageWorkspace
+
+**Path:** `components/usage/AccountUsageWorkspace.tsx`
+
+**Purpose:**
+
+Full account and usage overview workspace with Clerk-backed profile summary, Supabase-backed usage stat cards, AI usage trend, usage by category, recent activity, free workspace summary, quick actions, storage summary, and recent documents. The page-level title/actions live in `PageHeader`.
+
+**Used on:**
+
+- `/account`
+
+**Core classes:**
+
+```txt
+className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)_320px]"
+className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft md:p-6"
+className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="mt-3 flex min-w-0 flex-nowrap items-baseline gap-x-1.5 whitespace-nowrap text-[25px] font-bold leading-8 text-text-primary"
+className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+```
+
+**Variants:**
+
+- Sidebar account navigation with active Overview state.
+- Usage stat cards for AI usage, documents processed, AI improvements, and storage used.
+- Chart-style sections for trend, category donut, category bars, and health score.
+- Right utility rail with quick actions, storage, and recent documents as the third desktop column.
+
+**Rules:**
+
+- Receives `AccountUsageData` from `lib/usage/account-usage.service.ts`.
+- `/account` resolves Clerk profile details with `currentUser()` and scopes all Supabase usage reads to the authenticated Clerk user id.
+- `/account` uses a wider `max-w-[1600px]` page container so the left account rail, center usage workspace, and right utility rail can stay aligned as three columns.
+- The account workspace presents the MVP as free and must not include pricing, subscription, invoice, upgrade, renewal, or paid-plan controls.
+- Uses token colors and existing card/button/badge patterns only.
+- Keeps `/account#usage` anchored to the usage content for the authenticated nav.
+
+### AccountUsageTrendChart
+
+**Path:** `components/usage/AccountUsageTrendChart.tsx`
+
+**Purpose:**
+
+Client-side AI usage line chart with a working date-range selector for Today, This Week, This Month, and This Year.
+
+**Used on:**
+
+- `/account`
+
+**Core classes:**
+
+```txt
+className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-9 text-sm font-medium text-text-secondary"
+className="mt-5 grid h-64 grid-cols-[44px_minmax(0,1fr)] gap-4"
+className="absolute inset-x-0 top-0 bottom-8 h-[calc(100%-2rem)] w-full overflow-visible"
+```
+
+**Variants:**
+
+- Range selector: Today, This Week, This Month, This Year.
+- SVG line with subtle filled area and token-colored marker.
+- Token-styled callout positioned with approved Tailwind classes.
+
+**Rules:**
+
+- Receives precomputed trend series from `AccountUsageData.trends`.
+- The selector changes local chart state only; no document or usage mutation happens.
+- Keep the visual close to `context/designs/account and usage.png`: line chart, horizontal grid, y-axis labels, x-axis date labels, and compact callout.
 
 ---
 

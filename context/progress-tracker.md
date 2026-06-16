@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 9 - Account and Usage
-**Last completed:** 25 Export Logic
-**Next:** 26 Account and Usage Page - Full UI
+**Phase:** Phase 10 - Final Review and Hardening
+**Last completed:** 27 Account and Usage Logic
+**Next:** 28 Security Review
 
 ---
 
@@ -66,8 +66,8 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 9 - Account and Usage
 
-- [ ] 26 Account and Usage Page - Full UI
-- [ ] 27 Account and Usage Logic
+- [x] 26 Account and Usage Page - Full UI
+- [x] 27 Account and Usage Logic
 
 ### Phase 10 - Final Review and Hardening
 
@@ -88,6 +88,8 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
 - Decision: Single suggestion cards now use direct Apply in the editor for faster review. Review Selected and Review All remain routed through `/documents/[id]/preview` using server-backed selections.
 - Decision: Browser-based visual and interaction testing is delegated to the user by default. Agents should run code-level verification and list the route/flow that needs user browser review unless the user explicitly asks the agent to perform browser testing.
+- Decision: The MVP is free and should not expose pricing, subscription, invoice, renewal, upgrade, or paid-plan account UI. Usage surfaces remain for operational activity tracking.
+- Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
 
 ---
 
@@ -102,6 +104,96 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-16
+Feature: Authenticated PageHeader Normalization
+Status: Completed
+Files changed: components/layout/PageHeader.tsx, app/(app)/dashboard/page.tsx, app/(app)/account/page.tsx, components/usage/AccountUsageWorkspace.tsx, components/export/ExportWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Standardized authenticated page titles/actions on the shared PageHeader component for dashboard, documents, new document, account, export, and version history. The editor and AI result preview workspaces remain exempt. PageHeader now renders the optional eyebrow prop, and the account workspace no longer owns a duplicate page title block.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered all protected app routes.
+Follow-up: User should visually review /dashboard, /documents, /documents/new, /account, /documents/[id]/export, and /documents/[id]/versions because browser-based verification is user-owned by project rule.
+```
+
+```txt
+Date: 2026-06-16
+Feature: App Sidebar Top Spacing Alignment
+Status: Reverted
+Files changed: components/layout/AppSidebar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reverted the sidebar top-offset experiment after visual review. The global authenticated sidebar is back to the original flush viewport rail with `top-0` and `h-screen`.
+Verification: Static revert only.
+Follow-up: Continue sidebar polish from the restored baseline if needed.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Authenticated Sidebar-Only App Shell
+Status: Completed
+Files changed: app/(app)/layout.tsx, components/layout/AppSidebar.tsx, components/layout/AppHeader.tsx, components/layout/PageShell.tsx, components/editor/EditorWorkspace.tsx, components/export/ExportWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, components/ai/AIResultPreview.tsx, components/usage/AccountUsageWorkspace.tsx, context/architecture.md, context/project-overview.md, context/build-plan.md, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the authenticated top navbar with a collapsed-by-default global sidebar based on the existing editor rail pattern. The sidebar now carries Dashboard, Documents, New Document, Usage, Account, Clerk account control, usage shortcut, and contextual document links for Editor, Versions, and Export. Removed duplicate persistent rails from editor, export, version history, AI preview, and account usage workspaces so protected pages rely on the shared sidebar and reclaim workspace area.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered all protected app routes. Browser visual review remains user-owned by project rule.
+Follow-up: User should visually review /dashboard, /documents/new, /account, /documents/[id], /documents/[id]/versions, /documents/[id]/export, and /documents/[id]/preview in a signed-in session.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Free Account Usage Cleanup
+Status: Completed
+Files changed: components/usage/AccountUsageWorkspace.tsx, lib/usage/account-usage.service.ts, components/layout/PublicNavbar.tsx, components/layout/Footer.tsx, components/marketing/BottomCta.tsx, context/project-overview.md, context/build-plan.md, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed monetization-facing plan/subscription language from the account usage DTO, account workspace, public navbar/footer, and CTA anchor while keeping operational usage metrics visible. The account page now shows a free workspace summary, usage stats as consumed activity, quick account actions, storage used, recent documents, recent activity, category charts, trend chart, and document health score without plan, renewal, upgrade, invoice, or subscription controls.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered / and /account. String sweep over app/components/lib found no remaining plan, pricing, subscription, upgrade, invoice, renewal, or #pricing references.
+Follow-up: User should visually review /account and / because browser-based verification is user-owned by project rule.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Dynamic Account AI Usage Trend Chart
+Status: Completed
+Files changed: components/usage/AccountUsageWorkspace.tsx, components/usage/AccountUsageTrendChart.tsx, lib/usage/account-usage.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the account AI usage trend bars with a design-matched line chart. Added a client-side range selector for Today, This Week, This Month, and This Year. The account usage service now builds precomputed trend series for each selector range from user-scoped AI request and usage ledger token data.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /account.
+Follow-up: User should visually review /account and switch each chart range.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Account Usage Stat Card Polish
+Status: Completed
+Files changed: components/usage/AccountUsageWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined the account usage stat cards to better match the account design reference. The cards now use the rounded card shape, tighter min height, larger icon tiles, cleaner label/value hierarchy, and split slash-based metric values so AI usage and storage values stay readable on one line.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /account.
+Follow-up: User should visually review /account at desktop width.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Account Usage Third-Column Layout Correction
+Status: Completed
+Files changed: app/(app)/account/page.tsx, components/usage/AccountUsageWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Moved the account utility rail out of the nested usage grid so it renders as the third desktop column. Widened the account page container to max-w-[1600px] and delayed the inner chart grid split to 2xl so the center column remains readable.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /account.
+Follow-up: Continue Phase 10 / 28 Security Review after browser-checking /account at desktop width.
+```
+
+```txt
+Date: 2026-06-16
+Feature: 27 Account and Usage Logic
+Status: Completed
+Files changed: app/(app)/account/page.tsx, components/usage/AccountUsageWorkspace.tsx, lib/usage/account-usage.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired the account page to real Clerk profile details and Supabase-backed usage aggregation. Added a dedicated account usage service that scopes reads by authenticated Clerk user id, loads documents, AI requests, suggestions, exports, and usage ledger rows, then builds stats, trend data, category summaries, recent activity, storage estimates, health score, and recent document rows for the account workspace. The page now shows an inline warning and empty real-data fallback if Supabase loading fails.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /account as dynamic. Supabase MCP count query confirmed documents, ai_requests, suggestions, exports, and usage_ledger are queryable in the project.
+Follow-up: Continue Phase 10 / 28 Security Review.
+```
+
+```txt
+Date: 2026-06-16
+Feature: 26 Account and Usage Page - Full UI
+Status: Completed
+Files changed: app/(app)/account/page.tsx, components/usage/AccountUsageWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the account placeholder with a complete mock-data account and usage workspace referencing context/designs/account and usage.png. The page now includes account navigation, profile summary, tabs, usage stat cards, AI usage trend, usage by category, recent activity, top improvement categories, document health score, right utility rail, storage summary, recent documents, and a sign out action.
+Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /account. Browser visual review remains user-owned by current project rule.
+Follow-up: Continue Phase 9 / 27 Account and Usage Logic. Wire Clerk profile details and Supabase-backed usage aggregation while keeping user-owned queries scoped to the authenticated Clerk user.
+```
 
 ```txt
 Date: 2026-06-16
@@ -793,8 +885,8 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 9 / 26 Account and Usage Page - Full UI.
-2. Build the account and usage page with mock data referencing context/designs/account and usage.png.
-3. Include profile summary, current plan placeholder, usage cards, AI usage summary, document usage summary, export usage summary, recent usage activity, and sign out action.
-4. Keep real usage aggregation and Clerk profile wiring deferred to Phase 9 / 27 Account and Usage Logic.
+1. Start Phase 10 / 28 Security Review.
+2. Verify protected routes require authentication and private API routes resolve Clerk users server-side.
+3. Check document, AI, suggestion, version, export, usage, and storage flows for authenticated-user scoping.
+4. Confirm service role usage remains server-only and private files/exports are served only through signed or authenticated routes.
 ```

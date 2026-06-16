@@ -1,6 +1,13 @@
 "use client";
 
-import { CheckCircle2, ChevronLeft, RotateCcw, Sparkles, UserRound, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  RotateCcw,
+  Sparkles,
+  UserRound,
+  X,
+} from "lucide-react";
 
 import { VersionChangeSummaryCard } from "@/components/versions/VersionChangeSummaryCard";
 import {
@@ -161,7 +168,9 @@ export function VersionDetailsPanel({
               <X className="size-4" />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{content}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            {content}
+          </div>
         </aside>
       </div>
     );
@@ -185,7 +194,7 @@ export function VersionDetailsPanel({
         ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">{content}</div>
-      <div className="hidden shrink-0 border-t border-border-light p-3 lg:block">
+      <div className="hidden shrink-0 p-3 lg:block">
         <button
           type="button"
           onClick={onRestore}

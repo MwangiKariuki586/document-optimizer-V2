@@ -17,6 +17,7 @@ import { SuggestionsReady } from "@/components/dashboard/SuggestionsReady";
 import { UsageSummary } from "@/components/dashboard/UsageSummary";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import {
   getDashboardData,
@@ -137,24 +138,11 @@ export default async function DashboardPage() {
 
   return (
     <PageShell>
-      <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-[28px] font-bold leading-9 text-text-primary md:text-[40px] md:leading-[48px]">
-            Dashboard Workspace
-          </h1>
-          <p className="mt-2 max-w-2xl text-base leading-[26px] text-text-secondary">
-            Optimize documents with AI while tracking formatting confidence,
-            document activity, and usage.
-          </p>
-        </div>
-        <Link
-          href="/documents/new"
-          className="inline-flex w-fit items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
-        >
-          <Plus className="size-4" />
-          New Document
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Dashboard"
+        title="Dashboard Workspace"
+        description="Optimize documents with AI while tracking formatting confidence, document activity, and usage."
+      />
 
       {error ? (
         <InlineAlert title="Dashboard data unavailable" variant="warning">

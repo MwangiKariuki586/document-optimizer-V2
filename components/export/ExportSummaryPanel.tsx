@@ -36,7 +36,10 @@ type ExportSummaryPanelProps = {
 type SummaryToggleOption = {
   key: keyof Pick<
     ExportOptionsState,
-    "includeAiImprovements" | "includeTrackChanges" | "addSummary" | "addMetadata"
+    | "includeAiImprovements"
+    | "includeTrackChanges"
+    | "addSummary"
+    | "addMetadata"
   >;
   label: string;
 };
@@ -194,7 +197,7 @@ export function ExportSummaryPanel({
         ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-border-light p-4">
+      <div className="shrink-0  p-4">
         {status === "ready" && result ? (
           <button
             type="button"
@@ -215,19 +218,6 @@ export function ExportSummaryPanel({
             Export
           </LoadingButton>
         )}
-        <div className="mt-3 flex items-center justify-center gap-2 text-xs text-text-muted">
-          <Lock className="size-3.5" />
-          <span>Your export will be secure and private.</span>
-        </div>
-        <div className="mt-3 flex justify-center gap-3 text-xs">
-          <button
-            type="button"
-            onClick={onResetStatus}
-            className="font-medium text-text-secondary transition hover:text-text-primary"
-          >
-            Reset state
-          </button>
-        </div>
       </div>
     </aside>
   );

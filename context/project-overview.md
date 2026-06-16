@@ -41,18 +41,18 @@ The goal is to help users produce clearer, stronger, export-ready documents with
 Top navbar on public pages. Clean and minimal.
 
 ```txt
-Features    How It Works    Pricing    Resources    Log in    Get Started
+Features    How It Works    Resources    Log in    Get Started
 ```
 
-Authenticated workspace should remain visually consistent with the public navbar, while adapting actions for document work.
+Authenticated workspace uses a collapsed-by-default sidebar so app pages keep maximum horizontal and vertical workspace area.
 
-Primary authenticated navigation:
+Primary authenticated sidebar navigation:
 
 ```txt
-Dashboard    Documents    Usage    Account
+Dashboard    Documents    New Document    Usage    Account
 ```
 
-No heavy sidebar for the first MVP unless a specific workspace screen benefits from a secondary document panel.
+Document routes add contextual sidebar links for the current document, such as Editor, Versions, and Export.
 
 ---
 
@@ -206,6 +206,8 @@ No heavy sidebar for the first MVP unless a specific workspace screen benefits f
   - suggestions applied
   - exports generated
   - token usage where available
+- The MVP is free to use. Account usage should read as operational activity
+  tracking, not as paid-plan, subscription, renewal, upgrade, or invoice UI.
 
 ---
 
@@ -296,7 +298,7 @@ created_at
 
 Usage records live in the `usage_ledger` table.
 
-Usage tracking supports limits, analytics, and future monetization.
+Usage tracking supports operational activity reporting and product analytics.
 
 ---
 
@@ -336,6 +338,7 @@ Usage tracking supports limits, analytics, and future monetization.
 - Admin dashboard
 - Stripe billing
 - Subscription management
+- Pricing pages and paid-plan account UI
 - Template marketplace
 - Mobile app
 - Browser extension

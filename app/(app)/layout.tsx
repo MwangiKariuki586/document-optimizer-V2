@@ -1,4 +1,4 @@
-import { AppHeader } from "@/components/layout/AppHeader";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 
 const hasClerk = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
@@ -10,9 +10,9 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader hasClerk={hasClerk} />
-      {children}
+    <div className="flex min-h-screen bg-background">
+      <AppSidebar hasClerk={hasClerk} />
+      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }

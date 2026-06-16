@@ -35,15 +35,9 @@ export function VersionSelector({
 
   if (label === "Current") {
     return (
-      <div className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 shadow-card-soft">
-        <p className="text-[11px] font-semibold uppercase tracking-normal text-text-muted">
-          {label}
-        </p>
+      <div className="min-w-0 flex-1 rounded-lg ">
         <p className="truncate text-sm font-semibold text-text-primary">
           v{currentVersion.versionNumber} Current
-        </p>
-        <p className="truncate text-[11px] text-text-muted">
-          {formatVersionDate(currentVersion.createdAt)}
         </p>
       </div>
     );
@@ -51,9 +45,6 @@ export function VersionSelector({
 
   return (
     <label className="relative min-w-0 flex-1">
-      <span className="block text-[11px] font-semibold uppercase tracking-normal text-text-muted">
-        {label}
-      </span>
       <span className="relative mt-1 block">
         <select
           value={value.versionNumber}
@@ -71,9 +62,6 @@ export function VersionSelector({
         {onChange ? (
           <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-text-muted" />
         ) : null}
-      </span>
-      <span className="block truncate text-[11px] text-text-muted">
-        {displayLabel} · {formatVersionDate(value.createdAt)}
       </span>
     </label>
   );

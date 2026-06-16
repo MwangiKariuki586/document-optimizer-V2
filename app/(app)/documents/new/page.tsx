@@ -34,9 +34,6 @@ export default function NewDocumentPage() {
         </aside>
       </div>
 
-      {/* Recent uploads table */}
-      <RecentUploads />
-
       {/* Tips section */}
       <UploadTips />
 

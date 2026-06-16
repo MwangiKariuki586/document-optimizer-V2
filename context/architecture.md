@@ -80,7 +80,7 @@
 │   ├── ui/                                 → shadcn/ui components only
 │   ├── layout/
 │   │   ├── Navbar.tsx
-│   │   ├── AppHeader.tsx
+│   │   ├── AppSidebar.tsx
 │   │   └── Footer.tsx
 │   ├── marketing/
 │   │   ├── Hero.tsx

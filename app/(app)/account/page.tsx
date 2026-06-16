@@ -1,33 +1,98 @@
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { CalendarDays, Download } from "lucide-react";
+import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PageShell } from "@/components/layout/PageShell";
+import { AccountUsageWorkspace } from "@/components/usage/AccountUsageWorkspace";
+import {
+  getAccountUsageData,
+  getEmptyAccountUsageData,
+  type AccountProfile,
+  type AccountUsageData,
+} from "@/lib/usage/account-usage.service";
 
-const usage = [
-  { label: "Documents created", value: "12" },
-  { label: "AI actions used", value: "48" },
-  { label: "Exports generated", value: "9" },
-];
+function initialsFromName(name: string, email: string): string {
+  const parts = name
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean);
 
-export default function AccountPage() {
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return email.slice(0, 2).toUpperCase();
+}
+
+async function getAccountProfile(): Promise<AccountProfile> {
+  const user = await currentUser();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ?? "account@example.com";
+  const name =
+    user?.fullName ??
+    user?.username ??
+    user?.primaryEmailAddress?.emailAddress?.split("@")[0] ??
+    "Account user";
+
+  return {
+    email,
+    initials: initialsFromName(name, email),
+    name,
+  };
+}
+
+async function loadAccountUsageData(
+  userId: string | null,
+  profile: AccountProfile,
+): Promise<{ data: AccountUsageData; error: string | null }> {
+  if (!userId) {
+    return {
+      data: getEmptyAccountUsageData(profile),
+      error: null,
+    };
+  }
+
+  try {
+    return {
+      data: await getAccountUsageData(userId, profile),
+      error: null,
+    };
+  } catch (error) {
+    console.error("[account/load]", error);
+
+    return {
+      data: getEmptyAccountUsageData(profile),
+      error:
+        "We could not load account usage data. Check the Supabase server configuration and try again.",
+    };
+  }
+}
+
+export default async function AccountPage() {
+  const [{ userId }, profile] = await Promise.all([
+    auth(),
+    getAccountProfile(),
+  ]);
+  const { data, error } = await loadAccountUsageData(userId, profile);
+
   return (
-    <PageShell>
-      <PageHeader
-        eyebrow="Account"
-        title="Account and usage"
-        description="Account shell placeholder with usage summary. Real Clerk profile and usage data are scheduled for Phase 9."
-      />
-      <section
-        id="usage"
-        className="grid gap-4 rounded-2xl border border-border bg-surface p-6 shadow-card-soft md:grid-cols-3"
-      >
-        {usage.map((item) => (
-          <article key={item.label}>
-            <p className="text-3xl font-bold leading-[38px] text-text-primary">
-              {item.value}
-            </p>
-            <p className="mt-1 text-sm text-text-muted">{item.label}</p>
-          </article>
-        ))}
-      </section>
-    </PageShell>
+    <main className="flex-1 bg-background px-4 py-6 md:px-6 md:py-8">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-6">
+        <PageHeader
+          eyebrow="Account"
+          title="Account and usage"
+          description="Manage account settings, usage activity, and recent document work."
+        />
+        {error ? (
+          <InlineAlert title="Account usage unavailable" variant="warning">
+            {error}
+          </InlineAlert>
+        ) : null}
+        <AccountUsageWorkspace data={data} />
+      </div>
+    </main>
   );
 }
