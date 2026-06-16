@@ -183,20 +183,6 @@ export function EditorSidebar({
             </>
           );
 
-          if (item.key === "export") {
-            return (
-              <button
-                key={item.key}
-                type="button"
-                aria-label={collapsed ? item.label : undefined}
-                title={collapsed ? item.label : undefined}
-                className={itemClass}
-              >
-                {itemContent}
-              </button>
-            );
-          }
-
           return (
             <Link
               key={item.key}

@@ -1294,7 +1294,55 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 
 ## Export Components
 
-_Empty._
+### ExportWorkspace
+
+**Path:** `components/export/ExportWorkspace.tsx`
+
+**Purpose:**
+
+Mock-data export workspace with editor-style left rail, export format selection, export options, preview/status area, formatting warning, and sticky export summary rail.
+
+**Used on:**
+
+- `/documents/[id]/export`
+
+**Core classes:**
+
+```txt
+className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-[calc(100vh-73px)] xl:max-h-[calc(100vh-73px)] xl:overflow-hidden"
+className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden"
+className="order-1 grid min-h-0 gap-3 overflow-hidden lg:order-2 xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]"
+className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-5 shadow-card-soft"
+```
+
+**Variants:**
+
+- Formats: DOCX, PDF, Markdown, TXT, HTML.
+- Export states: idle, processing with `CometSpinner`, ready with download action, error with warning copy.
+
+**Rules:**
+
+- UI phase only: uses local mock state and must not call export APIs until Phase 8 / 25 Export Logic.
+- Uses `EditorSidebar` with `activeNav="export"` so export is reachable from the document workspace.
+- Summary rail stays narrow on desktop while the format/options workspace gets the remaining width.
+
+### ExportFormatCard
+
+**Path:** `components/export/ExportFormatCard.tsx`
+
+Selectable export format card with icon swatch, extension, description, selected state, and `aria-pressed`.
+
+### ExportOptionsPanel
+
+**Path:** `components/export/ExportOptionsPanel.tsx`
+
+Export configuration panel with token-styled toggle controls and compact select controls for image quality, page size, margins, and watermark.
+
+### ExportSummaryPanel
+
+**Path:** `components/export/ExportSummaryPanel.tsx`
+
+Right-side export summary rail with selected document, format, options, document stats, mock AI improvement totals, loading/ready/error states, and secure export footer.
 
 ---
 
