@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Check,
   Download,
@@ -22,10 +22,12 @@ import type {
   ExportFormatOption,
   ExportOptionKey,
   ExportOptionsState,
+  ExportResult,
   ExportStatus,
 } from "@/components/export/export.types";
 import { CometSpinner } from "@/components/loading-ui/comet-spinner";
 import type { EditorDocument } from "@/lib/documents/document.types";
+import { appToast } from "@/lib/feedback/toast";
 
 type ExportWorkspaceProps = {
   document: EditorDocument;
@@ -104,11 +106,23 @@ function estimateFileSize(wordCount: number, format: ExportFormat) {
   return `${estimatedKb.toLocaleString()} KB`;
 }
 
+function downloadExport(result: ExportResult) {
+  const link = window.document.createElement("a");
+  link.href = result.downloadUrl;
+  link.download = result.fileName;
+  link.rel = "noopener";
+  window.document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 export function ExportWorkspace({ document }: ExportWorkspaceProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("docx");
   const [options, setOptions] = useState<ExportOptionsState>(defaultOptions);
   const [status, setStatus] = useState<ExportStatus>("idle");
+  const [result, setResult] = useState<ExportResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const estimatedPages = Math.max(1, Math.ceil(document.wordCount / 350));
   const estimatedFileSize = useMemo(
@@ -116,18 +130,11 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
     [document.wordCount, selectedFormat],
   );
 
-  useEffect(() => {
-    if (status !== "processing") {
-      return;
-    }
-
-    const timer = window.setTimeout(() => setStatus("ready"), 900);
-    return () => window.clearTimeout(timer);
-  }, [status]);
-
   const toggleOption = (key: ExportOptionKey) => {
     setOptions((current) => ({ ...current, [key]: !current[key] }));
     setStatus("idle");
+    setResult(null);
+    setErrorMessage(null);
   };
 
   const selectOption = (
@@ -136,11 +143,63 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
   ) => {
     setOptions((current) => ({ ...current, [key]: value }));
     setStatus("idle");
+    setResult(null);
+    setErrorMessage(null);
   };
 
   const handleFormatSelect = (format: ExportFormat) => {
     setSelectedFormat(format);
     setStatus("idle");
+    setResult(null);
+    setErrorMessage(null);
+  };
+
+  const handleResetStatus = () => {
+    setStatus("idle");
+    setResult(null);
+    setErrorMessage(null);
+  };
+
+  const handleGenerateExport = async () => {
+    if (status === "processing") {
+      return;
+    }
+
+    setStatus("processing");
+    setErrorMessage(null);
+    setResult(null);
+
+    try {
+      const response = await fetch(`/api/documents/${document.id}/export`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format: selectedFormat, options }),
+      });
+      const payload = (await response.json()) as {
+        success: boolean;
+        data?: ExportResult;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.success || !payload.data) {
+        throw new Error(payload.error ?? "Could not generate the export.");
+      }
+
+      setResult(payload.data);
+      setStatus("ready");
+      downloadExport(payload.data);
+      appToast.success("Export started.");
+
+      if (payload.data.warning) {
+        appToast.warning(payload.data.warning);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not generate the export.";
+      setErrorMessage(message);
+      setStatus("error");
+      appToast.error(message);
+    }
   };
 
   return (
@@ -266,7 +325,7 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
                     </h2>
                     <p className="mt-1 text-xs text-text-secondary">
                       {status === "ready"
-                        ? "Your mock export is ready for review and download."
+                        ? "Your secure export is ready for download."
                         : status === "processing"
                           ? "Preparing a secure export preview with your selected settings."
                           : "See how your document will look in the selected format."}
@@ -275,11 +334,16 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setStatus("ready")}
-                  className="inline-flex items-center justify-center gap-2 rounded-md border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light"
+                  onClick={handleGenerateExport}
+                  disabled={status === "processing"}
+                  className="inline-flex items-center justify-center gap-2 rounded-md border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <Download className="size-4" />
-                  Preview Document
+                  {status === "processing" ? (
+                    <CometSpinner className="size-4" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  Export
                 </button>
               </div>
             </section>
@@ -310,9 +374,11 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
             formats={exportFormats}
             options={options}
             status={status}
-            onGenerate={() => setStatus("processing")}
-            onShowError={() => setStatus("error")}
-            onResetStatus={() => setStatus("idle")}
+            result={result}
+            errorMessage={errorMessage}
+            onGenerate={handleGenerateExport}
+            onDownload={downloadExport}
+            onResetStatus={handleResetStatus}
           />
         </div>
       </div>

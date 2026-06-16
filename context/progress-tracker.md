@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 8 - Export Flow
-**Last completed:** 24 Export Page - Full UI
-**Next:** 25 Export Logic
+**Phase:** Phase 9 - Account and Usage
+**Last completed:** 25 Export Logic
+**Next:** 26 Account and Usage Page - Full UI
 
 ---
 
@@ -62,7 +62,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ### Phase 8 - Export Flow
 
 - [x] 24 Export Page - Full UI
-- [ ] 25 Export Logic
+- [x] 25 Export Logic
 
 ### Phase 9 - Account and Usage
 
@@ -102,6 +102,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-16
+Feature: One-Click Export Download
+Status: Completed
+Files changed: app/api/documents/[id]/export/[exportId]/download/route.ts, components/export/export.types.ts, components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, lib/export/export.service.ts, lib/storage/storage.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Changed export behavior so clicking Export generates the file and immediately starts a same-origin authenticated download. Added an export download route with Content-Disposition attachment headers so DOCX, PDF, Markdown, TXT, and HTML download instead of opening or redirecting to the file URL. The ready state now offers Download Again only as a fallback.
+Verification: npx tsc --noEmit passed; npx vitest run lib/export/export-renderers.test.ts passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /api/documents/[id]/export/[exportId]/download.
+Follow-up: Browser-verify /documents/[id]/export in a signed-in session by exporting each format and confirming the page stays on the export route while the file downloads.
+```
+
+```txt
+Date: 2026-06-16
+Feature: Export Action Copy Refinement
+Status: Completed
+Files changed: components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Renamed the export page primary action from Generate Export to Export, updated the loading state to Exporting, and changed the success toast to Export ready.
+Verification: npx tsc --noEmit passed.
+Follow-up: Continue Phase 9 / 26 Account and Usage Page - Full UI.
+```
+
+```txt
+Date: 2026-06-16
+Feature: 25 Export Logic
+Status: Completed
+Files changed: app/api/documents/[id]/export/route.ts, components/export/export.types.ts, components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, lib/export/export.validators.ts, lib/export/export-renderers.ts, lib/export/export-renderers.test.ts, lib/export/export.service.ts, lib/storage/storage.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Wired the export workspace to a real POST /api/documents/[id]/export flow. Added server-side export validation, ownership-scoped document loading, dependency-free renderers for DOCX, PDF, Markdown, TXT, and HTML, private exports bucket uploads, exports table records, export usage ledger writes, signed download URLs, and client success/error/warning feedback.
+Verification: npx tsc --noEmit passed; npx vitest run lib/export/export-renderers.test.ts passed; npm test passed (8 files, 44 tests); npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered /api/documents/[id]/export. Supabase MCP confirmed the private exports bucket accepts PDF, DOCX, Markdown, TXT, and HTML MIME types and the exports table has the expected columns.
+Follow-up: Continue Phase 9 / 26 Account and Usage Page - Full UI with mock data referencing context/designs/account and usage.png.
+```
 
 ```txt
 Date: 2026-06-16
@@ -763,9 +793,8 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 8 / 24 Export Page - Full UI.
-2. Build the export page with mock data referencing context/designs/export document.png.
-3. Include export format cards for DOCX, PDF, Markdown, TXT, and HTML.
-4. Include export options, formatting warning area, export summary panel, generate export button, loading state, download-ready state, and error state.
-5. Keep real export generation, private storage writes, export records, and signed download URLs deferred to Phase 8 / 25 Export Logic.
+1. Start Phase 9 / 26 Account and Usage Page - Full UI.
+2. Build the account and usage page with mock data referencing context/designs/account and usage.png.
+3. Include profile summary, current plan placeholder, usage cards, AI usage summary, document usage summary, export usage summary, recent usage activity, and sign out action.
+4. Keep real usage aggregation and Clerk profile wiring deferred to Phase 9 / 27 Account and Usage Logic.
 ```

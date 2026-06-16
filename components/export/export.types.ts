@@ -25,3 +25,14 @@ export type ExportOptionsState = Record<ExportOptionKey, boolean> & {
   margins: string;
   watermark: string;
 };
+
+export type ExportResult = {
+  id: string;
+  format: ExportFormat;
+  fileName: string;
+  fileKey: string;
+  signedUrl: string;
+  downloadUrl: string;
+  expiresAt: string;
+  warning: string | null;
+};

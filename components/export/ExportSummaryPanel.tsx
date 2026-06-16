@@ -12,6 +12,7 @@ import type {
   ExportFormat,
   ExportFormatOption,
   ExportOptionsState,
+  ExportResult,
   ExportStatus,
 } from "@/components/export/export.types";
 
@@ -25,8 +26,10 @@ type ExportSummaryPanelProps = {
   formats: ExportFormatOption[];
   options: ExportOptionsState;
   status: ExportStatus;
+  result: ExportResult | null;
+  errorMessage: string | null;
   onGenerate: () => void;
-  onShowError: () => void;
+  onDownload: (result: ExportResult) => void;
   onResetStatus: () => void;
 };
 
@@ -55,8 +58,10 @@ export function ExportSummaryPanel({
   formats,
   options,
   status,
+  result,
+  errorMessage,
   onGenerate,
-  onShowError,
+  onDownload,
   onResetStatus,
 }: ExportSummaryPanelProps) {
   const selected =
@@ -182,8 +187,7 @@ export function ExportSummaryPanel({
             <div>
               <p className="text-sm font-semibold">Export failed</p>
               <p className="mt-1 text-xs">
-                Could not generate the mock export. Try again before wiring real
-                downloads.
+                {errorMessage ?? "Could not generate the export. Try again."}
               </p>
             </div>
           </div>
@@ -191,22 +195,24 @@ export function ExportSummaryPanel({
       </div>
 
       <div className="shrink-0 border-t border-border-light p-4">
-        {status === "ready" ? (
-          <a
-            href="#"
+        {status === "ready" && result ? (
+          <button
+            type="button"
+            onClick={() => onDownload(result)}
             className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
           >
             <Download className="size-4" />
-            Download Export
-          </a>
+            Download Again
+          </button>
         ) : (
           <LoadingButton
             className="w-full"
             isLoading={status === "processing"}
-            loadingText="Generating export"
+            loadingText="Exporting"
+            disabled={status === "processing"}
             onClick={onGenerate}
           >
-            Review Export
+            Export
           </LoadingButton>
         )}
         <div className="mt-3 flex items-center justify-center gap-2 text-xs text-text-muted">
@@ -220,13 +226,6 @@ export function ExportSummaryPanel({
             className="font-medium text-text-secondary transition hover:text-text-primary"
           >
             Reset state
-          </button>
-          <button
-            type="button"
-            onClick={onShowError}
-            className="font-medium text-error-foreground transition hover:text-error-dark"
-          >
-            Show error
           </button>
         </div>
       </div>

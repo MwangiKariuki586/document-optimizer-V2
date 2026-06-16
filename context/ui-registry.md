@@ -1300,7 +1300,7 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 
 **Purpose:**
 
-Mock-data export workspace with editor-style left rail, export format selection, export options, preview/status area, formatting warning, and sticky export summary rail.
+Real export workspace with editor-style left rail, export format selection, export options, preview/status area, formatting warning, API-backed generation, automatic same-origin download, and sticky export summary rail.
 
 **Used on:**
 
@@ -1318,11 +1318,13 @@ className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-
 **Variants:**
 
 - Formats: DOCX, PDF, Markdown, TXT, HTML.
-- Export states: idle, processing with `CometSpinner`, ready with download action, error with warning copy.
+- Export states: idle, processing with `CometSpinner`, ready with Download Again fallback action, error with warning copy.
 
 **Rules:**
 
-- UI phase only: uses local mock state and must not call export APIs until Phase 8 / 25 Export Logic.
+- Export calls `POST /api/documents/[id]/export` with the selected format and options.
+- The API verifies ownership, generates the file server-side, uploads to the private `exports` bucket, creates an `exports` row, records export usage, and returns a download route.
+- Successful export automatically triggers the same-origin download route so DOCX, PDF, Markdown, TXT, and HTML download without navigating away from the export page.
 - Uses `EditorSidebar` with `activeNav="export"` so export is reachable from the document workspace.
 - Summary rail stays narrow on desktop while the format/options workspace gets the remaining width.
 
@@ -1342,7 +1344,7 @@ Export configuration panel with token-styled toggle controls and compact select 
 
 **Path:** `components/export/ExportSummaryPanel.tsx`
 
-Right-side export summary rail with selected document, format, options, document stats, mock AI improvement totals, loading/ready/error states, and secure export footer.
+Right-side export summary rail with selected document, format, options, document stats, AI improvement totals placeholder, loading/ready/error states, Download Again fallback, and secure export footer.
 
 ---
 
