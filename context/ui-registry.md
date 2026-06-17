@@ -218,7 +218,6 @@ Collapsed-by-default authenticated workspace sidebar with product identity, prim
 
 - Authenticated app layout
 - `/dashboard`
-- `/documents`
 - `/documents/new`
 - `/documents/[id]`
 - `/account`
@@ -246,6 +245,7 @@ className="flex items-center gap-3 rounded-md px-3 py-2"
 - Used by `app/(app)/layout.tsx`; all authenticated gated pages inherit it.
 - Collapsed is the default state.
 - Active item uses `text-accent`.
+- `/documents` is intentionally not a standalone navigation target; list-style document entry points route through `/dashboard`, `/documents/new`, or an owned `/documents/[id]` workspace.
 - Do not add a second persistent page-level navigation rail inside authenticated pages.
 
 ### PageShell
@@ -560,6 +560,7 @@ className="mt-5 hidden overflow-x-auto md:block"
 **Rules:**
 
 - Document rows/cards link to `/documents/[id]`.
+- The header action links back to `/dashboard`; `/documents` is not a standalone list route.
 - Always show document status and fidelity badges.
 - Accepts real dashboard records with DOCX, PDF, MD, TXT, or None file types.
 
@@ -1488,6 +1489,7 @@ className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px
 
 - Use for async button actions.
 - Disable while loading.
+- Sets `aria-busy` while loading.
 
 ### InlineAlert
 

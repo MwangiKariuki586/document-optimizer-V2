@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  Lock,
   XCircle,
 } from "lucide-react";
 
@@ -30,7 +29,6 @@ type ExportSummaryPanelProps = {
   errorMessage: string | null;
   onGenerate: () => void;
   onDownload: (result: ExportResult) => void;
-  onResetStatus: () => void;
 };
 
 type SummaryToggleOption = {
@@ -65,7 +63,6 @@ export function ExportSummaryPanel({
   errorMessage,
   onGenerate,
   onDownload,
-  onResetStatus,
 }: ExportSummaryPanelProps) {
   const selected =
     formats.find((format) => format.id === selectedFormat) ?? formats[0];

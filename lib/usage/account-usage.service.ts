@@ -171,6 +171,13 @@ function formatActionLabel(value: string): string {
     .join(" ");
 }
 
+export function formatAIActivityMeta(
+  provider: string | null | undefined,
+  model: string | null | undefined,
+): string {
+  return `${provider ?? "AI"} ${model ?? "model"}`;
+}
+
 function normalizeFileType(fileType: string): AccountRecentDocument["fileType"] {
   switch (fileType.toLowerCase()) {
     case "docx":
@@ -434,7 +441,7 @@ function buildActivity(
     items.push({
       createdAt: row.created_at,
       label: `${formatActionLabel(row.action)} completed`,
-      meta: `${row.provider ?? "AI"} ${row.model ?? "provider"}`,
+      meta: formatAIActivityMeta(row.provider, row.model),
       pill: row.output_tokens ? `${formatCount.format(row.output_tokens)} output tokens` : undefined,
       type: "ai",
       when: formatRelativeDate(row.created_at),

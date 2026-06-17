@@ -49,10 +49,11 @@ Authenticated workspace uses a collapsed-by-default sidebar so app pages keep ma
 Primary authenticated sidebar navigation:
 
 ```txt
-Dashboard    Documents    New Document    Usage    Account
+Dashboard    New Document    Usage    Account
 ```
 
 Document routes add contextual sidebar links for the current document, such as Editor, Versions, and Export.
+There is no standalone `/documents` list page in the current MVP flow; document entry points live on the dashboard, creation flow, and owned document workspaces.
 
 ---
 

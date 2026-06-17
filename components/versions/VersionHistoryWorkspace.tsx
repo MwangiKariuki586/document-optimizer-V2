@@ -183,6 +183,28 @@ export function VersionHistoryWorkspace({
               eyebrow="Versions"
               title="Version History"
               description="Compare saved versions, inspect document changes, and restore a previous state when needed."
+              actions={
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={scrollToComparison}
+                    className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-surface text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
+                    aria-label="Jump to comparison"
+                    title="Jump to comparison"
+                  >
+                    <ArrowLeftRight className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openDetails}
+                    className="inline-flex size-9 items-center justify-center rounded-md border border-border bg-surface text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
+                    aria-label="Open version details"
+                    title="Open version details"
+                  >
+                    <PanelRightOpen className="size-4" />
+                  </button>
+                </div>
+              }
             />
 
             <div className="flex shrink-0 flex-wrap items-center gap-1  pt-1">
@@ -256,8 +278,6 @@ export function VersionHistoryWorkspace({
                   currentVersionNumber={currentPreview.versionNumber}
                   changeSummary={changeSummary}
                   onSelectedVersionChange={setSelectedVersionNumber}
-                  onRestore={openRestoreDialog}
-                  canRestore={canRestore}
                 />
 
                 {showDetailsPanel ? (

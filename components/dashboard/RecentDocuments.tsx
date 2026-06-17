@@ -46,8 +46,8 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
           </p>
         </div>
 
-        <Link href="/documents" className="text-sm font-medium text-accent">
-          View all
+        <Link href="/dashboard" className="text-sm font-medium text-accent">
+          Dashboard
         </Link>
       </div>
 

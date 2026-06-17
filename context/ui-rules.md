@@ -52,7 +52,7 @@ Features    How It Works    Resources    Log in    Get Started
 Authenticated workspace sidebar navigation:
 
 ```txt
-Dashboard    Documents    New Document    Usage    Account
+Dashboard    New Document    Usage    Account
 ```
 
 Rules:
@@ -62,6 +62,7 @@ Rules:
 - Inactive items use `text-text-secondary`
 - Authenticated sidebar is collapsed by default and expands on demand
 - Document routes may add contextual sidebar links for Editor, Versions, and Export
+- Do not add or link to a standalone `/documents` list page unless the product direction changes
 - Do not reintroduce a top authenticated navbar
 
 ---

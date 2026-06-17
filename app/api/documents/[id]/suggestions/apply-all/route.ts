@@ -1,11 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
-import {
-  applyPendingSuggestions,
-  SuggestionReplacementError,
-} from "@/lib/suggestions/suggestions.service";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -22,30 +17,18 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
-    const supabase = createSupabaseServerClient();
-    const result = await applyPendingSuggestions(supabase, {
-      userId,
-      documentId: id,
-    });
+    await params;
 
-    if (!result) {
-      return NextResponse.json(
-        { success: false, error: "Document not found." },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ success: true, data: result });
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Review selected suggestions before applying them to the document.",
+      },
+      { status: 410 },
+    );
   } catch (error) {
     console.error("[api/documents/[id]/suggestions/apply-all]", error);
-
-    if (error instanceof SuggestionReplacementError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 },
-      );
-    }
 
     return NextResponse.json(
       { success: false, error: "Could not apply suggestions." },

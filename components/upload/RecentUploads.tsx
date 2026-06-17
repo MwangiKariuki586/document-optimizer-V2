@@ -75,10 +75,10 @@ export function RecentUploads() {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-text-primary">Recent Uploads</h2>
         <Link
-          href="/documents"
+          href="/dashboard"
           className="text-sm font-medium text-accent hover:underline"
         >
-          View all
+          Dashboard
         </Link>
       </div>
 

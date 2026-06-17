@@ -4,7 +4,6 @@ import { PageShell } from "@/components/layout/PageShell";
 import { UploadTabs } from "@/components/upload/UploadTabs";
 import { SupportedFormats } from "@/components/upload/SupportedFormats";
 import { WhatHappensNext } from "@/components/upload/WhatHappensNext";
-import { RecentUploads } from "@/components/upload/RecentUploads";
 import { UploadTips } from "@/components/upload/UploadTips";
 
 export const metadata = {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeftRight, RotateCcw } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 
 import { VersionChangeSummaryCard } from "@/components/versions/VersionChangeSummaryCard";
 import { VersionPreviewPane } from "@/components/versions/VersionPreviewPane";
@@ -21,8 +21,6 @@ type VersionComparisonWorkspaceProps = {
   currentVersionNumber: number;
   changeSummary: VersionChangeSummary;
   onSelectedVersionChange: (versionNumber: number) => void;
-  onRestore?: () => void;
-  canRestore: boolean;
   comparisonRef?: React.RefObject<HTMLElement | null>;
 };
 
@@ -47,8 +45,6 @@ export function VersionComparisonWorkspace({
   currentVersionNumber,
   changeSummary,
   onSelectedVersionChange,
-  onRestore,
-  canRestore,
   comparisonRef,
 }: VersionComparisonWorkspaceProps) {
   const isWideComparison = useMediaQuery("(min-width: 900px)");

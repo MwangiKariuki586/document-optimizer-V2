@@ -2,14 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
-  Check,
-  Download,
-  Eye,
   FileCode2,
   FileText,
   FileType,
   FileWarning,
-  Lock,
   Settings2,
 } from "lucide-react";
 
@@ -25,7 +21,6 @@ import type {
   ExportResult,
   ExportStatus,
 } from "@/components/export/export.types";
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
 import type { EditorDocument } from "@/lib/documents/document.types";
 import { appToast } from "@/lib/feedback/toast";
 
@@ -87,13 +82,6 @@ const defaultOptions: ExportOptionsState = {
   watermark: "None",
 };
 
-const steps = [
-  { label: "Format", helper: "Choose file format" },
-  { label: "Options", helper: "Set preferences" },
-  { label: "Review", helper: "Review export" },
-  { label: "Export", helper: "Download file" },
-];
-
 function estimateFileSize(wordCount: number, format: ExportFormat) {
   const multiplier: Record<ExportFormat, number> = {
     docx: 0.42,
@@ -148,12 +136,6 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
 
   const handleFormatSelect = (format: ExportFormat) => {
     setSelectedFormat(format);
-    setStatus("idle");
-    setResult(null);
-    setErrorMessage(null);
-  };
-
-  const handleResetStatus = () => {
     setStatus("idle");
     setResult(null);
     setErrorMessage(null);
@@ -270,7 +252,6 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
             errorMessage={errorMessage}
             onGenerate={handleGenerateExport}
             onDownload={downloadExport}
-            onResetStatus={handleResetStatus}
           />
         </div>
       </div>

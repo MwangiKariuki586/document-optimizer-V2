@@ -1,5 +1,4 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { CalendarDays, Download } from "lucide-react";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AccountUsageWorkspace } from "@/components/usage/AccountUsageWorkspace";

@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** 27 Account and Usage Logic
-**Next:** 28 Security Review
+**Last completed:** AI Activity Meta and LoadingButton Test Fix
+**Next:** MVP complete - resolve release follow-ups before shipping
 
 ---
 
@@ -71,9 +71,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 10 - Final Review and Hardening
 
-- [ ] 28 Security Review
-- [ ] 29 UI State Review
-- [ ] 30 MVP Testing Pass
+- [x] 28 Security Review
+- [x] 29 UI State Review
+- [x] 30 MVP Testing Pass
 
 ---
 
@@ -90,6 +90,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Browser-based visual and interaction testing is delegated to the user by default. Agents should run code-level verification and list the route/flow that needs user browser review unless the user explicitly asks the agent to perform browser testing.
 - Decision: The MVP is free and should not expose pricing, subscription, invoice, renewal, upgrade, or paid-plan account UI. Usage surfaces remain for operational activity tracking.
 - Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
+- Decision: `/documents` is intentionally not a standalone MVP page. Document list-style entry points should route through `/dashboard`, `/documents/new`, or an owned `/documents/[id]` workspace.
 
 ---
 
@@ -104,6 +105,46 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-17
+Feature: AI Activity Meta and LoadingButton Test Fix
+Status: Completed
+Files changed: lib/usage/account-usage.service.ts, lib/usage/account-usage.service.test.ts, components/feedback/LoadingButton.test.tsx, context/progress-tracker.md
+What was completed: Replaced the misleading account activity AI model fallback from "provider" to a generic "model" label through a dedicated formatAIActivityMeta helper, with regression coverage for missing provider/model values. Verified the LoadingButton role="status" concern: the status role is provided by the rendered CometSpinner child, not the button itself, so the test now queries the actual status element and its accessible label instead of checking raw markup.
+Verification: npx vitest run lib/usage/account-usage.service.test.ts components/feedback/LoadingButton.test.tsx passed. npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: None for these fixes.
+```
+
+```txt
+Date: 2026-06-17
+Feature: 30 MVP Testing Pass
+Status: Completed
+Files changed: components/feedback/LoadingButton.test.tsx, lib/documents/document.validators.test.ts, lib/documents/upload.validators.test.ts, lib/documents/document.service.test.ts, lib/export/export.validators.test.ts, lib/export/export.service.test.ts, lib/usage/usage.service.test.ts, context/progress-tracker.md
+What was completed: Added focused Vitest coverage for the MVP acceptance surface: document creation/update validation, supported upload validation and filename/title safety, paste document creation with initial version and usage recording, owner-scoped manual save and document load behavior, export request validation, private export generation/download scoping, export rollback on record failure, non-blocking usage ledger writes, and LoadingButton accessible loading/render states. Existing AI validator/router, suggestion replacement, version restore, export renderer, and editor extension tests remain part of the full suite.
+Verification: npx vitest run focused MVP test files passed (7 files, 32 tests). npm test passed (15 files, 76 tests). npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed.
+Follow-up: Build output currently registers /documents because app/(app)/documents/page.tsx exists in the working tree; reconcile that with the recorded MVP decision that /documents is not a standalone route before release.
+```
+
+```txt
+Date: 2026-06-17
+Feature: 29 UI State Review
+Status: Completed
+Files changed: app/(app)/account/page.tsx, app/(app)/documents/new/page.tsx, components/dashboard/RecentDocuments.tsx, components/editor/EditorSidebar.tsx, components/export/ExportSummaryPanel.tsx, components/export/ExportWorkspace.tsx, components/feedback/LoadingButton.tsx, components/layout/AppSidebar.tsx, components/layout/PageHeader.tsx, components/upload/RecentUploads.tsx, components/versions/VersionComparisonWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, components/versions/VersionSelector.tsx, context/project-overview.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Reviewed core loading, empty, error, toast, warning, and async action states. Kept the intentionally removed /documents page out of scope, retargeted remaining literal /documents UI links to /dashboard, documented that /documents is not a standalone MVP route, rendered PageHeader eyebrows consistently, added aria-busy to LoadingButton, exposed version comparison/details actions through compact header controls, and removed stale unused UI imports/props from account, upload, export, sidebar, and version components.
+Verification: rg confirmed no remaining literal href="/documents" links in app/components. npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed and registered the intended routes without a standalone /documents page.
+Follow-up: Continue Phase 10 / 30 MVP Testing Pass.
+```
+
+```txt
+Date: 2026-06-17
+Feature: 28 Security Review
+Status: Completed
+Files changed: app/api/documents/[id]/suggestions/apply-all/route.ts, context/library-docs.md, context/progress-tracker.md
+What was completed: Reviewed protected route middleware, private API route authentication, service-layer ownership scoping, server-only Supabase secret usage, private export/original storage handling, and live Supabase RLS/storage posture. Hardened the legacy bulk suggestion apply endpoint so it no longer mutates documents directly and instead requires the server-backed review selection flow before batch apply.
+Verification: Supabase security advisors returned no lints. SQL verification confirmed RLS is enabled on profiles, documents, document_versions, ai_requests, suggestions, suggestion_preview_selections, exports, usage_ledger, and storage.objects. SQL verification confirmed documents and exports buckets are private and path-scoped storage policies exist. npx tsc --noEmit passed after clearing stale generated .next type artifacts. npx vitest run lib/suggestions/suggestion-replace.test.ts lib/suggestions/suggestions.service.test.ts passed the available suggestion replacement test file. npm run lint passed with 22 pre-existing unused-symbol warnings. npm run build passed and registered all protected app/API routes.
+Follow-up: Continue Phase 10 / 29 UI State Review.
+```
 
 ```txt
 Date: 2026-06-16
@@ -885,8 +926,7 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 10 / 28 Security Review.
-2. Verify protected routes require authentication and private API routes resolve Clerk users server-side.
-3. Check document, AI, suggestion, version, export, usage, and storage flows for authenticated-user scoping.
-4. Confirm service role usage remains server-only and private files/exports are served only through signed or authenticated routes.
+1. Start Phase 10 / 30 MVP Testing Pass.
+2. Add and run MVP-level tests for document creation, upload validation, ownership, AI validation, version restore, export validation, and usage records.
+3. Use the existing no-standalone-/documents route decision when reviewing navigation and dashboard entry points.
 ```

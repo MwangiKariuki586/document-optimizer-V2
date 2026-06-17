@@ -609,8 +609,9 @@ POST /api/documents/[id]/suggestions/[suggestionId]/ignore
   → mark owned pending suggestion ignored (no document mutation)
 
 POST /api/documents/[id]/suggestions/apply-all
-  → legacy backend helper route retained for service reuse/testing
-  → editor rail must not call this directly
+  → legacy route kept only to return a safe review-required response
+  → must not mutate documents directly
+  → bulk suggestion apply must use server-backed selections and the preview apply route
 ```
 
 ### Normalized Result Shape

@@ -1,7 +1,6 @@
 import { ChevronDown } from "lucide-react";
 
 import {
-  formatVersionDate,
   sourceLabel,
   type PreviewRecord,
 } from "@/lib/versions/version-history.utils";
@@ -24,8 +23,6 @@ export function VersionSelector({
   disabled = false,
   onChange,
 }: VersionSelectorProps) {
-  const displayLabel =
-    value.source === "current" ? "Current" : sourceLabel[value.source];
   const options = [
     ...versions.map((version) => ({
       versionNumber: version.versionNumber,

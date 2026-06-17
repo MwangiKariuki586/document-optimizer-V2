@@ -116,10 +116,10 @@ export function EditorSidebar({
             <ChevronsRight className="size-4" />
           </button>
           <Link
-            href="/documents"
+            href="/dashboard"
             className="flex size-9 items-center justify-center rounded-md text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
-            aria-label="Back to Documents"
-            title="Back to Documents"
+            aria-label="Back to dashboard"
+            title="Back to dashboard"
           >
             <ArrowLeft className="size-4" />
           </Link>
@@ -127,11 +127,11 @@ export function EditorSidebar({
       ) : (
         <div className="flex items-center justify-between gap-2">
           <Link
-            href="/documents"
+            href="/dashboard"
             className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-text-secondary transition hover:text-text-primary"
           >
             <ArrowLeft className="size-3.5 shrink-0" />
-            <span className="truncate">Back to Documents</span>
+            <span className="truncate">Back to dashboard</span>
           </Link>
           <button
             type="button"
