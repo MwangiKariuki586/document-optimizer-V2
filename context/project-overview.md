@@ -64,7 +64,7 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 - Hero section explains the document improvement promise
 - Shows AI optimization process with suggestions users can choose from
 - Highlights safe document improvement, formatting awareness, version history, and export
-- Logged in users can continue to dashboard
+- Logged in users requesting `/` are redirected to `/dashboard`
 - Logged out users are directed to authentication
 
 ### Authentication

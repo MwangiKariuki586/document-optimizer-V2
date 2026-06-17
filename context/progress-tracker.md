@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Suggestion Review Flow Correction
+**Last completed:** Signed-In Homepage Redirect
 **Next:** MVP complete - browser visual review before shipping
 
 ---
@@ -79,7 +79,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Decisions Made During Build
 
-- Homepage CTAs are auth-aware when Clerk keys are configured: signed-in users go to `/dashboard`, signed-out users go to `/login`; without Clerk keys they fall back to `/login`.
+- Homepage is signed-out-only when Clerk keys are configured: signed-in requests to `/` redirect to `/dashboard`; signed-in CTAs go to `/dashboard`, signed-out CTAs go to `/login`, and without Clerk keys CTAs fall back to `/login`.
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
 - Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
 - Decision: Gemini is the primary MVP AI provider because the Gemini API test works and the project is avoiding separate OpenAI API billing for MVP. OpenAI remains optional/future through the provider abstraction.
@@ -105,6 +105,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-17
+Feature: Signed-In Homepage Redirect
+Status: Completed
+Files changed: app/page.tsx, context/project-overview.md, context/build-plan.md, context/progress-tracker.md
+What was completed: Added a server-side Clerk auth check on the landing page so authenticated users requesting `/` are redirected to `/dashboard` before the marketing page renders. Kept the existing no-Clerk local setup fallback so the landing page still renders when Clerk keys are not configured.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: Browser-verify `/` in a signed-in session redirects to `/dashboard`; signed-out `/` should still render the landing page.
+```
 
 ```txt
 Date: 2026-06-17

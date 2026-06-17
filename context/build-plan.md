@@ -38,6 +38,7 @@ Build the complete homepage UI,reference context/designs/landingpage.png
 
 **Logic:**
 
+- Signed-in users requesting `/` are redirected to `/dashboard` when Clerk is configured
 - Primary CTA → `/login` if unauthenticated
 - Primary CTA → `/dashboard` if authenticated
 - Navbar Get Started → `/login` if unauthenticated
