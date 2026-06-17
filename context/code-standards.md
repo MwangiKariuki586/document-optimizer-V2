@@ -362,30 +362,20 @@ Rules:
 
 ## Supabase Client Usage
 
-Use separate client patterns for browser and server contexts.
-
-```typescript
-// lib/supabase/client.ts
-// Browser-safe client.
-
-import { createClient } from "@supabase/supabase-js";
-
-export const supabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
-```
+Use the server client for the current MVP. Client Components call API routes for
+protected reads and mutations instead of importing Supabase directly.
 
 ```typescript
 // lib/supabase/server.ts
 // Server-only client.
 
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export function createSupabaseServerClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY!,
     {
       auth: {
         persistSession: false,
@@ -397,7 +387,7 @@ export function createSupabaseServerClient() {
 
 Rules:
 
-- Browser client must not perform sensitive writes
+- Add a browser client only for deliberate safe read paths
 - Server client is used in route handlers and services
 - Service role key must only be used on the server
 - Never import server client into Client Components
@@ -411,9 +401,10 @@ The document workflow must protect user content.
 Rules:
 
 - Never overwrite document content without explicit user action
-- AI output must be previewed before applying
-- AI-generated changes must only be finally applied from `/documents/[id]/preview`
-- AI Result Preview must compare current vs proposed content before mutation
+- Full-document AI output must be previewed before applying
+- Full AI action results and batch suggestion reviews must only be finally applied from `/documents/[id]/preview`
+- Single suggestion Apply is allowed directly from the editor after explicit user action, ownership verification, safe replacement validation, and a version snapshot
+- AI Result Preview must compare current vs proposed content before full-result or batch mutation
 - The proposed result must be editable before applying
 - Apply must persist the edited proposed result, not necessarily the raw AI output
 - Comparison view should support synchronous proportional scrolling
@@ -456,7 +447,7 @@ Rules:
 - AI requests must be stored in `ai_requests`
 - Token usage and estimated cost should be recorded where available
 - AI failures must be saved as safe error messages
-- AI results must be preview-first
+- AI full-document results must be preview-first
 - AI actions must preserve structure by default where possible
 
 ---
@@ -585,9 +576,14 @@ Never hardcode keys, URLs, or secrets.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk browser setup             |
 | `CLERK_SECRET_KEY`                  | Clerk server auth               |
 | `CLERK_WEBHOOK_SECRET`              | Clerk webhook verification      |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_URL`     | Clerk protected-route redirects |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_URL`     | Clerk sign-up route             |
+| `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL` | Clerk sign-in fallback |
+| `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL` | Clerk sign-up fallback |
 | `NEXT_PUBLIC_SUPABASE_URL`          | Supabase browser/server clients |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | Supabase browser client         |
 | `SUPABASE_SERVICE_ROLE_KEY`         | Server-only Supabase access     |
+| `SUPABASE_SECRET_KEY`               | Server-only Supabase fallback secret |
 | `GEMINI_API_KEY`                    | Required MVP Gemini provider    |
 | `OPENAI_API_KEY`                    | Optional/future OpenAI provider |
 | `NEXT_PUBLIC_APP_URL`               | App URL redirects and links     |
@@ -652,6 +648,13 @@ Approved dependencies:
 - `zod` — validation
 - `@tiptap/react` — editor
 - `@tiptap/starter-kit` — editor toolkit
+- `@tiptap/extension-highlight` — editor highlight control
+- `@tiptap/extension-text-align` — editor text alignment
+- `@tiptap/extension-text-style` — editor text style controls
+- `@tiptap/markdown` — editor markdown serialization
+- `@tiptap/pm` — TipTap/ProseMirror peer package
+- `mammoth` — DOCX text/structure extraction
+- `unpdf` — PDF text extraction
 - `sonner` — toast notifications
 - Loading UI CometSpinner — small loading states
 - `lucide-react` — icons
@@ -659,6 +662,7 @@ Approved dependencies:
 - `shadcn/ui` components — UI primitives
 - `radix-ui` components — accessible primitives
 - `vitest` — tests
-- `playwright` — later E2E tests
+- `jsdom` — Vitest DOM environment
+- `playwright` — planned later E2E tests, not installed yet
 
 Do not install additional packages without updating this list first.

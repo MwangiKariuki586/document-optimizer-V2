@@ -14,10 +14,10 @@ const suggestions = [
 ];
 
 const quality = [
-  { label: "Clarity", value: 88 },
-  { label: "Structure", value: 84 },
-  { label: "Readability", value: 87 },
-  { label: "Tone", value: 82 },
+  { label: "Clarity", value: 88, widthClass: "w-[88%]" },
+  { label: "Structure", value: 84, widthClass: "w-[84%]" },
+  { label: "Readability", value: 87, widthClass: "w-[87%]" },
+  { label: "Tone", value: 82, widthClass: "w-[82%]" },
 ];
 
 export function OptimizationPreview() {
@@ -177,8 +177,7 @@ export function OptimizationPreview() {
                     </span>
                     <span className="h-2 rounded-full bg-surface-tertiary">
                       <span
-                        className="block h-2 rounded-full bg-accent"
-                        style={{ width: `${item.value}%` }}
+                        className={`block h-2 rounded-full bg-accent ${item.widthClass}`}
                       />
                     </span>
                     <span className="text-right font-medium text-text-primary">

@@ -164,9 +164,10 @@ There is no standalone `/documents` list page in the current MVP flow; document 
   - suggested text
   - explanation
 
-- User can review or ignore each suggestion
+- User can apply or ignore each suggestion directly from the editor
 - Suggestion cards visually connect to matching document text where possible
-- Applying a suggestion happens only from AI Result Preview and creates a version snapshot where needed
+- Applying a single suggestion creates a version snapshot first and updates the editor immediately
+- Review All and Review Selected send the user to AI Result Preview before batch mutation
 
 ### Version History
 
@@ -345,7 +346,7 @@ Usage tracking supports operational activity reporting and product analytics.
 - Browser extension
 - Cloud drive imports
 - Scheduled background document optimization
-- Auto-apply AI changes without preview
+- Auto-apply full AI document rewrites without preview
 - Pixel-perfect PDF reconstruction
 - Advanced OCR for scanned documents
 - Complex image positioning preservation

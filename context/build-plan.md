@@ -444,7 +444,7 @@ Required route:
 app/(app)/documents/[id]/preview/page.tsx
 ```
 
-Purpose: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated change before it can be applied to the document.
+Purpose: `/documents/[id]/preview` is the required approval checkpoint for full AI action output and explicit batch suggestion reviews before they can be applied to the document. Direct single-suggestion Apply remains an editor action because the user has already chosen one concrete replacement.
 
 **Implementation rules:**
 
@@ -490,14 +490,15 @@ Purpose: `/documents/[id]/preview` is the required approval checkpoint for every
 
 - For multi-suggestion preview, use a safe server-backed selection instead of storing large payloads in the URL.
 - Ensure the AI request, suggestion, or server-backed selection belongs to the authenticated user and document.
-- AI actions and suggestion reviews must redirect to this page before any document mutation.
+- AI actions and batch suggestion reviews must redirect to this page before document mutation.
+- Single suggestion Apply may mutate directly from the editor after ownership verification, safe replacement validation, and a version snapshot.
 - Applying a result or suggestion creates a version snapshot first.
 - Applying uses the edited proposed result from the preview page, not necessarily the raw AI response.
 - Update document content
 - Record usage/activity
 - Redirect back to editor after apply
 - Show success toast
-- Critical rule: no AI-generated change should be applied directly from the editor or suggestions panel. The preview page is the only place where the final `Apply to Document` action should exist.
+- Critical rule: full AI action output and batch suggestion review output must not be applied directly from the editor or suggestions panel. The preview page is the only place where those final `Apply to Document` actions should exist.
 
 ---
 
@@ -531,9 +532,10 @@ Wire suggestions to real data.
 - Generate suggestions from AI result where applicable
 - Save suggestions to `suggestions`
 - Fetch suggestions for document
-- Review/apply suggestion:
+- Apply single suggestion:
   - verify ownership
-  - send the user to `/documents/[id]/preview?suggestionId={suggestionId}` before document mutation
+  - apply only after an explicit card-level Apply click
+  - fail safely when the source text is missing or ambiguous
   - create version snapshot where needed
   - update document content
   - mark suggestion as applied
@@ -551,11 +553,11 @@ Wire suggestions to real data.
 
 ---
 
-### 21a Preview-Gated Suggestion Apply
+### 21a Batch Suggestion Review Flow
 
-Update the completed suggestions flow so it fully obeys the preview checkpoint rule before continuing to Version History.
+Update the completed suggestions flow so batch review fully obeys the preview checkpoint rule before continuing to Version History.
 
-This is required because the editor suggestions rail may show AI-generated changes, but the final document mutation must happen only from `/documents/[id]/preview`.
+Single suggestion Apply is intentionally immediate from the editor after explicit user action and a server-side version snapshot. Review Selected and Review All are the batch review paths and must route through `/documents/[id]/preview`.
 
 **UI:**
 
@@ -567,9 +569,8 @@ This is required because the editor suggestions rail may show AI-generated chang
 
 - Keep original vs proposed comparison visible for every applyable AI change.
 - Show AI improvement summary and formatting/fidelity warnings where applicable.
-- Move final `Apply to Document` for suggestions to the preview page.
-- Replace editor rail apply actions with review actions:
-  - `Review`
+- Keep single-card `Apply` in the editor rail for immediate one-suggestion mutation.
+- Keep explicit batch review actions:
   - `Review selected`
   - `Review all`
 
@@ -594,8 +595,13 @@ This is required because the editor suggestions rail may show AI-generated chang
 
 - Do not store large suggestion payloads in the URL.
 - Ensure the suggestion or selection belongs to the authenticated Clerk user and document.
-- Remove direct document mutation from editor/suggestions panel apply actions.
-- Final apply from preview must:
+- Single-card Apply from the editor must:
+  - verify ownership
+  - snapshot the current document first
+  - apply exactly one safe replacement
+  - mark the suggestion as applied
+  - record `suggestion_apply` usage
+- Final batch apply from preview must:
   - verify ownership
   - snapshot the current document first
   - apply the selected suggestion or suggestion batch
@@ -608,9 +614,9 @@ This is required because the editor suggestions rail may show AI-generated chang
 
 - Run typecheck, lint, and focused tests for suggestion replacement/apply behavior.
 - Manually verify:
-  - single suggestion review opens preview and applies only from preview
+- single suggestion Apply updates the editor immediately after the server snapshots first
   - multi-suggestion review opens preview through server-backed selection
-  - editor rail no longer mutates document content directly
+- editor rail only routes to preview when the user chooses Review Selected or Review All
   - AI action previews still work with `requestId`
 
 ---

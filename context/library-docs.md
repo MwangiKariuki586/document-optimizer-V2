@@ -178,30 +178,20 @@ Supabase is used for Postgres, private storage, RLS, and generated TypeScript ty
 
 ### Client vs Server
 
-Use separate client patterns.
-
-```typescript
-// lib/supabase/client.ts
-// Browser-safe client.
-
-import { createClient } from "@supabase/supabase-js";
-
-export const supabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
-```
+The current MVP uses the server client only. Client Components call API routes
+for data mutations and protected reads instead of importing Supabase directly.
 
 ```typescript
 // lib/supabase/server.ts
 // Server-only client.
 
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export function createSupabaseServerClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY!,
     {
       auth: {
         persistSession: false,
@@ -544,6 +534,7 @@ Task 19 preview/apply flow:
   → getSuggestionPreview()
   → ownership-scoped pending suggestion + document lookup
   → compute proposed markdown without persisting
+  → used for explicit preview/review links, not the default single-card Apply
 
 /documents/[id]/preview?selectionId=...
   → authenticate with Clerk in the server page
@@ -655,10 +646,10 @@ type AIActionResult = {
 - Route handlers should call `runDocumentAIAction()` for document-scoped execution; it owns `ai_requests` persistence and usage recording.
 - The AI router defaults to Gemini for MVP execution.
 - Providers return normalized results
-- AI actions must support preview-first workflows
+- AI actions must support preview-first workflows for full-document results
 - Structure-preserving behavior is the default
 - AI output must be stored before being applied
-- Applying AI output is a separate user action
+- Applying full AI output is a separate user action from the preview page; applying one concrete suggestion is a separate explicit editor action
 - Applying AI output must call `snapshotDocumentVersion()` first; never update document content directly from the preview UI.
 
 ---
@@ -831,7 +822,7 @@ CometSpinner is used for small loading states.
 ### Usage
 
 ```typescript
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
+import { CometSpinner } from "@/components/loading-ui/CometSpinner";
 
 export function SaveButton({ isSaving }: { isSaving: boolean }) {
   return (

@@ -1,0 +1,21 @@
+---
+description: Suggest concise commit messages after substantial changes
+alwaysApply: true
+---
+
+# Commit Message Suggestion
+
+After every substantial change, include a suggested commit message.
+
+Rules:
+
+- Maximum 20 words.
+- Cover the major changes completed.
+- Use clear, imperative wording.
+- Do not create a commit unless the user explicitly asks.
+
+Example:
+
+```txt
+Harden document routes, align suggestion review flow, and clean UI rule drift
+```

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { applyAIRequestResult } from "@/lib/ai/ai.service";
+import { aiRequestRouteParamsSchema } from "@/lib/ai/ai.validators";
 import { applyEditedResultSchema } from "@/lib/suggestions/suggestions.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -20,7 +21,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id, requestId } = await params;
+    const parsedParams = aiRequestRouteParamsSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid AI result.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id, requestId } = parsedParams.data;
     let body: unknown = {};
 
     try {

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { runDocumentAIAction } from "@/lib/ai/ai.service";
 import { runAIActionRequestSchema } from "@/lib/ai/ai.validators";
+import { documentIdParamSchema } from "@/lib/documents/document.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -20,7 +21,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.data;
 
     let body: unknown;
     try {

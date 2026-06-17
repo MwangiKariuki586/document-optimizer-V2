@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
 const hasClerk = Boolean(
@@ -22,7 +22,14 @@ const clerkProxy = clerkMiddleware(async (auth, req) => {
 
 export default hasClerk
   ? clerkProxy
-  : function proxy() {
+  : function proxy(req: NextRequest) {
+      if (process.env.NODE_ENV === "production" && isProtectedRoute(req)) {
+        return NextResponse.json(
+          { success: false, error: "Authentication is not configured." },
+          { status: 503 },
+        );
+      }
+
       return NextResponse.next();
     };
 

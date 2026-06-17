@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { downloadDocumentExport } from "@/lib/export/export.service";
+import { exportDownloadParamsSchema } from "@/lib/export/export.validators";
 
 type RouteContext = {
   params: Promise<{ id: string; exportId: string }>;
@@ -23,7 +24,19 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id, exportId } = await params;
+    const parsedParams = exportDownloadParamsSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: parsedParams.error.issues[0]?.message ?? "Invalid export.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id, exportId } = parsedParams.data;
     const exportFile = await downloadDocumentExport({
       userId,
       documentId: id,

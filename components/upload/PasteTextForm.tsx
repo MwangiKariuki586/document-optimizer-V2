@@ -125,8 +125,7 @@ export function PasteTextForm() {
           rows={8}
           maxLength={DOCUMENT_CONTENT_MAX}
           disabled={isSubmitting}
-          className="w-full rounded-lg border border-border bg-surface p-4 text-sm text-text-primary placeholder:text-text-soft focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent resize-y disabled:cursor-not-allowed disabled:opacity-70"
-          style={{ minHeight: "180px" }}
+          className="min-h-[180px] w-full resize-y rounded-lg border border-border bg-surface p-4 text-sm text-text-primary placeholder:text-text-soft focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-70"
         />
         {/* Word and character count */}
         <p className="self-end text-xs text-text-muted">

@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { createManualVersion } from "@/lib/documents/document.service";
-import { createVersionSchema } from "@/lib/documents/document.validators";
+import {
+  createVersionSchema,
+  documentIdParamSchema,
+} from "@/lib/documents/document.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { listDocumentVersions } from "@/lib/versions/versions.service";
@@ -21,7 +24,20 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.data;
     const supabase = createSupabaseServerClient();
     const versions = await listDocumentVersions(supabase, userId, id);
 
@@ -47,7 +63,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.data;
 
     let body: unknown;
     try {

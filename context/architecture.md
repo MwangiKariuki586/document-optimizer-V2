@@ -134,7 +134,6 @@
 │   ├── auth/
 │   │   └── clerk.ts
 │   ├── supabase/
-│   │   ├── client.ts
 │   │   ├── server.ts
 │   │   └── types.ts
 │   ├── documents/
@@ -271,11 +270,14 @@ Document current_markdown, editor_json, and word_count are updated
 Usage/activity is recorded
 ```
 
-AI-generated changes can only be finally applied from `/documents/[id]/preview`.
-The preview workspace compares current vs proposed content, supports editable
-proposed results, and supports synchronous proportional scrolling. If the user
-edits the proposed result before applying, that edited markdown is the source of
-truth for the document update.
+Full AI action results and explicit batch suggestion reviews are finally applied
+from `/documents/[id]/preview`. Single suggestion Apply is an explicit editor
+action: it verifies ownership, snapshots the current document first, applies the
+single safe replacement, and refreshes the editor immediately. The preview
+workspace compares current vs proposed content, supports editable proposed
+results, and supports synchronous proportional scrolling. If the user edits the
+proposed result before applying, that edited markdown is the source of truth for
+the document update.
 
 ### Export
 
@@ -463,30 +465,21 @@ Access rules:
 
 ## Supabase Client Pattern
 
-Two separate Supabase clients should be used.
-
-```typescript
-// lib/supabase/client.ts
-// Browser-side client for safe frontend reads where allowed.
-
-import { createClient } from "@supabase/supabase-js";
-
-export const supabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
-```
+The MVP routes all database and storage access through server components, API
+routes, and service-layer functions. There is currently no browser Supabase
+client because client components must not perform sensitive writes.
 
 ```typescript
 // lib/supabase/server.ts
 // Server-side client for route handlers and service logic.
 
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export const createSupabaseServerClient = () => {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY!,
     {
       auth: {
         persistSession: false,
@@ -496,7 +489,9 @@ export const createSupabaseServerClient = () => {
 };
 ```
 
-The service role key must only be used on the server.
+The service role key must only be used on the server. If a future safe browser
+read path is needed, add `lib/supabase/client.ts` deliberately and keep all
+sensitive writes behind API routes.
 
 ---
 
@@ -585,7 +580,8 @@ Rules the AI agent must never violate:
 - Raw uploaded files are stored in private storage, not Postgres.
 - AI providers are only called through the AI router.
 - AI output never overwrites document content automatically.
-- AI-generated changes can only be finally applied from AI Result Preview.
+- Full AI action output and explicit batch suggestion reviews can only be finally applied from AI Result Preview.
+- Single suggestion Apply is allowed from the editor after explicit user action and must snapshot first.
 - AI Result Preview must support current vs proposed comparison before apply.
 - The proposed AI result must be editable before applying.
 - The edited proposed result is what gets applied.

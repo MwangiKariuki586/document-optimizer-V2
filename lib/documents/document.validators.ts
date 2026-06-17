@@ -53,6 +53,10 @@ export const updateDocumentSchema = z.object({
 
 export type UpdateDocumentRequest = z.infer<typeof updateDocumentSchema>;
 
+export const documentIdParamSchema = z.object({
+  id: z.string().uuid("Invalid document id."),
+});
+
 // Optional free-text note attached to a manual version snapshot. Capped; no
 // character allowlist (free text, stored via the parameterized Supabase client).
 export const VERSION_NOTES_MAX = 280;

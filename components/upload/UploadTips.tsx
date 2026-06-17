@@ -19,7 +19,7 @@ const TIPS = [
 export function UploadTips() {
   return (
     <section
-      className="relative overflow-hidden rounded-2xl border border-accent-light bg-gradient-to-br from-[#F8F9FF] to-[#F1F3FB] p-6 shadow-sm md:p-8"
+      className="relative overflow-hidden rounded-2xl border border-accent-light bg-accent-muted p-6 shadow-sm md:p-8"
       aria-label="Tips for best results"
     >
       {/* Decorative sparkle accents matching the design */}
@@ -57,13 +57,13 @@ export function UploadTips() {
             {TIPS.map(({ headline, detail }) => (
               <li key={headline} className="flex items-start gap-3">
                 {/* Design checkmark: solid accent circle with white check */}
-                <div className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+                <div className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
                   <CheckCircle2
                     className="absolute inset-0 size-5 text-accent"
                     aria-hidden="true"
                   />
                   <svg
-                    className="relative z-10 size-3 text-white"
+                    className="relative z-10 size-3 text-accent-foreground"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -86,7 +86,7 @@ export function UploadTips() {
           className="hidden min-w-[280px] items-center justify-center md:flex"
           aria-hidden="true"
         >
-          <div className="relative w-[240px] rounded-xl border border-border-light bg-white p-5 shadow-sm">
+          <div className="relative w-[240px] rounded-xl border border-border-light bg-surface p-5 shadow-sm">
             {/* Fake document lines */}
             <div className="space-y-3">
               <div className="h-2 w-full rounded-full bg-border-muted" />
@@ -100,7 +100,7 @@ export function UploadTips() {
             </div>
 
             {/* AI suggestion chip matching design */}
-            <div className="absolute -bottom-6 -right-6 w-[200px] rounded-xl border border-border-light bg-white p-4 shadow-lg">
+            <div className="absolute -bottom-6 -right-6 w-[200px] rounded-xl border border-border-light bg-surface p-4 shadow-lg">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="size-4 text-accent" />
                 <span className="text-xs font-bold text-text-primary">AI Suggestion</span>
@@ -111,7 +111,7 @@ export function UploadTips() {
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
-                  className="rounded-md bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-sm"
+                  className="rounded-md bg-accent px-4 py-1.5 text-xs font-semibold text-accent-foreground shadow-sm"
                 >
                   Apply
                 </button>

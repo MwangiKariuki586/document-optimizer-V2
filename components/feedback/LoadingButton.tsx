@@ -1,6 +1,6 @@
 "use client";
 
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
+import { CometSpinner } from "@/components/loading-ui/CometSpinner";
 
 type LoadingButtonProps = {
   children: React.ReactNode;

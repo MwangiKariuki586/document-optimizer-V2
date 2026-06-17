@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { DOCUMENT_CONTENT_MAX } from "@/lib/documents/document.validators";
+import {
+  DOCUMENT_CONTENT_MAX,
+  documentIdParamSchema,
+} from "@/lib/documents/document.validators";
 
 export const AI_CONTENT_MAX = DOCUMENT_CONTENT_MAX;
 
@@ -17,6 +20,10 @@ export const aiActionSchema = z.enum([
 ]);
 
 export const aiProviderSchema = z.enum(["openai", "gemini"]);
+
+export const aiRequestRouteParamsSchema = documentIdParamSchema.extend({
+  requestId: z.string().uuid("Invalid AI request id."),
+});
 
 export const aiToneSchema = z.enum([
   "professional",

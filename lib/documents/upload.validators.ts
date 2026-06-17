@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { ParsedFileType } from "@/lib/parsing/parse-file";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -19,6 +21,32 @@ const CONTENT_TYPE_BY_FILE_TYPE: Record<ParsedFileType, string> = {
   markdown: "text/markdown",
   txt: "text/plain",
 };
+
+export const uploadFileMetadataSchema = z
+  .object({
+    name: z
+      .string({ message: "No file was provided." })
+      .trim()
+      .min(1, "No file was provided."),
+    size: z
+      .number({ message: "No file was provided." })
+      .int("No file was provided.")
+      .positive("No file was provided.")
+      .max(
+        MAX_UPLOAD_BYTES,
+        `File is too large. Maximum size is ${MAX_UPLOAD_LABEL}.`,
+      ),
+  })
+  .superRefine((file, ctx) => {
+    if (!detectFileType(file.name)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["name"],
+        message:
+          "Unsupported file type. Upload a PDF, DOCX, Markdown, or TXT file.",
+      });
+    }
+  });
 
 export const FILE_TYPE_TO_DB: Record<ParsedFileType, string> = {
   pdf: "pdf",
@@ -86,18 +114,16 @@ export function validateUpload(file: {
   name: string;
   size: number;
 }): UploadValidationResult {
-  if (!file.name || file.size <= 0) {
-    return { ok: false, error: "No file was provided." };
-  }
+  const parsed = uploadFileMetadataSchema.safeParse(file);
 
-  if (file.size > MAX_UPLOAD_BYTES) {
+  if (!parsed.success) {
     return {
       ok: false,
-      error: `File is too large. Maximum size is ${MAX_UPLOAD_LABEL}.`,
+      error: parsed.error.issues[0]?.message ?? "Invalid upload request.",
     };
   }
 
-  const fileType = detectFileType(file.name);
+  const fileType = detectFileType(parsed.data.name);
 
   if (!fileType) {
     return {
@@ -109,8 +135,8 @@ export function validateUpload(file: {
   return {
     ok: true,
     fileType,
-    title: deriveTitleFromFileName(file.name),
-    safeFileName: sanitizeStorageFileName(file.name),
+    title: deriveTitleFromFileName(parsed.data.name),
+    safeFileName: sanitizeStorageFileName(parsed.data.name),
     contentType: contentTypeFor(fileType),
   };
 }

@@ -329,7 +329,7 @@ Rules:
 - AI output must appear as preview or suggestions before applying
 - AI suggestions should visually connect to document text where practical
 - Suggestion cards and highlighted document text should focus each other
-- The editor may show AI suggestions, highlights, and review controls, but it must not directly apply AI-generated content
+- The editor may apply one concrete suggestion after an explicit Apply click, server ownership checks, safe replacement validation, and a version snapshot. Review Selected and Review All route to the preview workspace.
 
 Editor canvas:
 
@@ -352,13 +352,13 @@ Rules:
 
 - AI actions should be clear buttons or cards
 - AI actions should explain what they do
-- AI results should be preview-first
-- AI Result Preview is the only page where AI-generated changes can be finally applied
+- Full AI results should be preview-first
+- AI Result Preview is the only page where full AI output and batch suggestion reviews can be finally applied
 - AI Result Preview should compare current document content with the proposed result
 - The proposed result should be editable before applying
 - Synchronous scrolling should be available in side-by-side comparison view
 - Apply to Document must use the edited proposed result
-- Suggestions should be individually reviewable
+- Suggestions should be individually applyable/ignorable, with optional batch review
 - Applying AI output must feel intentional
 - Use AI tokens for AI-specific elements
 - Do not hide structure preservation settings when relevant
@@ -563,7 +563,7 @@ Rules:
 - Never add gradients to normal card backgrounds
 - Never use more than one font family
 - Never show raw error messages to users
-- Never make AI changes without preview
+- Never apply full AI action output or batch suggestion review output without preview
 - Never hide document fidelity warnings
 - Never imply formatting is preserved when it is not
 - Never reintroduce a top authenticated navbar unless the app shell direction changes

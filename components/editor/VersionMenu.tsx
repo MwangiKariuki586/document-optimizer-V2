@@ -3,13 +3,11 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, Clock } from "lucide-react";
 
-import {
-  EditorMenuBackdrop,
-  EditorMenuFooter,
-  EditorMenuPanel,
-  EditorMenuSectionHeader,
-} from "@/components/editor/EditorMenu";
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
+import { EditorMenuBackdrop } from "@/components/editor/EditorMenuBackdrop";
+import { EditorMenuFooter } from "@/components/editor/EditorMenuFooter";
+import { EditorMenuPanel } from "@/components/editor/EditorMenuPanel";
+import { EditorMenuSectionHeader } from "@/components/editor/EditorMenuSectionHeader";
+import { CometSpinner } from "@/components/loading-ui/CometSpinner";
 import type { VersionListItem, VersionSource } from "@/lib/versions/versions.service";
 
 type VersionMenuProps = {

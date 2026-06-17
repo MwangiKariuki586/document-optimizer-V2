@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { updateDocumentContent } from "@/lib/documents/document.service";
-import { updateDocumentSchema } from "@/lib/documents/document.validators";
+import {
+  documentIdParamSchema,
+  updateDocumentSchema,
+} from "@/lib/documents/document.validators";
 import type { Json } from "@/lib/supabase/types";
 
 type RouteContext = {
@@ -19,7 +22,20 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.data;
 
     let body: unknown;
     try {

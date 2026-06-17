@@ -12,12 +12,10 @@ import {
   Undo2,
 } from "lucide-react";
 
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
-import {
-  EditorMenuBackdrop,
-  EditorMenuItem,
-  EditorMenuPanel,
-} from "@/components/editor/EditorMenu";
+import { CometSpinner } from "@/components/loading-ui/CometSpinner";
+import { EditorMenuBackdrop } from "@/components/editor/EditorMenuBackdrop";
+import { EditorMenuItem } from "@/components/editor/EditorMenuItem";
+import { EditorMenuPanel } from "@/components/editor/EditorMenuPanel";
 import { VersionMenu } from "@/components/editor/VersionMenu";
 import type { SaveState } from "@/components/editor/EditorWorkspace";
 

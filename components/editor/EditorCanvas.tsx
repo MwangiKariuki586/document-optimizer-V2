@@ -13,6 +13,24 @@ type EditorCanvasProps = {
 const MIN_ZOOM = 50;
 const MAX_ZOOM = 200;
 const ZOOM_STEP = 10;
+const zoomScaleClasses: Record<number, string> = {
+  50: "scale-[0.5]",
+  60: "scale-[0.6]",
+  70: "scale-[0.7]",
+  80: "scale-[0.8]",
+  90: "scale-[0.9]",
+  100: "scale-100",
+  110: "scale-[1.1]",
+  120: "scale-[1.2]",
+  130: "scale-[1.3]",
+  140: "scale-[1.4]",
+  150: "scale-150",
+  160: "scale-[1.6]",
+  170: "scale-[1.7]",
+  180: "scale-[1.8]",
+  190: "scale-[1.9]",
+  200: "scale-200",
+};
 
 export function EditorCanvas({
   editor,
@@ -31,9 +49,7 @@ export function EditorCanvas({
     <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
       <div className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0">
         <div
-          className="document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 transition-transform md:min-h-[480px] md:px-7 md:py-6 xl:min-h-0"
-          // Zoom is a dynamic scale factor and cannot be a static token class.
-          style={{ transform: `scale(${zoom / 100})` }}
+          className={`document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 transition-transform md:min-h-[480px] md:px-7 md:py-6 xl:min-h-0 ${zoomScaleClasses[zoom]}`}
         >
           <EditorContent editor={editor} />
         </div>

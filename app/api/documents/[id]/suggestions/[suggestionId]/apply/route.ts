@@ -5,7 +5,10 @@ import {
   applySuggestion,
   SuggestionReplacementError,
 } from "@/lib/suggestions/suggestions.service";
-import { applyEditedResultSchema } from "@/lib/suggestions/suggestions.validators";
+import {
+  applyEditedResultSchema,
+  suggestionRouteParamsSchema,
+} from "@/lib/suggestions/suggestions.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -23,7 +26,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id, suggestionId } = await params;
+    const parsedParams = suggestionRouteParamsSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid suggestion.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id, suggestionId } = parsedParams.data;
     let body: unknown = {};
 
     try {

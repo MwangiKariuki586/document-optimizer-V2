@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { documentIdParamSchema } from "@/lib/documents/document.validators";
 import { createSuggestionSelectionSchema } from "@/lib/suggestions/suggestions.validators";
 import { createSuggestionPreviewSelection } from "@/lib/suggestions/suggestions.service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,7 +21,29 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const body = await req.json();
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Invalid request body." },
+        { status: 400 },
+      );
+    }
+
     const parsed = createSuggestionSelectionSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -30,7 +53,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id } = await params;
+    const { id } = parsedParams.data;
     const supabase = createSupabaseServerClient();
     const result = await createSuggestionPreviewSelection(supabase, {
       userId,

@@ -33,6 +33,22 @@ export type AIActionResult = {
   warnings: string[];
 };
 
+export type AIRequestPreview = {
+  id: string;
+  documentId: string;
+  documentTitle: string;
+  action: AIActionKey;
+  status: string;
+  originalMarkdown: string;
+  output: AIActionOutput;
+  provider: string | null;
+  model: string | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  estimatedCost: number | null;
+  completedAt: string | null;
+};
+
 export type AIProvider = {
   name: AIProviderName;
   defaultModel: string;

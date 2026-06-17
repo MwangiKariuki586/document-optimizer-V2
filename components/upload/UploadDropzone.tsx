@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, X } from "lucide-react";
-import { CometSpinner } from "@/components/loading-ui/comet-spinner";
+import { CometSpinner } from "@/components/loading-ui/CometSpinner";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import {
   ACCEPTED_EXTENSIONS,
@@ -126,12 +126,12 @@ export function UploadDropzone() {
             ? "border-accent bg-accent-lighter"
             : isDragging
               ? "border-accent bg-accent-lighter"
-              : "border-accent-light/50 bg-[#F8F9FF] hover:border-accent hover:bg-accent-lighter",
+              : "border-accent-light/50 bg-accent-muted hover:border-accent hover:bg-accent-lighter",
         ].join(" ")}
       >
         {isUploading ? (
           <>
-            <span className="flex size-16 items-center justify-center rounded-full bg-white text-accent shadow-sm">
+            <span className="flex size-16 items-center justify-center rounded-full bg-surface text-accent shadow-sm">
               <CometSpinner className="size-8" />
             </span>
             <p className="mt-2 text-lg font-bold text-text-primary">
@@ -151,8 +151,8 @@ export function UploadDropzone() {
               className={[
                 "flex size-16 items-center justify-center rounded-full transition-colors",
                 isDragging
-                  ? "bg-accent text-white"
-                  : "bg-white text-accent shadow-sm",
+                  ? "bg-accent text-accent-foreground"
+                  : "bg-surface text-accent shadow-sm",
               ].join(" ")}
               aria-hidden="true"
             >
@@ -168,7 +168,7 @@ export function UploadDropzone() {
               id="upload-choose-file-btn"
               type="button"
               onClick={handleChooseFile}
-              className="rounded-lg bg-accent px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-dark"
+              className="rounded-lg bg-accent px-6 py-2.5 text-sm font-semibold text-accent-foreground shadow-sm transition hover:bg-accent-dark"
             >
               Choose File
             </button>

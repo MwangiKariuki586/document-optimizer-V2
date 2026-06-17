@@ -6,6 +6,7 @@ import type {
   AIActionInput,
   AIActionKey,
   AIActionOptions,
+  AIRequestPreview,
   AIActionResult,
   AIProviderName,
 } from "@/lib/ai/ai.types";
@@ -37,22 +38,6 @@ export type RunDocumentAIActionResult =
       id: string;
       error: string;
     };
-
-export type AIRequestPreview = {
-  id: string;
-  documentId: string;
-  documentTitle: string;
-  action: AIActionKey;
-  status: string;
-  originalMarkdown: string;
-  output: AIActionOutput;
-  provider: string | null;
-  model: string | null;
-  inputTokens: number | null;
-  outputTokens: number | null;
-  estimatedCost: number | null;
-  completedAt: string | null;
-};
 
 export type ApplyAIRequestResult = {
   documentId: string;
@@ -136,6 +121,7 @@ async function createAIRequest(
 
 async function markAIRequestCompleted(
   supabase: SupabaseClient<Database>,
+  userId: string,
   requestId: string,
   result: AIActionResult,
 ): Promise<void> {
@@ -154,7 +140,8 @@ async function markAIRequestCompleted(
   const { error } = await supabase
     .from("ai_requests")
     .update(payload)
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .eq("user_id", userId);
 
   if (error) {
     console.error("[ai/request/complete]", error.message);
@@ -164,6 +151,7 @@ async function markAIRequestCompleted(
 
 async function markAIRequestFailed(
   supabase: SupabaseClient<Database>,
+  userId: string,
   requestId: string,
   errorMessage: string,
 ): Promise<void> {
@@ -176,7 +164,8 @@ async function markAIRequestFailed(
   const { error } = await supabase
     .from("ai_requests")
     .update(payload)
-    .eq("id", requestId);
+    .eq("id", requestId)
+    .eq("user_id", userId);
 
   if (error) {
     console.error("[ai/request/fail]", error.message);
@@ -226,7 +215,7 @@ export async function runDocumentAIAction(
       model: result.model,
     });
 
-    await markAIRequestCompleted(supabase, requestId, result);
+    await markAIRequestCompleted(supabase, input.userId, requestId, result);
     const savedSuggestionCount = await saveSuggestionsFromAIResult(supabase, {
       userId: input.userId,
       documentId: input.documentId,
@@ -261,7 +250,7 @@ export async function runDocumentAIAction(
   } catch (error) {
     console.error("[ai/run-document-action]", error);
     const safeError = "Could not run AI action. Please try again.";
-    await markAIRequestFailed(supabase, requestId, safeError);
+    await markAIRequestFailed(supabase, input.userId, requestId, safeError);
 
     return { status: "failed", id: requestId, error: safeError };
   }

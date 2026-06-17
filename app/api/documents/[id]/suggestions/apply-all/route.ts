@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { documentIdParamSchema } from "@/lib/documents/document.validators";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -17,7 +18,18 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    await params;
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
 
     return NextResponse.json(
       {

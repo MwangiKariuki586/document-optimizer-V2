@@ -27,3 +27,8 @@ export const createExportSchema = z.object({
 export type ExportFormat = z.infer<typeof exportFormatSchema>;
 export type CreateExportOptions = z.infer<typeof exportOptionsSchema>;
 export type CreateExportRequest = z.infer<typeof createExportSchema>;
+
+export const exportDownloadParamsSchema = z.object({
+  id: z.string().uuid("Invalid document id."),
+  exportId: z.string().uuid("Invalid export id."),
+});

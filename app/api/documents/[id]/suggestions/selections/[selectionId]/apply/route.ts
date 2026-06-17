@@ -7,7 +7,7 @@ import {
 } from "@/lib/suggestions/suggestions.service";
 import {
   applyEditedResultSchema,
-  selectionIdParamSchema,
+  selectionRouteParamsSchema,
 } from "@/lib/suggestions/suggestions.validators";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -26,14 +26,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { id, selectionId } = await params;
-    const parsed = selectionIdParamSchema.safeParse({ selectionId });
+    const parsed = selectionRouteParamsSchema.safeParse(await params);
 
     if (!parsed.success) {
       return NextResponse.json(
         {
           success: false,
-          error: parsed.error.issues[0]?.message ?? "Invalid selection id.",
+          error: parsed.error.issues[0]?.message ?? "Invalid selection.",
         },
         { status: 400 },
       );
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const supabase = createSupabaseServerClient();
     const result = await applySelectedSuggestions(supabase, {
       userId,
-      documentId: id,
+      documentId: parsed.data.id,
       selectionId: parsed.data.selectionId,
       editedMarkdown: parsedBody.data.editedMarkdown,
     });

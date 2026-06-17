@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { DOCUMENT_CONTENT_MAX } from "@/lib/documents/document.validators";
+import {
+  DOCUMENT_CONTENT_MAX,
+  documentIdParamSchema,
+} from "@/lib/documents/document.validators";
 
 export const suggestionTypeSchema = z.enum([
   "clarity",
@@ -17,6 +20,10 @@ export const suggestionStatusSchema = z.enum([
 ]);
 
 export const suggestionIdParamSchema = z.object({
+  suggestionId: z.string().uuid("Invalid suggestion id"),
+});
+
+export const suggestionRouteParamsSchema = documentIdParamSchema.extend({
   suggestionId: z.string().uuid("Invalid suggestion id"),
 });
 
@@ -43,6 +50,10 @@ export const createSuggestionSelectionSchema = z
   .strict();
 
 export const selectionIdParamSchema = z.object({
+  selectionId: z.string().uuid("Invalid selection id"),
+});
+
+export const selectionRouteParamsSchema = documentIdParamSchema.extend({
   selectionId: z.string().uuid("Invalid selection id"),
 });
 

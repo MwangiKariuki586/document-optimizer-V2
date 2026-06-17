@@ -14,7 +14,7 @@ import {
   type PreviewMode,
 } from "@/components/ai/PreviewModeToggle";
 import { SyncScrollToggle } from "@/components/ai/SyncScrollToggle";
-import type { AIRequestPreview } from "@/lib/ai/ai.service";
+import type { AIRequestPreview } from "@/lib/ai/ai.types";
 import { appToast } from "@/lib/feedback/toast";
 import type { SuggestionPreview } from "@/lib/suggestions/suggestions.types";
 

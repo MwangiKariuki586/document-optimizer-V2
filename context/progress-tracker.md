@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** AI Activity Meta and LoadingButton Test Fix
-**Next:** MVP complete - resolve release follow-ups before shipping
+**Last completed:** Commit Message Suggestion Rule
+**Next:** MVP complete - browser visual review before shipping
 
 ---
 
@@ -108,6 +108,26 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-17
+Feature: Commit Message Suggestion Rule
+Status: Completed
+Files changed: .cursor/rules/commit-message-suggestion.mdc, context/progress-tracker.md
+What was completed: Added an always-applied Cursor rule requiring agents to provide a suggested commit message after every substantial change. The suggested message must be 20 words or fewer, cover the major changes, use imperative wording, and must not imply a commit should be created without explicit user request.
+Verification: Rule file added with valid .mdc frontmatter.
+Follow-up: None.
+```
+
+```txt
+Date: 2026-06-17
+Feature: Rule Violation Hardening Pass
+Status: Completed
+Files changed: context/project-overview.md, context/architecture.md, context/build-plan.md, context/code-standards.md, context/library-docs.md, context/ui-rules.md, context/ui-registry.md, app/(app)/documents/page.tsx, proxy.ts, vitest.config.ts, test/server-only.ts, lib/supabase/server.ts, lib/ai/ai.service.ts, lib/ai/ai.types.ts, lib/ai/ai.validators.ts, lib/documents/document.validators.ts, lib/documents/upload.validators.ts, lib/suggestions/suggestions.validators.ts, lib/export/export.validators.ts, app/api/documents/[id]/route.ts, app/api/documents/[id]/ai/route.ts, app/api/documents/[id]/ai/[requestId]/apply/route.ts, app/api/documents/[id]/export/route.ts, app/api/documents/[id]/export/[exportId]/download/route.ts, app/api/documents/[id]/suggestions/route.ts, app/api/documents/[id]/suggestions/[suggestionId]/apply/route.ts, app/api/documents/[id]/suggestions/[suggestionId]/ignore/route.ts, app/api/documents/[id]/suggestions/apply-all/route.ts, app/api/documents/[id]/suggestions/selections/route.ts, app/api/documents/[id]/suggestions/selections/[selectionId]/apply/route.ts, app/api/documents/[id]/versions/route.ts, components/ai/AIResultPreview.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorTopBar.tsx, components/editor/VersionMenu.tsx, components/editor/EditorMenuBackdrop.tsx, components/editor/EditorMenuPanel.tsx, components/editor/EditorMenuSectionHeader.tsx, components/editor/EditorMenuItem.tsx, components/editor/EditorMenuFooter.tsx, components/feedback/LoadingButton.tsx, components/loading-ui/CometSpinner.tsx, components/marketing/OptimizationPreview.tsx, components/upload/UploadDropzone.tsx, components/upload/UploadTips.tsx, components/upload/PasteTextForm.tsx
+What was completed: Reconciled context docs with the corrected suggestion workflow: single-card Apply is immediate and version-safe, while Review Selected and Review All route to preview/results. Redirected the standalone /documents route to /dashboard. Hardened server-only Supabase usage, production auth misconfiguration behavior, AI request update scoping, malformed JSON handling, and UUID route params. Converted upload validation to a Zod-backed schema. Removed default suggestion selection checkboxes behind an explicit selection mode, replaced hardcoded/inline UI styles with token classes, renamed CometSpinner to PascalCase, split editor menu primitives into one component per file, and moved AI preview DTO typing out of the server service module. Added a Vitest-only server-only stub so tests can import server modules while production keeps the real guard.
+Verification: focused tests passed (lib/documents/upload.validators.test.ts, lib/suggestions/suggestions.service.test.ts, lib/suggestions/suggestion-replace.test.ts). npm test passed (16 files, 78 tests). npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed.
+Follow-up: Browser visual review remains user-owned by project rule for /documents/[id] suggestion apply/review mode, /documents/[id]/preview, /documents/new upload visuals, and /documents redirect behavior.
+```
+
+```txt
+Date: 2026-06-17
 Feature: AI Activity Meta and LoadingButton Test Fix
 Status: Completed
 Files changed: lib/usage/account-usage.service.ts, lib/usage/account-usage.service.test.ts, components/feedback/LoadingButton.test.tsx, context/progress-tracker.md
@@ -123,7 +143,7 @@ Status: Completed
 Files changed: components/feedback/LoadingButton.test.tsx, lib/documents/document.validators.test.ts, lib/documents/upload.validators.test.ts, lib/documents/document.service.test.ts, lib/export/export.validators.test.ts, lib/export/export.service.test.ts, lib/usage/usage.service.test.ts, context/progress-tracker.md
 What was completed: Added focused Vitest coverage for the MVP acceptance surface: document creation/update validation, supported upload validation and filename/title safety, paste document creation with initial version and usage recording, owner-scoped manual save and document load behavior, export request validation, private export generation/download scoping, export rollback on record failure, non-blocking usage ledger writes, and LoadingButton accessible loading/render states. Existing AI validator/router, suggestion replacement, version restore, export renderer, and editor extension tests remain part of the full suite.
 Verification: npx vitest run focused MVP test files passed (7 files, 32 tests). npm test passed (15 files, 76 tests). npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed.
-Follow-up: Build output currently registers /documents because app/(app)/documents/page.tsx exists in the working tree; reconcile that with the recorded MVP decision that /documents is not a standalone route before release.
+Follow-up: Resolved in the Rule Violation Hardening Pass by redirecting /documents to /dashboard.
 ```
 
 ```txt
@@ -131,8 +151,8 @@ Date: 2026-06-17
 Feature: 29 UI State Review
 Status: Completed
 Files changed: app/(app)/account/page.tsx, app/(app)/documents/new/page.tsx, components/dashboard/RecentDocuments.tsx, components/editor/EditorSidebar.tsx, components/export/ExportSummaryPanel.tsx, components/export/ExportWorkspace.tsx, components/feedback/LoadingButton.tsx, components/layout/AppSidebar.tsx, components/layout/PageHeader.tsx, components/upload/RecentUploads.tsx, components/versions/VersionComparisonWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, components/versions/VersionSelector.tsx, context/project-overview.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
-What was completed: Reviewed core loading, empty, error, toast, warning, and async action states. Kept the intentionally removed /documents page out of scope, retargeted remaining literal /documents UI links to /dashboard, documented that /documents is not a standalone MVP route, rendered PageHeader eyebrows consistently, added aria-busy to LoadingButton, exposed version comparison/details actions through compact header controls, and removed stale unused UI imports/props from account, upload, export, sidebar, and version components.
-Verification: rg confirmed no remaining literal href="/documents" links in app/components. npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed and registered the intended routes without a standalone /documents page.
+What was completed: Reviewed core loading, empty, error, toast, warning, and async action states. Retargeted remaining literal /documents UI links to /dashboard, documented that /documents is not a standalone MVP route, rendered PageHeader eyebrows consistently, added aria-busy to LoadingButton, exposed version comparison/details actions through compact header controls, and removed stale unused UI imports/props from account, upload, export, sidebar, and version components.
+Verification: rg confirmed no remaining literal href="/documents" links in app/components. npx tsc --noEmit passed. npm run lint passed cleanly. npm run build passed for that pass; standalone /documents route reconciliation remained a release follow-up until the route was redirected to /dashboard.
 Follow-up: Continue Phase 10 / 30 MVP Testing Pass.
 ```
 
@@ -153,7 +173,7 @@ Status: Completed
 Files changed: components/layout/PageHeader.tsx, app/(app)/dashboard/page.tsx, app/(app)/account/page.tsx, components/usage/AccountUsageWorkspace.tsx, components/export/ExportWorkspace.tsx, components/versions/VersionHistoryWorkspace.tsx, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
 What was completed: Standardized authenticated page titles/actions on the shared PageHeader component for dashboard, documents, new document, account, export, and version history. The editor and AI result preview workspaces remain exempt. PageHeader now renders the optional eyebrow prop, and the account workspace no longer owns a duplicate page title block.
 Verification: npx tsc --noEmit passed; npm run lint passed with 3 pre-existing warnings in components/versions/VersionComparisonWorkspace.tsx; npm run build passed and registered all protected app routes.
-Follow-up: User should visually review /dashboard, /documents, /documents/new, /account, /documents/[id]/export, and /documents/[id]/versions because browser-based verification is user-owned by project rule.
+Follow-up: User should visually review /dashboard, /documents/new, /account, /documents/[id]/export, and /documents/[id]/versions because browser-based verification is user-owned by project rule.
 ```
 
 ```txt

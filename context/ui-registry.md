@@ -286,9 +286,7 @@ Shared authenticated page header with optional eyebrow and actions.
 **Used on:**
 
 - Dashboard shell
-- Documents shell
 - New document shell
-- Document placeholder shell
 - Account shell
 - Version history workspace
 - Export workspace
@@ -855,7 +853,7 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 - The editor does not render its own persistent navigation rail; document navigation comes from `AppSidebar`.
 - On mobile the canvas column comes first, then suggestions.
 - Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. Documents that load with no server-side suggestions default to `AIActionsPanel` so users immediately see available AI actions after upload/create; documents with existing suggestions default to the suggestions rail. The suggestions rail does not include Export or a prominent AI Assistant CTA; AI actions are the primary panel when there are no suggestions and cannot collapse back into the empty suggestions placeholder. Back/close controls appear on AI actions only when there are existing suggestions to return to.
-- Suggestion Review / Review Selected / Review All route users to `/documents/[id]/preview`; final document mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs and suggestion ignore actions.
+- Single-card Apply mutates one owned suggestion immediately after the server snapshots first. Review Selected / Review All route users to `/documents/[id]/preview` through server-backed selections; batch mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs, suggestion apply, and suggestion ignore actions.
 - Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
 
 ### EditorSidebar
@@ -900,13 +898,13 @@ Editor header row with an editable document title, a Save split button (primary 
 - The version pill is delegated to `VersionMenu` (`currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`, `onRestoreVersion`). Version switches use the owned version restore endpoint and update the editor state in place without creating a new version row.
 - Undo/redo are wired to the TipTap `editor` (disabled via `editor.can()`).
 
-### EditorMenu
+### EditorMenu Primitives
 
-**Path:** `components/editor/EditorMenu.tsx`
+**Path:** `components/editor/EditorMenuBackdrop.tsx`, `components/editor/EditorMenuPanel.tsx`, `components/editor/EditorMenuSectionHeader.tsx`, `components/editor/EditorMenuItem.tsx`, `components/editor/EditorMenuFooter.tsx`
 
 **Purpose:**
 
-Shared dropdown primitives for editor top-bar menus (Save and Version history).
+Shared dropdown primitives for editor top-bar menus (Save and Version history), split one component per file.
 
 **Used on:**
 
@@ -914,7 +912,7 @@ Shared dropdown primitives for editor top-bar menus (Save and Version history).
 
 **Rules:**
 
-- `"use client"`. Exports `EditorMenuBackdrop`, `EditorMenuPanel` (right-aligned, `shadow-popover`, `p-1.5`), `EditorMenuSectionHeader`, `EditorMenuItem` (icon + label + optional description), `EditorMenuFooter`.
+- `"use client"`. Import each primitive from its own file. `EditorMenuPanel` is right-aligned with `shadow-popover` and `p-1.5`; `EditorMenuItem` renders icon + label + optional description.
 
 ### VersionMenu
 
@@ -1007,7 +1005,7 @@ Right-rail AI Suggestions panel: panel header with total and pending counts, fil
 
 - Exports `EditorSuggestion`, `SuggestionType`, `SuggestionStatus`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
-- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply` and updates the editor content, counts, version number, save state, selected IDs, and suggestion list in place after the server creates a version snapshot. Review Selected and Review All still open `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned route because it only changes suggestion status.
+- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply` and updates the editor content, counts, version number, save state, selected IDs, and suggestion list in place after the server creates a version snapshot. Selection checkboxes are hidden by default and only appear after the user chooses Select Changes to Review. Review Selected and Review All open `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned route because it only changes suggestion status.
 - Export is not rendered in this rail; export belongs to the later preview/export flow.
 - The selected/all review footer is hidden when there are no pending suggestions so disabled review controls do not consume panel space.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
@@ -1531,9 +1529,7 @@ Reusable calm empty state with icon, title, description, and optional action.
 
 **Used on:**
 
-- `/documents`
-- `/documents/[id]` placeholder
-- Future dashboard, suggestions, version, and usage empty states
+- Dashboard, suggestions, version, upload, preview, and usage empty states
 
 **Core classes:**
 
@@ -1612,7 +1608,7 @@ className="h-3 rounded-full bg-surface-tertiary"
 
 ### CometSpinner
 
-**Path:** `components/loading-ui/comet-spinner.tsx`
+**Path:** `components/loading-ui/CometSpinner.tsx`
 
 **Purpose:**
 
