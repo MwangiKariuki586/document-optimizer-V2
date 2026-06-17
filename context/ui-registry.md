@@ -853,7 +853,7 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 - The editor does not render its own persistent navigation rail; document navigation comes from `AppSidebar`.
 - On mobile the canvas column comes first, then suggestions.
 - Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. Documents that load with no server-side suggestions default to `AIActionsPanel` so users immediately see available AI actions after upload/create; documents with existing suggestions default to the suggestions rail. The suggestions rail does not include Export or a prominent AI Assistant CTA; AI actions are the primary panel when there are no suggestions and cannot collapse back into the empty suggestions placeholder. Back/close controls appear on AI actions only when there are existing suggestions to return to.
-- Single-card Apply mutates one owned suggestion immediately after the server snapshots first. Review Selected / Review All route users to `/documents/[id]/preview` through server-backed selections; batch mutation happens only from the preview page. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs, suggestion apply, and suggestion ignore actions.
+- Single-card Apply mutates one owned suggestion immediately after the server snapshots first. Review Applied Suggestions routes to `/documents/[id]/preview?applied=1` for a read-only before/current comparison. Review All routes pending suggestions to `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned API route because it does not change document content. Initial suggestions are loaded on the server page; client refetch happens after AI runs, suggestion apply, and suggestion ignore actions.
 - Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
 
 ### EditorSidebar
@@ -930,7 +930,7 @@ Version-history dropdown for the editor top bar. Shows the current version label
 
 - `"use client"`. Props: `currentVersionNumber`, `documentId`, `refreshKey`, controlled `open` / `onOpenChange`, `onRestoreVersion`.
 - Pill shows `Version N` + inline **Current** chip; chevron rotates when open. Lazy-fetches `GET /api/documents/[id]/versions` when opened. Current row uses subtle left accent border + light tint (not full block fill); source shown as a small pill badge; relative timestamp on the right. Non-current rows are restore buttons with a compact restore affordance and row-level `CometSpinner` while the restore runs. `EditorMenuSectionHeader` / `EditorMenuFooter` for consistent chrome. Escape and backdrop close.
-- Switching delegates to `EditorWorkspace`, which posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, updates TipTap content/counts/current version number from the response, clears selected suggestion UI state, refreshes the route, and keeps the selected/current version label aligned with the version history page.
+- Switching delegates to `EditorWorkspace`, which posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, updates TipTap content/counts/current version number from the response, clears active suggestion UI state, refreshes the route, and keeps the selected/current version label aligned with the version history page.
 
 ### EditorToolbar
 
@@ -989,7 +989,7 @@ className="document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 
 
 **Purpose:**
 
-Right-rail AI Suggestions panel: panel header with total and pending counts, filter tabs (All/Clarity/Grammar/Tone/Structure/SEO), suggestion cards with original text, suggested text, explanation, type badge, pending/applied/ignored status, direct Apply/Ignore actions, selected/all review actions only when pending suggestions exist, and a compact empty state. Collapses to a "Show AI Suggestions" button when closed.
+Right-rail AI Suggestions panel: panel header with total and pending counts, filter tabs (All/Clarity/Grammar/Tone/Structure/SEO), suggestion cards with original text, suggested text, explanation, type badge, pending/applied/ignored status, direct Apply/Ignore actions, Review Applied Suggestions / Review All footer actions, and a compact empty state. Collapses to a "Show AI Suggestions" button when closed.
 
 **Used on:**
 
@@ -1005,9 +1005,9 @@ Right-rail AI Suggestions panel: panel header with total and pending counts, fil
 
 - Exports `EditorSuggestion`, `SuggestionType`, `SuggestionStatus`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
-- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply` and updates the editor content, counts, version number, save state, selected IDs, and suggestion list in place after the server creates a version snapshot. Selection checkboxes are hidden by default and only appear after the user chooses Select Changes to Review. Review Selected and Review All open `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned route because it only changes suggestion status.
+- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply` and updates the editor content, counts, version number, save state, active highlight, and suggestion list in place after the server creates a version snapshot. The rail must not show checkboxes or selection mode. Review Applied Suggestions opens `/documents/[id]/preview?applied=1` as a read-only before/current comparison. Review All opens `/documents/[id]/preview` through a server-backed selection before batch mutation. Ignore still calls the owned route because it only changes suggestion status.
 - Export is not rendered in this rail; export belongs to the later preview/export flow.
-- The selected/all review footer is hidden when there are no pending suggestions so disabled review controls do not consume panel space.
+- The review footer is shown when there are pending or applied suggestions. Review Applied is disabled until at least one suggestion is applied; Review All is disabled when no pending suggestions remain.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
 
 ### EditorStatusBar
@@ -1107,7 +1107,7 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 - Summary metric strip for total proposed changes, category counts, and preview-only safety copy.
 - Right insight rail with AI Summary, Change Navigator, and Document Safety cards.
 - Empty revised result branch for analysis-only outputs.
-- Formatting/fidelity warning branch when selected suggestions no longer match safely.
+- Formatting/fidelity warning branch when pending batch suggestions no longer match safely.
 
 **Rules:**
 
@@ -1248,7 +1248,8 @@ The editor suggestions rail is implemented by `EditorSuggestionsPanel` inside `E
 
 - Single-card Apply mutates the document through the owned server apply route, then refreshes editor content and suggestion state in place.
 - Single suggestion preview remains supported by `/documents/[id]/preview?suggestionId=...`, but the editor rail no longer uses it for the default card action.
-- Review Selected and Review All create a short-lived server-backed selection, then navigate to `/documents/[id]/preview?selectionId=...`.
+- Review Applied Suggestions navigates to `/documents/[id]/preview?applied=1` for read-only comparison.
+- Review All creates a short-lived server-backed selection, then navigates to `/documents/[id]/preview?selectionId=...`.
 - Ignore remains available in the rail because it only marks suggestion status and does not change document content.
 - Empty suggestions state must not strand users: show a compact `Choose AI Action` control that switches the right rail back to `AIActionsPanel`.
 - After an AI action, `EditorWorkspace` reloads suggestions and only switches to the suggestions rail when fresh pending suggestions exist; otherwise it keeps the AI Actions panel visible with the preview-ready result.

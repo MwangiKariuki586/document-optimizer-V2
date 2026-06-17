@@ -32,11 +32,16 @@ export const suggestionPreviewSearchParamsSchema = z
     requestId: z.string().uuid("Invalid AI request id").optional(),
     suggestionId: z.string().uuid("Invalid suggestion id").optional(),
     selectionId: z.string().uuid("Invalid selection id").optional(),
+    applied: z.literal("1").optional(),
   })
   .refine(
     (value) =>
-      [value.requestId, value.suggestionId, value.selectionId].filter(Boolean)
-        .length === 1,
+      [
+        value.requestId,
+        value.suggestionId,
+        value.selectionId,
+        value.applied,
+      ].filter(Boolean).length === 1,
     "Choose exactly one preview source",
   );
 

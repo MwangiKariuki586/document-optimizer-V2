@@ -129,24 +129,37 @@ function normalizePreview(preview: PreviewPayload) {
         (data.inputTokens ?? 0) + (data.outputTokens ?? 0)
       } tokens`,
       showRegenerate: true,
+      showApply: true,
     };
   }
 
   const data = preview.data;
   const isSingle = data.kind === "single_suggestion";
+  const isAppliedReview = data.kind === "applied_suggestions";
 
   return {
     kind: preview.kind,
     id: data.id,
     documentId: data.documentId,
     documentTitle: data.documentTitle,
-    sourceLabel: isSingle
-      ? `Suggestion ${data.id.slice(0, 8)}`
-      : `Selection ${data.id.slice(0, 8)}`,
-    statusLabel: isSingle ? "Suggestion ready" : "Selection ready",
-    title: isSingle ? "Suggestion Preview" : "Multi-Suggestion Preview",
-    description:
-      "Compare your current document with the proposed AI revision. Edit the proposed version before applying.",
+    sourceLabel: isAppliedReview
+      ? "Applied suggestions"
+      : isSingle
+        ? `Suggestion ${data.id.slice(0, 8)}`
+        : `Selection ${data.id.slice(0, 8)}`,
+    statusLabel: isAppliedReview
+      ? "Applied review"
+      : isSingle
+        ? "Suggestion ready"
+        : "Selection ready",
+    title: isAppliedReview
+      ? "Applied Suggestions Review"
+      : isSingle
+        ? "Suggestion Preview"
+        : "Multi-Suggestion Preview",
+    description: isAppliedReview
+      ? "Compare the before state with the current document after applied AI suggestions."
+      : "Compare your current document with the proposed AI revision. Edit the proposed version before applying.",
     originalMarkdown: data.originalMarkdown,
     proposedMarkdown: data.proposedMarkdown,
     emptyProposedText:
@@ -167,6 +180,7 @@ function normalizePreview(preview: PreviewPayload) {
       data.suggestions.length === 1 ? "" : "s"
     } ready for review`,
     showRegenerate: false,
+    showApply: !data.readOnly,
   };
 }
 
@@ -204,7 +218,9 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
   const changedCategoryCount =
     Object.values(suggestionCounts).filter(Boolean).length || 1;
   const canApply =
-    proposedMarkdown.trim().length > 0 && (display.canApply || proposedEdited);
+    display.showApply &&
+    proposedMarkdown.trim().length > 0 &&
+    (display.canApply || proposedEdited);
 
   const handleApply = async () => {
     if (!canApply || isApplying) {
@@ -281,6 +297,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                   canApply={canApply}
                   isApplying={isApplying}
                   showRegenerate={display.showRegenerate}
+                  showApply={display.showApply}
                   onApply={handleApply}
                 />
               </div>

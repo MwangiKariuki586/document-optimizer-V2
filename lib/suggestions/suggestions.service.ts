@@ -481,6 +481,33 @@ async function getOwnedPendingSuggestionsByIds(
   return suggestions;
 }
 
+async function getOwnedAppliedSuggestions(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+  },
+): Promise<DocumentSuggestion[] | null> {
+  const { data, error } = await supabase
+    .from("suggestions")
+    .select(
+      "id,document_id,ai_request_id,type,original_text,suggested_text,explanation,status,created_at,updated_at",
+    )
+    .eq("document_id", input.documentId)
+    .eq("user_id", input.userId)
+    .eq("status", "applied")
+    .order("updated_at", { ascending: true });
+
+  if (error) {
+    console.error("[suggestions/get-applied]", error.message);
+    throw new Error("Failed to load applied suggestions");
+  }
+
+  return (data ?? [])
+    .map((row) => mapSuggestionRow(row as SuggestionRow))
+    .filter((row): row is DocumentSuggestion => row !== null);
+}
+
 export async function getSuggestionPreview(
   supabase: SupabaseClient<Database>,
   input: {
@@ -630,6 +657,62 @@ export async function getSuggestionSelectionPreview(
     selectionId: selection.id,
     expiresAt: selection.expires_at,
   });
+}
+
+export async function getAppliedSuggestionsPreview(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+  },
+): Promise<SuggestionPreview | null> {
+  const [document, suggestions] = await Promise.all([
+    getOwnedDocumentPreview(supabase, input.userId, input.documentId),
+    getOwnedAppliedSuggestions(supabase, input),
+  ]);
+
+  if (!document || !suggestions || suggestions.length === 0) {
+    return null;
+  }
+
+  const currentMarkdown = document.current_markdown ?? "";
+  const previewItems = suggestions.map((suggestion) => ({
+    ...suggestion,
+    safety: getReplacementSafety(currentMarkdown, suggestion.suggestedText),
+  }));
+  const unsafeItems = previewItems.filter((item) => item.safety !== "safe");
+  const originalMarkdown =
+    unsafeItems.length === 0
+      ? applyReplacementsSafely(
+          currentMarkdown,
+          suggestions.map((suggestion) => ({
+            originalText: suggestion.suggestedText,
+            suggestedText: suggestion.originalText,
+          })),
+        )
+      : currentMarkdown;
+  const warnings =
+    unsafeItems.length > 0
+      ? [
+          "Some applied suggestions no longer match the current document exactly, so the before view may match the current document.",
+        ]
+      : [];
+
+  return {
+    kind: "applied_suggestions",
+    id: `${document.id}-applied`,
+    documentId: document.id,
+    documentTitle: document.title,
+    originalMarkdown,
+    proposedMarkdown: currentMarkdown,
+    canApply: false,
+    summary: `Review ${suggestions.length} applied AI suggestion${
+      suggestions.length === 1 ? "" : "s"
+    } against the current document.`,
+    warnings,
+    suggestions: previewItems,
+    readOnly: true,
+  };
 }
 
 export async function applySuggestion(

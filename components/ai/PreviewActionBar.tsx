@@ -16,6 +16,7 @@ type PreviewActionBarProps = {
   canApply: boolean;
   isApplying: boolean;
   showRegenerate: boolean;
+  showApply?: boolean;
   onApply: () => void;
 };
 
@@ -24,6 +25,7 @@ export function PreviewActionBar({
   canApply,
   isApplying,
   showRegenerate,
+  showApply = true,
   onApply,
 }: PreviewActionBarProps) {
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -49,16 +51,18 @@ export function PreviewActionBar({
           Return to Editor
         </Link>
 
-        <LoadingButton
-          className="min-h-9 px-7"
-          isLoading={isApplying}
-          loadingText="Applying..."
-          disabled={!canApply}
-          onClick={onApply}
-        >
-          <Sparkles className="size-4" />
-          Apply to Document
-        </LoadingButton>
+        {showApply ? (
+          <LoadingButton
+            className="min-h-9 px-7"
+            isLoading={isApplying}
+            loadingText="Applying..."
+            disabled={!canApply}
+            onClick={onApply}
+          >
+            <Sparkles className="size-4" />
+            Apply to Document
+          </LoadingButton>
+        ) : null}
       </div>
 
       <div className="relative">

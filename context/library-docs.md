@@ -578,9 +578,9 @@ POST /api/documents/[id]/suggestions/[suggestionId]/apply
 
 POST /api/documents/[id]/suggestions/selections
   → authenticate with Clerk
-  → validate suggestionIds with createSuggestionSelectionSchema
+  → validate pending suggestionIds with createSuggestionSelectionSchema
   → createSuggestionPreviewSelection()
-  → verify selected suggestions are owned, pending, and belong to document
+  → verify Review All suggestions are owned, pending, and belong to document
   → store short-lived suggestion_preview_selections row
   → return selectionId for /documents/[id]/preview?selectionId=...
 
@@ -588,9 +588,9 @@ POST /api/documents/[id]/suggestions/selections/[selectionId]/apply
   → authenticate with Clerk
   → applySelectedSuggestions()
   → resolve owned, unexpired selection
-  → revalidate selected suggestions against current document
+  → revalidate pending batch suggestions against current document
   → create one pre-batch snapshot
-  → apply all safe replacements and mark selected suggestions applied
+  → apply all safe replacements and mark batch suggestions applied
   → mark selection consumed
   → record suggestion_apply usage with appliedCount metadata
 

@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/feedback/ErrorState";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { getAIRequestPreview } from "@/lib/ai/ai.service";
 import {
+  getAppliedSuggestionsPreview,
   getSuggestionPreview,
   getSuggestionSelectionPreview,
 } from "@/lib/suggestions/suggestions.service";
@@ -19,6 +20,7 @@ type AIResultPreviewPageProps = {
     requestId?: string;
     suggestionId?: string;
     selectionId?: string;
+    applied?: string;
   }>;
 };
 
@@ -77,14 +79,22 @@ export default async function AIResultPreviewPage({
             suggestionId: source.suggestionId,
           }),
         }
-      : {
-          kind: "suggestion" as const,
-          data: await getSuggestionSelectionPreview(supabase, {
-            userId,
-            documentId: id,
-            selectionId: source.selectionId ?? "",
-          }),
-        };
+      : source.selectionId
+        ? {
+            kind: "suggestion" as const,
+            data: await getSuggestionSelectionPreview(supabase, {
+              userId,
+              documentId: id,
+              selectionId: source.selectionId,
+            }),
+          }
+        : {
+            kind: "suggestion" as const,
+            data: await getAppliedSuggestionsPreview(supabase, {
+              userId,
+              documentId: id,
+            }),
+          };
 
   if (!preview.data) {
     return (

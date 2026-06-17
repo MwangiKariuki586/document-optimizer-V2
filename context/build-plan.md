@@ -539,11 +539,11 @@ Wire suggestions to real data.
   - create version snapshot where needed
   - update document content
   - mark suggestion as applied
-- Review/apply multiple suggestions:
-  - store the selected suggestion ids server-side
+- Review/apply all pending suggestions:
+  - store the pending suggestion ids server-side
   - send the user to `/documents/[id]/preview` with a compact server-backed selection reference
   - do not store large payloads in the URL
-  - apply the selected suggestions only from the preview page
+  - apply the pending batch only from the preview page
 
 - Ignore suggestion:
   - verify ownership
@@ -557,7 +557,7 @@ Wire suggestions to real data.
 
 Update the completed suggestions flow so batch review fully obeys the preview checkpoint rule before continuing to Version History.
 
-Single suggestion Apply is intentionally immediate from the editor after explicit user action and a server-side version snapshot. Review Selected and Review All are the batch review paths and must route through `/documents/[id]/preview`.
+Single suggestion Apply is intentionally immediate from the editor after explicit user action and a server-side version snapshot. Review Applied Suggestions opens a read-only preview comparison, and Review All is the batch review path that must route through `/documents/[id]/preview`.
 
 **UI:**
 
@@ -570,9 +570,9 @@ Single suggestion Apply is intentionally immediate from the editor after explici
 - Keep original vs proposed comparison visible for every applyable AI change.
 - Show AI improvement summary and formatting/fidelity warnings where applicable.
 - Keep single-card `Apply` in the editor rail for immediate one-suggestion mutation.
-- Keep explicit batch review actions:
-  - `Review selected`
-  - `Review all`
+- Keep explicit review actions:
+  - `Review Applied Suggestions`
+  - `Review All`
 
 - Keep `Ignore` available from the suggestions rail when it does not mutate document content.
 - Keep `Discard / Return to Editor` available on preview.
@@ -589,7 +589,7 @@ Single suggestion Apply is intentionally immediate from the editor after explici
 - Multi-suggestion review must use a safe server-backed selection:
   - store authenticated user id
   - store document id
-  - store selected suggestion ids
+  - store pending suggestion ids for Review All
   - store short expiry if persistence is required
   - pass only a compact selection reference in the URL
 
@@ -601,10 +601,10 @@ Single suggestion Apply is intentionally immediate from the editor after explici
   - apply exactly one safe replacement
   - mark the suggestion as applied
   - record `suggestion_apply` usage
-- Final batch apply from preview must:
+- Final Review All batch apply from preview must:
   - verify ownership
   - snapshot the current document first
-  - apply the selected suggestion or suggestion batch
+  - apply the pending suggestion batch
   - mark applied suggestions as applied
   - record `suggestion_apply` usage
   - redirect back to the editor
@@ -615,8 +615,8 @@ Single suggestion Apply is intentionally immediate from the editor after explici
 - Run typecheck, lint, and focused tests for suggestion replacement/apply behavior.
 - Manually verify:
 - single suggestion Apply updates the editor immediately after the server snapshots first
-  - multi-suggestion review opens preview through server-backed selection
-- editor rail only routes to preview when the user chooses Review Selected or Review All
+- Review All opens preview through server-backed selection
+- editor rail only routes to preview when the user chooses Review Applied Suggestions or Review All
   - AI action previews still work with `requestId`
 
 ---

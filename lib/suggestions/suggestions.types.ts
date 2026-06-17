@@ -45,7 +45,7 @@ export type SuggestionPreviewItem = DocumentSuggestion & {
 };
 
 export type SuggestionPreview = {
-  kind: "single_suggestion" | "multi_suggestion";
+  kind: "single_suggestion" | "multi_suggestion" | "applied_suggestions";
   id: string;
   documentId: string;
   documentTitle: string;
@@ -57,4 +57,5 @@ export type SuggestionPreview = {
   suggestions: SuggestionPreviewItem[];
   selectionId?: string;
   expiresAt?: string;
+  readOnly?: boolean;
 };

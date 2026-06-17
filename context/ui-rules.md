@@ -329,7 +329,7 @@ Rules:
 - AI output must appear as preview or suggestions before applying
 - AI suggestions should visually connect to document text where practical
 - Suggestion cards and highlighted document text should focus each other
-- The editor may apply one concrete suggestion after an explicit Apply click, server ownership checks, safe replacement validation, and a version snapshot. Review Selected and Review All route to the preview workspace.
+- The editor may apply one concrete suggestion after an explicit Apply click, server ownership checks, safe replacement validation, and a version snapshot. Do not show suggestion checkboxes or manual selection mode. Review Applied Suggestions and Review All route to the preview workspace.
 
 Editor canvas:
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   CheckCircle2,
   FileText,
@@ -45,12 +45,11 @@ type EditorSuggestionsPanelProps = {
   filters: SuggestionFilter[];
   activeFilter: string;
   onFilterChange: (key: string) => void;
-  selectedSuggestionIds: string[];
-  onSelectionChange: (ids: string[]) => void;
   onReviewAllSuggestions: () => void;
-  onReviewSelectedSuggestions: () => void;
+  onReviewAppliedSuggestions: () => void;
   onApplySuggestion: (id: string) => void;
   pendingCount: number;
+  appliedCount: number;
   onIgnoreSuggestion: (id: string) => void;
   isLoading?: boolean;
   applyingSuggestionId?: string | null;
@@ -96,12 +95,11 @@ export function EditorSuggestionsPanel({
   filters,
   activeFilter,
   onFilterChange,
-  selectedSuggestionIds,
-  onSelectionChange,
   onReviewAllSuggestions,
-  onReviewSelectedSuggestions,
+  onReviewAppliedSuggestions,
   onApplySuggestion,
   pendingCount,
+  appliedCount,
   onIgnoreSuggestion,
   isLoading = false,
   applyingSuggestionId = null,
@@ -113,8 +111,7 @@ export function EditorSuggestionsPanel({
 }: EditorSuggestionsPanelProps) {
   const hasSuggestions = suggestions.length > 0;
   const canReviewAll = pendingCount > 0;
-  const selectedCount = selectedSuggestionIds.length;
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const canReviewApplied = appliedCount > 0;
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
@@ -127,23 +124,6 @@ export function EditorSuggestionsPanel({
       block: "center",
     });
   }, [activeSuggestionId]);
-
-  const handleSelectionToggle = (suggestionId: string) => {
-    onSelectionChange(
-      selectedSuggestionIds.includes(suggestionId)
-        ? selectedSuggestionIds.filter((id) => id !== suggestionId)
-        : [...selectedSuggestionIds, suggestionId],
-    );
-  };
-
-  const handleStartSelection = () => {
-    setIsSelectionMode(true);
-  };
-
-  const handleCancelSelection = () => {
-    setIsSelectionMode(false);
-    onSelectionChange([]);
-  };
 
   return (
     <div className="flex flex-col xl:h-full xl:min-h-0">
@@ -203,9 +183,6 @@ export function EditorSuggestionsPanel({
                 const isReviewed = suggestion.status !== "pending";
                 const isApplyingThis = applyingSuggestionId === suggestion.id;
                 const isIgnoringThis = ignoringSuggestionId === suggestion.id;
-                const isSelected = selectedSuggestionIds.includes(
-                  suggestion.id,
-                );
                 const isActive = activeSuggestionId === suggestion.id;
                 const isBusy =
                   isReviewingAll ||
@@ -229,17 +206,6 @@ export function EditorSuggestionsPanel({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        {isSelectionMode ? (
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            disabled={isReviewed || isBusy}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={() => handleSelectionToggle(suggestion.id)}
-                            className="mt-0.5 size-4 rounded border-border text-accent"
-                            aria-label={`Select suggestion ${suggestion.index}`}
-                          />
-                        ) : null}
                         <span className="flex size-5 items-center justify-center rounded-md bg-surface text-[11px] font-semibold text-text-secondary">
                           {suggestion.index}
                         </span>
@@ -341,52 +307,26 @@ export function EditorSuggestionsPanel({
             )}
           </div>
 
-          {pendingCount > 0 ? (
+          {pendingCount > 0 || appliedCount > 0 ? (
             <div className="shrink-0 border-t border-border-light p-3">
-              {isSelectionMode ? (
-                <div className="mb-2 grid gap-2">
-                  <LoadingButton
-                    onClick={onReviewSelectedSuggestions}
-                    disabled={
-                      selectedCount === 0 ||
-                      isReviewingSelected ||
-                      isReviewingAll ||
-                      Boolean(applyingSuggestionId) ||
-                      Boolean(ignoringSuggestionId)
-                    }
-                    isLoading={isReviewingSelected}
-                    loadingText="Opening review..."
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
-                  >
-                    <Sparkles className="size-4" />
-                    {selectedCount > 0
-                      ? `Review Selected ${selectedCount}`
-                      : "Choose Changes to Review"}
-                  </LoadingButton>
-                  <button
-                    type="button"
-                    onClick={handleCancelSelection}
-                    disabled={isReviewingSelected || isReviewingAll}
-                    className="inline-flex w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Cancel Selection
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleStartSelection}
-                  disabled={
-                    isReviewingAll ||
-                    Boolean(applyingSuggestionId) ||
-                    Boolean(ignoringSuggestionId)
-                  }
-                  className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Sparkles className="size-4" />
-                  Select Changes to Review
-                </button>
-              )}
+              <LoadingButton
+                onClick={onReviewAppliedSuggestions}
+                disabled={
+                  !canReviewApplied ||
+                  isReviewingSelected ||
+                  isReviewingAll ||
+                  Boolean(applyingSuggestionId) ||
+                  Boolean(ignoringSuggestionId)
+                }
+                isLoading={isReviewingSelected}
+                loadingText="Opening review..."
+                className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
+              >
+                <Sparkles className="size-4" />
+                {canReviewApplied
+                  ? `Review Applied Suggestions`
+                  : "No Applied Suggestions"}
+              </LoadingButton>
               <LoadingButton
                 onClick={onReviewAllSuggestions}
                 disabled={
@@ -406,8 +346,8 @@ export function EditorSuggestionsPanel({
                   : "All Suggestions Reviewed"}
               </LoadingButton>
               <p className="mt-2 text-center text-[11px] leading-4 text-text-muted">
-                Single Apply updates the editor immediately. Use selected or all
-                review for the preview page.
+                Single Apply updates the editor immediately. Review opens the
+                results preview comparison.
               </p>
             </div>
           ) : null}

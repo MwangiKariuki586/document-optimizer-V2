@@ -145,7 +145,6 @@ export function EditorWorkspace({
   );
   const [isReviewingAll, setIsReviewingAll] = useState(false);
   const [isReviewingSelected, setIsReviewingSelected] = useState(false);
-  const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([]);
   const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(
     null,
   );
@@ -258,13 +257,6 @@ export function EditorWorkspace({
 
       const mappedSuggestions = mapDocumentSuggestionsToEditorSuggestions(data.data);
       setSuggestions(mappedSuggestions);
-      setSelectedSuggestionIds((current) =>
-        current.filter((id) =>
-          mappedSuggestions.some(
-            (suggestion) => suggestion.id === id && suggestion.status === "pending",
-          ),
-        ),
-      );
       return mappedSuggestions;
     } catch {
       appToast.error("Could not load suggestions. Please try again.");
@@ -432,6 +424,9 @@ export function EditorWorkspace({
   const pendingSuggestionCount = suggestions.filter(
     (suggestion) => suggestion.status === "pending",
   ).length;
+  const appliedSuggestionCount = suggestions.filter(
+    (suggestion) => suggestion.status === "applied",
+  ).length;
   const hasSuggestions = suggestions.length > 0;
 
   const handleApplySuggestion = async (id: string) => {
@@ -465,9 +460,6 @@ export function EditorWorkspace({
       });
       setVersionNumber(data.data.versionNumber);
       setSaveState("saved");
-      setSelectedSuggestionIds((current) =>
-        current.filter((suggestionId) => suggestionId !== id),
-      );
       setActiveSuggestionId(null);
       await loadSuggestions();
       router.refresh();
@@ -509,7 +501,6 @@ export function EditorWorkspace({
       });
       setVersionNumber(data.data.restoredVersionNumber);
       setSaveState("saved");
-      setSelectedSuggestionIds([]);
       setActiveSuggestionId(null);
       router.refresh();
       appToast.success(
@@ -572,20 +563,13 @@ export function EditorWorkspace({
     );
   };
 
-  const handleReviewSelectedSuggestions = async () => {
-    if (selectedSuggestionIds.length === 0) {
+  const handleReviewAppliedSuggestions = () => {
+    if (appliedSuggestionCount === 0) {
       return;
     }
 
     setIsReviewingSelected(true);
-
-    try {
-      await openSelectionPreview(selectedSuggestionIds);
-    } catch {
-      appToast.error("Could not open selected suggestions for review.");
-    } finally {
-      setIsReviewingSelected(false);
-    }
+    router.push(`/documents/${document.id}/preview?applied=1`);
   };
 
   const handleReviewAllSuggestions = async () => {
@@ -686,13 +670,12 @@ export function EditorWorkspace({
                 filters={filters}
                 activeFilter={activeFilter}
                 onFilterChange={setActiveFilter}
-                selectedSuggestionIds={selectedSuggestionIds}
-                onSelectionChange={setSelectedSuggestionIds}
                 onApplySuggestion={handleApplySuggestion}
-                onReviewSelectedSuggestions={handleReviewSelectedSuggestions}
+                onReviewAppliedSuggestions={handleReviewAppliedSuggestions}
                 onReviewAllSuggestions={handleReviewAllSuggestions}
                 onIgnoreSuggestion={handleIgnoreSuggestion}
                 pendingCount={pendingSuggestionCount}
+                appliedCount={appliedSuggestionCount}
                 isLoading={isLoadingSuggestions}
                 applyingSuggestionId={applyingSuggestionId}
                 ignoringSuggestionId={ignoringSuggestionId}
