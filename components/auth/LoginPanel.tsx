@@ -42,20 +42,47 @@ export function LoginPanel({ hasClerk }: LoginPanelProps) {
   }
 
   return (
-    <SignIn
-      fallbackRedirectUrl="/dashboard"
-      signUpFallbackRedirectUrl="/dashboard"
-      appearance={{
-        elements: {
-          cardBox:
-            "rounded-2xl border border-border bg-surface shadow-card-soft",
-          headerTitle: "text-text-primary",
-          headerSubtitle: "text-text-secondary",
-          formButtonPrimary:
-            "bg-accent text-accent-foreground hover:bg-accent-dark",
-          footerActionLink: "text-accent hover:text-accent-dark",
-        },
-      }}
-    />
+    <div className="auth-modal rounded-2xl border border-border bg-surface p-2 shadow-popover">
+      <div className="border-b border-border-light px-6 py-5 text-center">
+        <div className="mx-auto flex size-11 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
+          DO
+        </div>
+        <p className="mt-3 text-sm font-semibold text-text-primary">
+          Document Optimizer
+        </p>
+        <p className="mt-1 text-xs leading-4 text-text-muted">
+          Sign in to continue your document workspace.
+        </p>
+      </div>
+      <SignIn
+        fallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+        appearance={{
+          elements: {
+            rootBox: "w-full",
+            cardBox: "w-full border-0 bg-transparent shadow-none",
+            card: "w-full bg-transparent px-4 pb-5 pt-4 shadow-none",
+            header: "hidden",
+            footer: "hidden",
+            socialButtonsBlockButton:
+              "border-border bg-surface text-text-primary hover:bg-surface-secondary",
+            socialButtonsBlockButtonText: "text-text-primary",
+            dividerLine: "bg-border-light",
+            dividerText: "text-text-muted",
+            formFieldLabel: "text-text-secondary",
+            formFieldInput:
+              "rounded-md border-border bg-surface text-text-primary focus:border-accent focus:ring-2 focus:ring-accent",
+            formFieldInputShowPasswordButton: "text-text-muted",
+            formButtonPrimary:
+              "rounded-md bg-accent text-sm font-medium text-accent-foreground hover:bg-accent-dark",
+            footerAction: "text-text-secondary",
+            footerActionLink: "text-accent hover:text-accent-dark",
+            identityPreviewText: "text-text-primary",
+            identityPreviewEditButton: "text-accent hover:text-accent-dark",
+            formResendCodeLink: "text-accent hover:text-accent-dark",
+          },
+        }}
+      />
+    </div>
   );
 }

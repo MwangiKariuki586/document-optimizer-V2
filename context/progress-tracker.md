@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Signed-In Homepage Redirect
+**Last completed:** Clerk Account Popover Width Polish
 **Next:** MVP complete - browser visual review before shipping
 
 ---
@@ -107,7 +107,37 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 _Add completed work notes here after each feature._
 
 ```txt
-Date: 2026-06-17
+Date: 2026-06-19
+Feature: Clerk Account Popover Width Polish
+Status: Completed
+Files changed: app/globals.css, components/layout/AppSidebar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reduced the sidebar Clerk account popover from a wide default card to a compact 292px surface, capped it for small viewports, added broader popover wrapper width overrides, added truncation for long account identifiers, and changed the expanded sidebar account chip to show the signed-in user's name centered beside the avatar instead of the generic "Account" label.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: Browser-verify the sidebar account popover in collapsed and expanded sidebar states.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Clerk Auth Surface Polish
+Status: Completed
+Files changed: app/globals.css, components/layout/AppSidebar.tsx, components/auth/LoginPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added scoped CSS to fully flatten Clerk's nested sign-in card inside the custom login modal. Added platform-token Clerk appearance overrides for the sidebar UserButton popover and account profile modal, backed by portal-safe `.cl-userButton*`, `.cl-userProfile*`, and `.cl-navbar*` global overrides to remove default footer/card/sidebar chrome and align borders, shadows, hover states, active nav, and modal backdrop with the app theme.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly. Browser plugin could not attach to the in-app browser surface (`iab` unavailable), so visual verification remains manual.
+Follow-up: Browser-verify `/login`, sidebar account popover, and Manage account modal in a signed-in session.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Themed Clerk Login Modal
+Status: Completed
+Files changed: app/(auth)/login/[[...rest]]/page.tsx, components/auth/LoginPanel.tsx, context/project-overview.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the split login marketing layout with a centered modal-style Clerk sign-in surface. The modal uses the platform mark, project tokens, border/shadow styling, Clerk appearance overrides, and scoped `.auth-modal .cl-*` CSS to flatten Clerk's injected default card/header/footer chrome while preserving the server-side signed-in redirect and no-Clerk setup fallback.
+Verification: Covered by the Clerk Auth Surface Polish pass: npx tsc --noEmit passed and npm run lint passed cleanly after the scoped Clerk CSS override.
+Follow-up: Browser-verify `/login` signed out at desktop and mobile widths, including Clerk sign-in/sign-up mode switching.
+```
+
+```txt
+Date: 2026-06-19
 Feature: Signed-In Homepage Redirect
 Status: Completed
 Files changed: app/page.tsx, context/project-overview.md, context/build-plan.md, context/progress-tracker.md

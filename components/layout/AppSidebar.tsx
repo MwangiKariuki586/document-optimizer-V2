@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Show, UserButton } from "@clerk/nextjs";
+import { Show, UserButton, useUser } from "@clerk/nextjs";
 import {
   ChevronsLeft,
   ChevronsRight,
@@ -24,6 +24,51 @@ type NavItem = {
   icon: typeof Gauge;
   label: string;
   match?: (pathname: string) => boolean;
+};
+
+const clerkAccountAppearance = {
+  elements: {
+    userButtonAvatarBox: "size-9",
+    userButtonPopoverCard:
+      "w-[292px] rounded-2xl border border-border bg-surface shadow-popover",
+    userButtonPopoverFooter: "hidden",
+    userButtonPopoverActionButton:
+      "text-text-secondary hover:bg-surface-secondary hover:text-text-primary",
+    userButtonPopoverActionButtonIcon: "text-text-muted",
+    userButtonPopoverActionButtonText: "text-sm font-medium",
+    userPreviewAvatarBox: "size-10",
+    userPreviewMainIdentifier: "text-sm font-semibold text-text-primary",
+    userPreviewSecondaryIdentifier: "text-sm text-text-muted",
+  },
+};
+
+const clerkProfileAppearance = {
+  elements: {
+    modalBackdrop: "bg-overlay-muted",
+    modalContent:
+      "overflow-hidden rounded-2xl border border-border bg-surface shadow-popover",
+    modalCloseButton:
+      "text-text-muted hover:bg-surface-secondary hover:text-text-primary",
+    userProfileRoot: "bg-surface text-text-primary",
+    userProfileCard: "border-0 bg-surface shadow-none",
+    navbar: "border-r border-border-light bg-surface-secondary",
+    navbarFooter: "hidden",
+    navbarButton:
+      "rounded-md text-text-secondary hover:bg-surface hover:text-text-primary",
+    navbarButtonIcon: "text-text-muted",
+    navbarButtonText: "text-sm font-medium",
+    pageScrollBox: "bg-surface",
+    profileSectionTitle: "text-text-primary",
+    profileSectionPrimaryButton:
+      "bg-accent text-accent-foreground hover:bg-accent-dark",
+    profileSectionItem: "border-border-light",
+    formFieldInput:
+      "rounded-md border-border bg-surface text-text-primary focus:border-accent focus:ring-2 focus:ring-accent",
+    formButtonPrimary:
+      "rounded-md bg-accent text-accent-foreground hover:bg-accent-dark",
+    badge: "border-border bg-surface-secondary text-text-secondary",
+    footer: "hidden",
+  },
 };
 
 const primaryItems: NavItem[] = [
@@ -90,6 +135,18 @@ function AppNavLink({
       <Icon className="size-3.5 shrink-0" />
       {collapsed ? null : <span className="truncate">{item.label}</span>}
     </Link>
+  );
+}
+
+function SidebarAccountName() {
+  const { user } = useUser();
+  const accountName =
+    user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Account";
+
+  return (
+    <span className="min-w-0 truncate text-xs font-medium text-text-primary">
+      {accountName}
+    </span>
   );
 }
 
@@ -232,15 +289,17 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
               className={
                 collapsed
                   ? "flex size-9 items-center justify-center"
-                  : "rounded-xl border border-border bg-surface p-2 shadow-card-soft"
+                  : "flex w-full items-center  gap-2 rounded-xl border border-border bg-surface px-2 py-2 shadow-card-soft"
               }
             >
-              <UserButton />
-              {!collapsed ? (
-                <span className="ml-2 text-xs font-medium text-text-primary">
-                  Account
-                </span>
-              ) : null}
+              <UserButton
+                userProfileMode="modal"
+                appearance={clerkAccountAppearance}
+                userProfileProps={{
+                  appearance: clerkProfileAppearance,
+                }}
+              />
+              {!collapsed ? <SidebarAccountName /> : null}
             </div>
           </Show>
         ) : (

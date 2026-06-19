@@ -117,6 +117,227 @@ body {
   box-sizing: border-box;
 }
 
+/* Clerk injects default auth card styles after className overrides; keep overrides scoped to the login modal. */
+.auth-modal .cl-rootBox,
+.auth-modal .cl-cardBox {
+  width: 100%;
+}
+
+.auth-modal .cl-cardBox,
+.auth-modal .cl-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.auth-modal .cl-card {
+  width: 100%;
+  padding: 1rem 1rem 1.25rem !important;
+}
+
+.auth-modal .cl-header,
+.auth-modal .cl-footer {
+  display: none !important;
+}
+
+.auth-modal .cl-socialButtonsBlockButton,
+.auth-modal .cl-formFieldInput {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.auth-modal .cl-socialButtonsBlockButton:hover {
+  background: var(--color-surface-secondary) !important;
+}
+
+.auth-modal .cl-formButtonPrimary {
+  border-radius: var(--radius-md) !important;
+  background: var(--color-accent) !important;
+  color: var(--color-accent-foreground) !important;
+  box-shadow: none !important;
+}
+
+.auth-modal .cl-formButtonPrimary:hover {
+  background: var(--color-accent-dark) !important;
+}
+
+.auth-modal .cl-footerActionLink,
+.auth-modal .cl-formResendCodeLink,
+.auth-modal .cl-identityPreviewEditButton {
+  color: var(--color-accent) !important;
+}
+
+.auth-modal .cl-dividerLine {
+  background: var(--color-border-light) !important;
+}
+
+.auth-modal .cl-dividerText,
+.auth-modal .cl-footerAction,
+.auth-modal .cl-formFieldLabel {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Clerk account controls are rendered in portals, so these token overrides target Clerk's generated surface classes. */
+.cl-userButtonPopoverCard {
+  width: 292px !important;
+  max-width: calc(100vw - 24px) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-2xl) !important;
+  background: var(--color-surface) !important;
+  box-shadow: var(--shadow-popover) !important;
+}
+
+.cl-userButtonPopoverRootBox,
+.cl-userButtonPopover,
+.cl-popoverBox:has(.cl-userButtonPopoverCard),
+.cl-popoverCard:has(.cl-userButtonPopoverMain) {
+  width: 292px !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+.cl-userButtonPopoverMain,
+.cl-userButtonPopoverActions {
+  width: 100% !important;
+}
+
+.cl-userPreview {
+  min-width: 0 !important;
+}
+
+.cl-userPreviewTextContainer {
+  min-width: 0 !important;
+}
+
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewSecondaryIdentifier {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.cl-userButtonPopoverFooter {
+  display: none !important;
+}
+
+.cl-userButtonPopoverActionButton {
+  color: var(--color-text-secondary) !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background: var(--color-surface-secondary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.cl-userButtonPopoverActionButtonIcon {
+  color: var(--color-text-muted) !important;
+}
+
+.cl-userPreviewMainIdentifier {
+  color: var(--color-text-primary) !important;
+}
+
+.cl-userPreviewSecondaryIdentifier {
+  color: var(--color-text-muted) !important;
+}
+
+.cl-modalBackdrop {
+  background: var(--color-overlay-muted) !important;
+}
+
+.cl-userProfileModalContent {
+  overflow: hidden !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-2xl) !important;
+  background: var(--color-surface) !important;
+  box-shadow: var(--shadow-popover) !important;
+}
+
+.cl-userProfileRoot,
+.cl-userProfileCard,
+.cl-userProfilePage,
+.cl-userProfilePageScrollBox {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: none !important;
+}
+
+.cl-userProfileNavbar {
+  border-right: 1px solid var(--color-border-light) !important;
+  background: var(--color-surface-secondary) !important;
+}
+
+.cl-userProfileNavbar *,
+.cl-navbar *,
+.cl-navbar {
+  background-image: none !important;
+}
+
+.cl-navbar,
+.cl-userProfileNavbar {
+  background-color: var(--color-surface-secondary) !important;
+}
+
+.cl-userProfileNavbarButton {
+  border-radius: var(--radius-md) !important;
+  color: var(--color-text-secondary) !important;
+  background: transparent !important;
+}
+
+.cl-userProfileNavbarButton:hover,
+.cl-userProfileNavbarButton[data-active="true"],
+.cl-userProfileNavbarButton[aria-current="page"],
+.cl-navbarButton:hover,
+.cl-navbarButton[data-active="true"],
+.cl-navbarButton[aria-current="page"] {
+  background: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.cl-userProfileNavbarButtonIcon,
+.cl-navbarButtonIcon {
+  color: var(--color-text-muted) !important;
+}
+
+.cl-userProfileFooter,
+.cl-userProfileNavbarFooter,
+.cl-navbarFooter,
+.cl-footer,
+.cl-developmentMode {
+  display: none !important;
+}
+
+.cl-profileSectionPrimaryButton,
+.cl-formButtonPrimary {
+  border-radius: var(--radius-md) !important;
+  background: var(--color-accent) !important;
+  color: var(--color-accent-foreground) !important;
+  box-shadow: none !important;
+}
+
+.cl-profileSectionPrimaryButton:hover,
+.cl-formButtonPrimary:hover {
+  background: var(--color-accent-dark) !important;
+}
+
+.cl-profileSectionItem,
+.cl-profileSectionItemList,
+.cl-userProfileAccordionTriggerButton {
+  border-color: var(--color-border-light) !important;
+}
+
+.cl-userProfileModalCloseButton {
+  color: var(--color-text-muted) !important;
+}
+
+.cl-userProfileModalCloseButton:hover {
+  background: var(--color-surface-secondary) !important;
+  color: var(--color-text-primary) !important;
+}
+
 /* Document editor (TipTap / ProseMirror) content styles. Uses project tokens. */
 .document-editor .ProseMirror {
   min-height: 240px;

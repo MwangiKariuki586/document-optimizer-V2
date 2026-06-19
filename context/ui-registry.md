@@ -133,12 +133,14 @@ Login page auth panel that renders Clerk `SignIn` when keys exist and a setup st
 **Core classes:**
 
 ```txt
-className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="auth-modal rounded-2xl border border-border bg-surface p-2 shadow-popover"
+className="border-b border-border-light px-6 py-5 text-center"
 ```
 
 **Variants:**
 
 - Clerk enabled - renders Clerk sign-in/sign-up experience.
+- Clerk enabled - renders a centered, platform-themed modal-style auth surface.
 - Clerk missing - renders setup guidance.
 
 **Rules:**
@@ -146,6 +148,8 @@ className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shado
 - Uses fallback redirects to `/dashboard` only when no Clerk `redirect_url` is present.
 - Do not force redirect from this component; protected-page refreshes should return to the originally requested route after sign-in.
 - Keep setup state visible until Clerk environment variables are configured.
+- The `/login` page should not render a split marketing layout; keep the focus on the Clerk auth modal.
+- Scoped `.auth-modal .cl-*` overrides in `app/globals.css` flatten Clerk's injected card/header/footer styles so the default Clerk modal chrome is not visible inside the project shell.
 
 ---
 
@@ -247,6 +251,7 @@ className="flex items-center gap-3 rounded-md px-3 py-2"
 - Active item uses `text-accent`.
 - `/documents` is intentionally not a standalone navigation target; list-style document entry points route through `/dashboard`, `/documents/new`, or an owned `/documents/[id]` workspace.
 - Do not add a second persistent page-level navigation rail inside authenticated pages.
+- Clerk `UserButton` uses platform-token appearance overrides for the account popover and profile modal. The expanded sidebar account chip shows the signed-in user's name beside the avatar, centered as a compact row. Portal-rendered Clerk surfaces are backed by `.cl-userButton*`, `.cl-popover*`, `.cl-userProfile*`, and `.cl-navbar*` overrides in `app/globals.css` to remove default footer/card/sidebar chrome, keep the account popover at a compact 292px width with truncated identifiers, and align borders, shadows, hover states, active nav, and modal backdrop with the app theme.
 
 ### PageShell
 

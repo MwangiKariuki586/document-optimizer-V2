@@ -70,6 +70,7 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 ### Authentication
 
 - User signs up or logs in through Clerk
+- Login renders as a compact, platform-themed Clerk auth modal
 - On login → redirect to `/dashboard`
 - If user has no documents → dashboard shows empty state and primary action to create or upload a document
 
