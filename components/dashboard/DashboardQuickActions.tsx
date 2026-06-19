@@ -20,7 +20,7 @@ export function DashboardQuickActions({ actions }: DashboardQuickActionsProps) {
         <Link
           key={title}
           href={href}
-          className="group relative flex min-h-[94px] min-w-0 items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-card-soft transition hover:border-border-strong hover:shadow-card"
+          className="group relative flex h-[94px] min-w-0 items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-card-soft transition hover:border-border-strong hover:shadow-card"
         >
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border-light bg-accent-lighter text-accent shadow-card-soft">
             <Icon className="size-5" />

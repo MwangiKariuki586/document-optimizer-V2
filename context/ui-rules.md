@@ -38,6 +38,7 @@ Never use system fonts as the primary font.
 - Authenticated app navigation uses a collapsed-by-default sidebar based on the editor workspace rail pattern
 - Use full-width soft page backgrounds with centered content containers
 - Keep layouts spacious, calm, and document-focused
+- Dashboard cards must not grow indefinitely based on user activity. Use fixed heights, minimum heights, capped visible rows, internal scrolling, or "View all" links to preserve grid consistency.
 
 ---
 

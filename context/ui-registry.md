@@ -487,7 +487,7 @@ Three primary dashboard action cards linking users into the document creation fl
 
 ```txt
 className="grid min-w-0 gap-4 lg:grid-cols-3"
-className="group relative flex min-h-[94px] min-w-0 items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-card-soft transition hover:border-border-strong hover:shadow-card"
+className="group relative flex h-[94px] min-w-0 items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-card-soft transition hover:border-border-strong hover:shadow-card"
 className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border-light bg-accent-lighter text-accent shadow-card-soft"
 className="block truncate whitespace-nowrap text-xs font-semibold leading-4 text-text-primary"
 className="absolute bottom-4 right-4 flex size-6 items-center justify-center rounded-md bg-accent-lighter text-accent"
@@ -502,6 +502,7 @@ className="absolute bottom-4 right-4 flex size-6 items-center justify-center rou
 - Quick action cards navigate to `/documents/new`.
 - Use lucide icons and token-based accent surfaces only.
 - Arrow control is a small visual affordance anchored to the lower-right of each card.
+- Cards use a fixed 94px height so the dashboard action row stays stable.
 
 ### DocumentStats
 
@@ -519,7 +520,7 @@ Dashboard stat card grid for document count, AI actions, exports, and quality sc
 
 ```txt
 className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4"
-className="flex min-h-[112px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft"
+className="flex h-[112px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft"
 className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border-light"
 className="whitespace-nowrap text-[11px] font-semibold leading-4 text-text-secondary"
 className="mt-1 text-[26px] font-bold leading-8 text-text-primary"
@@ -534,6 +535,7 @@ className="mt-1 text-[26px] font-bold leading-8 text-text-primary"
 - Use token variants only.
 - Progress widths are supplied as fixed Tailwind width classes.
 - Non-progress helpers use a small success arrow indicator.
+- Cards use a fixed 112px height so KPI metrics do not shift the dashboard grid.
 
 ### RecentDocuments
 
@@ -550,15 +552,16 @@ Recent document overview with desktop table and mobile document cards.
 **Core classes:**
 
 ```txt
-className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="mt-5 space-y-3 md:hidden"
-className="mt-5 hidden overflow-x-auto md:block"
+className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto md:hidden"
+className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto md:block"
 ```
 
 **Variants:**
 
 - Mobile card list.
 - Desktop/tablet scanning table.
+- Empty state with Start a Document action.
 
 **Rules:**
 
@@ -566,6 +569,8 @@ className="mt-5 hidden overflow-x-auto md:block"
 - The header action links back to `/dashboard`; `/documents` is not a standalone list route.
 - Always show document status and fidelity badges.
 - Accepts real dashboard records with DOCX, PDF, MD, TXT, or None file types.
+- The card always keeps a 360px height, caps visible documents to five, and lets only the row/table area scroll with hidden scrollbars.
+- Empty and filled states must preserve the same card height.
 
 ### RecentActivity
 
@@ -582,19 +587,25 @@ Recent dashboard activity list with compact status badges and icons.
 **Core classes:**
 
 ```txt
-className="min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="flex min-w-0 items-center gap-3 py-3"
+className="flex h-[260px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto"
+className="flex min-h-0 flex-1 flex-col justify-center py-5"
 ```
 
 **Variants:**
 
 - `ai`, `info`, `success`, `warning` activity variants.
+- Empty state - compact centered guidance when there is no activity.
 
 **Rules:**
 
 - Keep labels short and human-readable.
 - Hide secondary badges on small screens when space is tight.
 - Activity icons are selected from the activity `kind` prop so data services do not import UI icons.
+- The card must render a real empty state instead of a blank panel when activity is unavailable.
+- Show at most four activity items in the card. Use View all for deeper activity.
+- Internal list scrolling keeps overflow behavior but hides scrollbar chrome via `scrollbar-hidden`.
+- Must match SuggestionsReady height so the bottom dashboard row stays aligned.
 
 ### SuggestionsReady
 
@@ -602,7 +613,7 @@ className="flex min-w-0 items-center gap-3 py-3"
 
 **Purpose:**
 
-Dashboard panel showing mock pending improvement suggestions.
+Dashboard panel showing pending improvement suggestions.
 
 **Used on:**
 
@@ -611,18 +622,25 @@ Dashboard panel showing mock pending improvement suggestions.
 **Core classes:**
 
 ```txt
-className="min-w-0 rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="mt-4 min-w-0 divide-y divide-border-light"
+className="flex h-[260px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto"
+className="flex min-h-0 flex-1 flex-col justify-center py-5"
 ```
 
 **Variants:**
 
 - `ai`, `info`, `warning` suggestion variants.
+- Empty state - compact centered guidance when no suggestions are ready.
 
 **Rules:**
 
 - This is dashboard preview UI only; full suggestion review is built in the Suggestions phase.
 - Suggestion icons are selected from the suggestion `kind` prop so data services do not import UI icons.
+- The header count reflects the real `suggestions.length`; do not hardcode the suggestion count.
+- Hide the Review All Suggestions action when no suggestions are ready.
+- Show at most three suggestions in the card. Use Review All Suggestions for deeper review.
+- Internal list scrolling keeps overflow behavior but hides scrollbar chrome via `scrollbar-hidden`.
+- Must match RecentActivity height so the bottom dashboard row stays aligned.
 
 ### UsageSummary
 
@@ -639,19 +657,23 @@ Dashboard side panel for usage overview and export-format distribution.
 **Core classes:**
 
 ```txt
-className="space-y-4"
-className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="min-w-0 space-y-6"
+className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="text-lg font-semibold leading-7 text-text-primary"
 className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary"
-className="relative mx-auto mt-4 flex size-[116px] items-center justify-center"
+className="relative mx-auto mt-2 flex size-[92px] items-center justify-center"
+className="mb-1 flex items-center justify-between gap-4 text-sm leading-5"
 className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
-className="mx-auto flex size-28 items-center justify-center rounded-full p-4"
-className="mt-5 grid items-center gap-5 sm:grid-cols-[132px_minmax(0,1fr)]"
+className="mt-auto flex w-full shrink-0 items-center justify-center rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent"
+className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="mx-auto flex size-24 items-center justify-center rounded-full p-3"
+className="mt-4 grid min-h-0 flex-1 items-center gap-4 sm:grid-cols-[112px_minmax(0,1fr)]"
 ```
 
 **Variants:**
 
 - Usage progress list.
-- Dynamic SVG usage ring showing selected-range AI actions used against the dashboard action limit.
+- Dynamic SVG usage ring with a `border`-token track stroke, `accent` progress stroke, and a bordered inner surface disc showing selected-range AI actions used against the dashboard action limit.
 - Dynamic usage progress bars driven by numeric percentages from the dashboard service.
 - Export-format donut chart with PDF, DOCX, TXT, MD, and Other legend rows using live count distribution.
 - Native date-range dropdown controls for Today, This Week, This Month, and This Year. Default visible range is This Week.
@@ -662,6 +684,9 @@ className="mt-5 grid items-center gap-5 sm:grid-cols-[132px_minmax(0,1fr)]"
 - Date filters switch between precomputed user-scoped dashboard usage snapshots; do not treat the selector as static UI.
 - Usage counts, AI action total, usage bar percentages, and export-format distribution are supplied by the dashboard service.
 - `View Usage Details` links to `/account#usage`.
+- Usage Overview stays fixed at 360px in the dashboard analytics rail.
+- Usage Overview rows are a fixed four-category set and must not use internal scrolling; tighten spacing instead.
+- Exports by Format stays fixed at 300px and uses the standard PDF, DOCX, TXT, MD, and Other legend.
 
 ---
 

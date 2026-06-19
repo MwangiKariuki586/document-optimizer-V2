@@ -34,7 +34,7 @@ export function DocumentStats({ stats }: DocumentStatsProps) {
       {stats.map(({ helper, icon: Icon, label, progressClass, value, variant }) => (
         <article
           key={label}
-          className="flex min-h-[112px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft"
+          className="flex h-[112px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft"
         >
           <div className="flex min-w-0 items-start gap-3">
             <span

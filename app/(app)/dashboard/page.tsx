@@ -1,11 +1,9 @@
-import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import {
   ClipboardList,
   Download,
   FileText,
   FileUp,
-  Plus,
   Star,
   WandSparkles,
 } from "lucide-react";
@@ -15,7 +13,6 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { RecentDocuments } from "@/components/dashboard/RecentDocuments";
 import { SuggestionsReady } from "@/components/dashboard/SuggestionsReady";
 import { UsageSummary } from "@/components/dashboard/UsageSummary";
-import { EmptyState } from "@/components/feedback/EmptyState";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
@@ -100,7 +97,6 @@ export default async function DashboardPage() {
     ? await loadDashboardData(userId)
     : { data: getEmptyDashboardData(), error: null };
 
-  const hasDocuments = dashboardData.recentDocuments.length > 0;
   const stats = [
     {
       label: "Total Documents",
@@ -150,42 +146,25 @@ export default async function DashboardPage() {
         </InlineAlert>
       ) : null}
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-6">
+      <section className="grid min-w-0 items-start gap-6 xl:grid-cols-12">
+        <main className="min-w-0 space-y-6 xl:col-span-8">
           <DashboardQuickActions actions={quickActions} />
           <DocumentStats stats={stats} />
+          <RecentDocuments documents={dashboardData.recentDocuments} />
 
-          {hasDocuments ? (
-            <RecentDocuments documents={dashboardData.recentDocuments} />
-          ) : (
-            <EmptyState
-              title="No documents yet."
-              description="Upload a file, paste text, or create a blank document to begin."
-              icon={<FileText className="size-6" />}
-              action={
-                <Link
-                  href="/documents/new"
-                  className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
-                >
-                  <Plus className="size-4" />
-                  Start a Document
-                </Link>
-              }
-            />
-          )}
-        </div>
+          <div className="grid min-w-0 items-stretch gap-6 lg:grid-cols-2">
+            <SuggestionsReady suggestions={dashboardData.suggestions} />
+            <RecentActivity activity={dashboardData.activity} />
+          </div>
+        </main>
 
         <UsageSummary
+          className="xl:col-span-4"
           aiActionLimit={aiActionLimit}
           exportFormats={dashboardData.exportFormats}
           usageOverview={dashboardData.usageOverview}
         />
-      </div>
-
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-        <SuggestionsReady suggestions={dashboardData.suggestions} />
-        <RecentActivity activity={dashboardData.activity} />
-      </div>
+      </section>
     </PageShell>
   );
 }

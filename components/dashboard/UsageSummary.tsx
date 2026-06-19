@@ -18,6 +18,7 @@ type ExportFormatItem = {
 
 type UsageSummaryProps = {
   aiActionLimit: number;
+  className?: string;
   exportFormats: ExportFormatItem[];
   usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>;
 };
@@ -122,12 +123,13 @@ function UsageRing({
   used: number;
 }) {
   const radius = 38;
+  const strokeWidth = 10;
   const circumference = 2 * Math.PI * radius;
   const progress = percent > 0 ? Math.max(3, percent) : 0;
   const dashOffset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative mx-auto mt-4 flex size-[116px] items-center justify-center">
+    <div className="relative mx-auto mt-3 flex size-[116px] shrink-0 items-center justify-center self-center">
       <svg
         aria-hidden="true"
         className="absolute inset-0 size-full -rotate-90"
@@ -138,23 +140,25 @@ function UsageRing({
           cy="50"
           fill="none"
           r={radius}
-          stroke="var(--color-accent-light)"
-          strokeWidth="9"
+          strokeWidth={strokeWidth}
+          style={{ stroke: "var(--color-border)" }}
         />
-        <circle
-          cx="50"
-          cy="50"
-          fill="none"
-          r={radius}
-          stroke="var(--color-accent)"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashOffset}
-          strokeLinecap="butt"
-          strokeWidth="9"
-        />
+        {progress > 0 ? (
+          <circle
+            cx="50"
+            cy="50"
+            fill="none"
+            r={radius}
+            strokeDasharray={circumference}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            strokeWidth={strokeWidth}
+            style={{ stroke: "var(--color-accent)" }}
+          />
+        ) : null}
       </svg>
 
-      <div className="relative flex size-[84px] flex-col items-center justify-center rounded-full bg-surface text-center">
+      <div className="relative flex size-[84px] flex-col items-center justify-center rounded-full border border-border-light bg-surface text-center">
         <p className="text-2xl font-bold leading-7 text-text-primary">
           {percent}%
         </p>
@@ -199,6 +203,7 @@ function exportGradient(exportFormats: ExportFormatItem[]): CSSProperties {
 
 export function UsageSummary({
   aiActionLimit,
+  className,
   exportFormats,
   usageOverview,
 }: UsageSummaryProps) {
@@ -218,10 +223,10 @@ export function UsageSummary({
   );
 
   return (
-    <aside className="space-y-4">
-      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold leading-8 text-text-primary">
+    <aside className={`min-w-0 space-y-6 ${className ?? ""}`}>
+      <section className="flex h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+        <div className="flex shrink-0 items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Usage Overview
           </h2>
           <DateRangeSelect
@@ -238,10 +243,10 @@ export function UsageSummary({
           used={currentUsage.aiActionsUsed}
         />
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-3 shrink-0 space-y-2.5">
           {usage.map((item) => (
             <div key={item.label}>
-              <div className="mb-2 flex items-center justify-between gap-4 text-lg leading-6">
+              <div className="mb-0.5 flex items-center justify-between gap-4 text-sm leading-5">
                 <span className="min-w-0 truncate text-text-secondary">
                   {item.label}
                 </span>
@@ -249,7 +254,7 @@ export function UsageSummary({
                   {item.value}
                 </span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-accent-lighter">
+              <div className="h-1.5 overflow-hidden rounded-full bg-accent-lighter">
                 <div
                   className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
                   style={barStyle(item.percent)}
@@ -260,20 +265,21 @@ export function UsageSummary({
         </div>
         <Link
           href="/account#usage"
-          className="mt-5 flex w-full items-center justify-center rounded-xl bg-accent-lighter px-4 py-3 text-base font-medium text-accent transition hover:bg-accent-light"
+          className="mt-auto flex w-full shrink-0 items-center justify-center gap-2 rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light"
         >
           View Usage Details
+          <ArrowRight className="size-4" />
         </Link>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+      <section className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Exports by Format
         </h2>
 
-        <div className="mt-5 grid items-center gap-5 sm:grid-cols-[132px_minmax(0,1fr)]">
+        <div className="mt-4 grid min-h-0 flex-1 items-center gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
           <div
-            className="mx-auto flex size-28 items-center justify-center rounded-full p-4"
+            className="mx-auto flex size-24 items-center justify-center rounded-full p-3"
             style={exportGradient(exportFormats)}
           >
             <div className="flex size-full flex-col items-center justify-center rounded-full bg-surface">
@@ -284,7 +290,7 @@ export function UsageSummary({
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-2.5 overflow-hidden">
             {exportFormats.map((item) => (
               <div key={item.format} className="flex items-center gap-3">
                 <span
@@ -300,14 +306,6 @@ export function UsageSummary({
             ))}
           </div>
         </div>
-
-        <button
-          type="button"
-          className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-accent-dark"
-        >
-          View full report
-          <ArrowRight className="size-4" />
-        </button>
       </section>
     </aside>
   );

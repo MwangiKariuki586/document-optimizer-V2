@@ -429,3 +429,14 @@ body {
     inset 0 -2px 0 var(--color-ai-dark),
     0 0 0 2px var(--color-ai-light);
 }
+
+@layer utilities {
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+}

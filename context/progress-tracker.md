@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Dashboard Usage Ring Size Polish
+**Last completed:** Dashboard Card Scrollbar Visibility Fix
 **Next:** MVP complete - browser visual review before shipping
 
 ---
@@ -105,6 +105,76 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Card Scrollbar Visibility Fix
+Status: Completed
+Files changed: app/globals.css, components/dashboard/RecentDocuments.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/RecentActivity.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a shared scrollbar-hidden utility and applied it to the scrollable regions in Recent Documents, Suggestions Ready, and Recent Activity so dashboard cards keep overflow behavior without visible scrollbar chrome.
+Verification: Scroll still works via wheel/trackpad; scrollbars are hidden in WebKit and Firefox.
+Follow-up: User-owned visual review of dashboard cards on /dashboard.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Overview Button Visibility Fix
+Status: Completed
+Files changed: components/dashboard/UsageSummary.tsx, context/progress-tracker.md
+What was completed: Fixed the clipped View Usage Details CTA by tightening Usage Overview vertical spacing and pinning the footer link with mt-auto inside the fixed-height card.
+Verification: Layout math fits within the 400px card without internal scrolling.
+Follow-up: User-owned visual review of the Usage Overview card on /dashboard.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Ring Border Fix
+Status: Completed
+Files changed: components/dashboard/UsageSummary.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Restored the visible usage ring with an SVG track and progress stroke using inline CSS variable colors, plus a bordered inner surface disc. Kept percentage and count copy only; did not reintroduce the removed "AI actions used" label.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: User-owned visual review of the Usage Overview ring on /dashboard.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Overview Scroll Removal
+Status: Completed
+Files changed: components/dashboard/UsageSummary.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the internal scrollbar from the fixed-height Usage Overview card because the usage category count is stable. Tightened the usage ring and category row spacing so the four fixed rows and View Usage Details action fit without scroll.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: User-owned visual review of the Usage Overview card on /dashboard.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Fixed Zone Layout Refactor
+Status: Completed
+Files changed: app/(app)/dashboard/page.tsx, components/dashboard/DashboardQuickActions.tsx, components/dashboard/DocumentStats.tsx, components/dashboard/RecentDocuments.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/RecentActivity.tsx, components/dashboard/UsageSummary.tsx, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refactored the Dashboard Workspace into stable fixed zones with an 8-column left content area and 4-column analytics rail on desktop. Fixed quick action, KPI, Recent Documents, Suggestions Ready, Recent Activity, Usage Overview, and Exports by Format card heights; capped visible rows; added internal scrolling; and made empty states preserve filled-state height.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: User-owned visual review of /dashboard with zero, one, and many documents, suggestions, activity items, usage rows, and exports.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Typography Harmonization
+Status: Completed
+Files changed: components/dashboard/UsageSummary.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reduced the Usage Overview card heading, usage row labels, values, and View Usage Details CTA to match the text scale used by the other dashboard sections while preserving the dynamic date selection and usage chart behavior.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: User-owned visual review of /dashboard typography balance.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Grid Whitespace Refinement
+Status: Completed
+Files changed: app/(app)/dashboard/page.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/RecentActivity.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reworked the dashboard body into independent left content and right usage columns so Suggestions Ready and Recent Activity rise directly under Recent Documents or the dashboard empty state instead of waiting for the full usage rail height. Added real empty states to Suggestions Ready and Recent Activity, made the suggestions count dynamic, and hid the Review All Suggestions action when there are no suggestions.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: User-owned visual review of /dashboard with and without recent documents, suggestions, and activity.
+```
 
 ```txt
 Date: 2026-06-19
