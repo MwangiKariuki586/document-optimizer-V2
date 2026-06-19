@@ -31,12 +31,6 @@ const quickActions = [
     icon: FileUp,
   },
   {
-    title: "Create Blank Document",
-    description: "Start with a clean slate",
-    href: newDocumentHref("blank"),
-    icon: FileText,
-  },
-  {
     title: "Paste Text",
     description: "Paste text to optimize instantly",
     href: newDocumentHref("paste"),

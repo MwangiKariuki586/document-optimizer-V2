@@ -17,7 +17,6 @@ import { parseFile } from "@/lib/parsing/parse-file";
 import { FILE_TYPE_TO_DB } from "@/lib/documents/upload.validators";
 import type { Json, TablesInsert } from "@/lib/supabase/types";
 import type {
-  CreateBlankDocumentInput,
   CreateManualVersionInput,
   CreatePasteDocumentInput,
   CreateUploadedDocumentInput,
@@ -26,8 +25,6 @@ import type {
   EditorDocument,
   UpdateDocumentContentInput,
 } from "@/lib/documents/document.types";
-
-const EMPTY_EDITOR_JSON: Json = { type: "doc", content: [] };
 
 function getNumericMetadataValue(metadata: Json, key: string): number | null {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
@@ -270,31 +267,6 @@ export async function createManualVersion(
   });
 
   return { id: version.id, versionNumber: version.versionNumber };
-}
-
-export async function createBlankDocument(
-  input: CreateBlankDocumentInput,
-): Promise<CreatedDocument> {
-  const title = input.title.trim();
-
-  return createDocumentWithInitialVersion({
-    userId: input.userId,
-    documentPayload: {
-      user_id: input.userId,
-      title,
-      status: "ready",
-      source_type: "blank",
-      file_type: "none",
-      editor_json: EMPTY_EDITOR_JSON,
-      current_markdown: "",
-      fidelity_status: "Structure Preserved",
-      word_count: 0,
-    },
-    versionSource: "blank",
-    versionContentMarkdown: "",
-    versionEditorJson: EMPTY_EDITOR_JSON,
-    versionNotes: "Document created",
-  });
 }
 
 export async function createPasteDocument(

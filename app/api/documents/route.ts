@@ -1,13 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
-import {
-  createBlankDocument,
-  createPasteDocument,
-} from "@/lib/documents/document.service";
-import {
-  createBlankDocumentSchema,
-  createPasteDocumentSchema,
-} from "@/lib/documents/document.validators";
+import { createPasteDocument } from "@/lib/documents/document.service";
+import { createPasteDocumentSchema } from "@/lib/documents/document.validators";
 import type { CreatedDocument } from "@/lib/documents/document.types";
 
 function getSourceType(body: unknown): string {
@@ -18,7 +12,7 @@ function getSourceType(body: unknown): string {
     }
   }
 
-  return "blank";
+  return "";
 }
 
 function firstIssueMessage(
@@ -66,20 +60,6 @@ export async function POST(req: NextRequest) {
         userId,
         title: parsed.data.title,
         content: parsed.data.content,
-      });
-    } else if (sourceType === "blank") {
-      const parsed = createBlankDocumentSchema.safeParse(body);
-
-      if (!parsed.success) {
-        return NextResponse.json(
-          { success: false, error: firstIssueMessage(parsed, "Invalid document details.") },
-          { status: 400 },
-        );
-      }
-
-      document = await createBlankDocument({
-        userId,
-        title: parsed.data.title,
       });
     } else {
       return NextResponse.json(

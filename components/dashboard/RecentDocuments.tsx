@@ -116,7 +116,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
             No documents yet.
           </h3>
           <p className="mt-1 max-w-sm text-sm leading-5 text-text-secondary">
-            Upload a file, paste text, or create a blank document to begin.
+            Upload a file or paste text to begin.
           </p>
           <Link
             href="/documents/new"

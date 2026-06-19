@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, FilePlus, ClipboardList, FileUp } from "lucide-react";
+import { FileText, ClipboardList, FileUp } from "lucide-react";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { FidelityBadge } from "@/components/documents/FidelityBadge";
 import type { DocumentsLibraryItem } from "@/lib/documents/documents-library.service";
@@ -100,8 +100,7 @@ function NoDocumentsState() {
               No documents yet
             </p>
             <p className="mt-1 text-sm text-text-secondary">
-              Upload a document, paste text, or create a blank document to start
-              optimizing.
+              Upload a document or paste text to start optimizing.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -118,13 +117,6 @@ function NoDocumentsState() {
             >
               <ClipboardList className="size-4" />
               Paste Text
-            </Link>
-            <Link
-              href={newDocumentHref("blank")}
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-surface-secondary"
-            >
-              <FilePlus className="size-4" />
-              Create Blank
             </Link>
           </div>
         </div>
@@ -245,7 +237,6 @@ function MobileDocumentCard({
 
 type DocumentsTableProps = {
   documents: DocumentsLibraryItem[];
-  total: number;
   loading?: boolean;
   hasFilters: boolean;
   onClearFilters: () => void;
@@ -256,7 +247,6 @@ type DocumentsTableProps = {
 
 export function DocumentsTable({
   documents,
-  total,
   loading,
   hasFilters,
   onClearFilters,
@@ -448,7 +438,7 @@ export function DocumentsTable({
               No documents yet
             </p>
             <p className="text-sm text-text-secondary">
-              Upload a document, paste text, or create a blank document.
+              Upload a document or paste text.
             </p>
             <Link
               href={newDocumentHref("upload")}

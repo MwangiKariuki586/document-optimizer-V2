@@ -226,7 +226,7 @@ const { data, error } = await supabase
   .insert({
     user_id: userId,
     title,
-    source_type: "blank",
+    source_type: "paste",
     status: "ready",
   })
   .select()
@@ -743,8 +743,8 @@ import { z } from "zod";
 
 const CreateDocumentSchema = z.object({
   title: z.string().min(1).max(120),
-  sourceType: z.enum(["blank", "paste"]),
-  content: z.string().optional(),
+  sourceType: z.literal("paste"),
+  content: z.string().min(1),
 });
 
 const result = CreateDocumentSchema.safeParse(body);

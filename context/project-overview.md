@@ -2,7 +2,7 @@
 
 ## About the Project
 
-Document Optimizer V2 is a full stack AI-powered document improvement workspace. The user can upload a document, paste text, or create a blank document, then use AI to analyze, improve, rewrite, summarize, translate, and prepare the document for export.
+Document Optimizer V2 is a full stack AI-powered document improvement workspace. The user can upload a document or paste text, then use AI to analyze, improve, rewrite, summarize, translate, and prepare the document for export.
 
 Unlike basic AI rewriting tools, the platform is designed around document safety and user control. AI-generated changes are shown as previews or suggestions before they are applied. The original file is preserved, important edits are versioned, and the user can restore previous document states when needed.
 
@@ -26,7 +26,7 @@ The goal is to help users produce clearer, stronger, export-ready documents with
 /                         → Homepage
 /login                    → Auth page
 /dashboard                → Document overview, recent activity, usage summary
-/documents/new            → Upload, paste text, or create blank document
+/documents/new            → Upload or paste text to create a document
 /documents/[id]           → Document editor workspace
 /documents/[id]/preview   → AI result preview
 /documents/[id]/versions  → Version history and restore flow
@@ -84,14 +84,12 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 - Provides quick actions:
   - Upload Document
   - Paste Text
-  - Create Blank Document
 
 ### Upload/Create Document Flow
 
-- User chooses one of three starting options:
+- User chooses one of two starting options:
   - Upload File
   - Paste Text
-  - Create Blank
 
 - Supported MVP formats:
   - PDF
@@ -177,7 +175,6 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 - Versions are created for important document states:
   - initial upload
   - pasted content
-  - blank document creation
   - AI result application
   - suggestion application
   - restore actions
@@ -314,7 +311,6 @@ Usage tracking supports operational activity reporting and product analytics.
 - Dashboard with recent documents, quick actions, recent activity, and usage summary
 - Upload document flow
 - Paste text flow
-- Create blank document flow
 - Private original file storage
 - PDF, DOCX, Markdown, and TXT support
 - Document parsing with structure preservation where possible

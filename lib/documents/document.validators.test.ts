@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  createBlankDocumentSchema,
   createPasteDocumentSchema,
   documentTitleSchema,
   editorJsonSchema,
@@ -9,18 +8,6 @@ import {
 } from "@/lib/documents/document.validators";
 
 describe("document creation validation", () => {
-  it("trims valid blank document titles", () => {
-    const result = createBlankDocumentSchema.safeParse({
-      title: "  Project Proposal  ",
-    });
-
-    expect(result.success).toBe(true);
-
-    if (result.success) {
-      expect(result.data.title).toBe("Project Proposal");
-    }
-  });
-
   it("rejects unsafe title characters before document creation", () => {
     const result = documentTitleSchema.safeParse("<script>alert(1)</script>");
 
@@ -39,7 +26,7 @@ describe("document creation validation", () => {
 });
 
 describe("document update validation", () => {
-  it("accepts empty editor markdown for blank documents", () => {
+  it("accepts empty editor markdown for manual edits", () => {
     const result = updateDocumentSchema.safeParse({
       title: "Blank Draft",
       editorJson: { type: "doc", content: [] },

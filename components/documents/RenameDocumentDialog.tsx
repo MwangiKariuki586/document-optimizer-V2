@@ -22,21 +22,33 @@ export function RenameDocumentDialog({
   onClose,
   onSuccess,
 }: RenameDocumentDialogProps) {
+  if (!open) return null;
+
+  return (
+    <RenameDocumentDialogContent
+      key={`${documentId}:${currentTitle}`}
+      documentId={documentId}
+      currentTitle={currentTitle}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
+  );
+}
+
+function RenameDocumentDialogContent({
+  documentId,
+  currentTitle,
+  onClose,
+  onSuccess,
+}: Omit<RenameDocumentDialogProps, "open">) {
   const [title, setTitle] = useState(currentTitle);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setTitle(currentTitle);
-      setError(null);
-      setSaving(false);
-      setTimeout(() => inputRef.current?.select(), 50);
-    }
-  }, [open, currentTitle]);
-
-  if (!open) return null;
+    setTimeout(() => inputRef.current?.select(), 50);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

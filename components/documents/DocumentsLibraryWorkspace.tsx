@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, FilePlus, FileUp, ClipboardList } from "lucide-react";
+import { ChevronDown, FileUp, ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DocumentsSummaryCards } from "@/components/documents/DocumentsSummaryCards";
 import { DocumentsTabs } from "@/components/documents/DocumentsTabs";
@@ -44,11 +44,6 @@ function NewDocumentDropdown() {
       label: "Paste Text",
       icon: ClipboardList,
       href: newDocumentHref("paste"),
-    },
-    {
-      label: "Create Blank",
-      icon: FilePlus,
-      href: newDocumentHref("blank"),
     },
   ];
 
@@ -221,7 +216,7 @@ export function DocumentsLibraryWorkspace({
       <PageHeader
         eyebrow="Documents"
         title="Documents Library"
-        description="Manage uploaded, pasted, and created documents in one place."
+        description="Manage uploaded and pasted documents in one place."
         actions={<NewDocumentDropdown />}
       />
 
@@ -253,7 +248,6 @@ export function DocumentsLibraryWorkspace({
 
         <DocumentsTable
           documents={data.documents}
-          total={data.total}
           hasFilters={hasActiveFilters || currentTab !== "all"}
           onClearFilters={handleClearFilters}
           onRenameDoc={openRename}

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, FileText, PenLine, Search, Sparkles } from "lucide-react";
+import { FileText, PenLine, Search, Sparkles } from "lucide-react";
 
 type SuggestionItem = {
   documentTitle: string;

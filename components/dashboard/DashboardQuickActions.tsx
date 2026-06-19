@@ -15,7 +15,7 @@ type DashboardQuickActionsProps = {
 
 export function DashboardQuickActions({ actions }: DashboardQuickActionsProps) {
   return (
-    <section className="grid min-w-0 gap-4 lg:grid-cols-3">
+    <section className="grid min-w-0 gap-4 md:grid-cols-2">
       {actions.map(({ description, href, icon: Icon, title }) => (
         <Link
           key={title}

@@ -1,8 +1,8 @@
-export type NewDocumentTab = "upload" | "blank" | "paste";
+export type NewDocumentTab = "upload" | "paste";
 
 export const NEW_DOCUMENT_PATH = "/documents/new";
 
-const NEW_DOCUMENT_TABS: NewDocumentTab[] = ["upload", "blank", "paste"];
+const NEW_DOCUMENT_TABS: NewDocumentTab[] = ["upload", "paste"];
 
 export function isNewDocumentTab(value: string): value is NewDocumentTab {
   return NEW_DOCUMENT_TABS.includes(value as NewDocumentTab);

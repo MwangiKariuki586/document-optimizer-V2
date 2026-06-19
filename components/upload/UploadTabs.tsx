@@ -1,8 +1,7 @@
 "use client";
 
-import { FileText, Plus, Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BlankDocumentForm } from "@/components/upload/BlankDocumentForm";
 import { PasteTextForm } from "@/components/upload/PasteTextForm";
 import { UploadDropzone } from "@/components/upload/UploadDropzone";
 import {
@@ -14,7 +13,6 @@ import {
 const TABS: { id: NewDocumentTab; label: string; Icon: React.ElementType }[] =
   [
     { id: "upload", label: "Upload File", Icon: Upload },
-    { id: "blank", label: "Create Blank", Icon: Plus },
     { id: "paste", label: "Paste Text", Icon: FileText },
   ];
 
@@ -74,16 +72,6 @@ export function UploadTabs() {
             className="flex min-h-0 flex-1 flex-col"
           >
             <UploadDropzone />
-          </div>
-        )}
-        {activeTab === "blank" && (
-          <div
-            id="upload-panel-blank"
-            role="tabpanel"
-            aria-labelledby="upload-tab-blank"
-            className="flex min-h-0 flex-1 flex-col"
-          >
-            <BlankDocumentForm />
           </div>
         )}
         {activeTab === "paste" && (

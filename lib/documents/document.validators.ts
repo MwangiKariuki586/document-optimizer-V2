@@ -28,7 +28,7 @@ export const documentContentSchema = z
     `Content must be ${DOCUMENT_CONTENT_MAX.toLocaleString("en-US")} characters or fewer`,
   );
 
-// Editor body content may be empty (e.g. a blank document) but is still capped.
+// Editor body content may be empty after manual editing, but is still capped.
 export const documentBodySchema = z
   .string({ message: "Content is required" })
   .max(
@@ -81,20 +81,11 @@ export const createVersionSchema = z.object({
 
 export type CreateVersionRequest = z.infer<typeof createVersionSchema>;
 
-export const createBlankDocumentSchema = z.object({
-  sourceType: z.literal("blank").optional(),
-  title: documentTitleSchema,
-});
-
 export const createPasteDocumentSchema = z.object({
   sourceType: z.literal("paste"),
   title: documentTitleSchema,
   content: documentContentSchema,
 });
-
-export type CreateBlankDocumentRequest = z.infer<
-  typeof createBlankDocumentSchema
->;
 
 export type CreatePasteDocumentRequest = z.infer<
   typeof createPasteDocumentSchema

@@ -415,7 +415,7 @@ Examples:
 
 ```txt
 No documents yet.
-Upload a file, paste text, or create a blank document to begin.
+Upload a file or paste text to begin.
 ```
 
 ```txt

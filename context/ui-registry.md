@@ -742,7 +742,7 @@ className="mt-4 grid min-h-0 flex-1 items-center gap-4 sm:grid-cols-[112px_minma
 
 **Purpose:**
 
-Tabbed container for the three document creation methods (Upload File, Create Blank, Paste Text) on `/documents/new`.
+Tabbed container for the two current MVP document creation methods (Upload File, Paste Text) on `/documents/new`.
 
 **Used on:**
 
@@ -750,7 +750,7 @@ Tabbed container for the three document creation methods (Upload File, Create Bl
 
 **Rules:**
 
-- Holds the active-tab state and renders `UploadDropzone`, `BlankDocumentForm`, or `PasteTextForm`.
+- Holds the active-tab state and renders `UploadDropzone` or `PasteTextForm`.
 - Uses `role="tablist"` / `role="tab"` / `role="tabpanel"` for accessibility.
 
 ### UploadDropzone
@@ -776,23 +776,6 @@ Drag-and-drop / choose-file zone that uploads a file to `POST /api/upload`, show
 - Client-side validates type/size via `validateUpload` before sending (server re-validates).
 - Sends `multipart/form-data`; does not set `Content-Type` manually.
 - Shows a warning toast when the API returns formatting warnings.
-
-### BlankDocumentForm
-
-**Path:** `components/upload/BlankDocumentForm.tsx`
-
-**Purpose:**
-
-Creates a blank document via `POST /api/documents` (`sourceType: "blank"`) and redirects to the editor.
-
-**Used on:**
-
-- `/documents/new` (Create Blank tab)
-
-**Rules:**
-
-- Title uses the shared clean-character allowlist (`TITLE_ALLOWED_PATTERN`) with inline error + `aria-invalid`.
-- Uses `LoadingButton`; success/error via `appToast`.
 
 ### PasteTextForm
 
@@ -1853,6 +1836,7 @@ Select: h-9 appearance-none rounded-md border border-border bg-surface
 **Rules:**
 
 - Search debounces URL updates by 400ms.
+- Search input derives its visible value from the current URL value plus local draft state; do not add a synchronous prop-to-state effect.
 - Fidelity filter is hidden below `xl` to reduce toolbar crowding.
 - Clear filters button appears only when active non-default filters are present.
 
@@ -1883,7 +1867,7 @@ Mobile card: rounded-xl border border-border bg-surface p-4 shadow-card-soft
 - Desktop/tablet table with 8 columns.
 - Mobile card list.
 - Skeleton rows during loading.
-- Full empty state with three creation action links.
+- Full empty state with Upload Document and Paste Text action links.
 - Filtered empty state with clear-filters button.
 
 **Rules:**
@@ -1891,6 +1875,7 @@ Mobile card: rounded-xl border border-border bg-surface p-4 shadow-card-soft
 - Always shows `DocumentStatusBadge` and `FidelityBadge`.
 - Open button links to `/documents/[id]`, hidden for archived documents.
 - Empty state occupies the table area without collapsing the outer card.
+- Create Blank is not exposed in table empty states for the current MVP.
 
 ---
 
@@ -1979,6 +1964,7 @@ Panel: max-w-md rounded-2xl border border-border bg-surface p-6 shadow-popover
 **Rules:**
 
 - Pre-fills input with current title and selects all text on open.
+- Uses a keyed inner dialog component to reset state when opening for a different document/title instead of syncing state in an effect.
 - Calls `onSuccess()` + `onClose()` after successful rename.
 
 ---

@@ -2,11 +2,6 @@ import type { Json } from "@/lib/supabase/types";
 
 export type DocumentSourceType = "upload" | "paste" | "blank";
 
-export type CreateBlankDocumentInput = {
-  userId: string;
-  title: string;
-};
-
 export type CreatePasteDocumentInput = {
   userId: string;
   title: string;

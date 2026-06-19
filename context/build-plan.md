@@ -179,7 +179,6 @@ Build the complete dashboard UI with mock data,referencing context/designs/dashb
 - Quick action cards:
   - Upload Document
   - Paste Text
-  - Create Blank Document
 
 - Recent documents section
 - Document status/fidelity badges
@@ -216,10 +215,9 @@ Build the complete document creation flow with mock states,referencing context/d
 
 **UI:**
 
-- Three creation options:
+- Two creation options:
   - Upload File
   - Paste Text
-  - Create Blank
 
 - Upload dropzone
 - Supported file format notes:
@@ -229,7 +227,6 @@ Build the complete document creation flow with mock states,referencing context/d
   - TXT
 
 - Paste text form
-- Blank document form
 - Upload progress state
 - Parsing state
 - Success state
@@ -240,18 +237,12 @@ Build the complete document creation flow with mock states,referencing context/d
 
 ### 10 Create Blank Document
 
-Wire blank document creation.
+Removed from the current MVP. Do not expose a blank-document tab, dashboard quick action, documents-library action, or `POST /api/documents` creation branch for `sourceType = blank`.
 
 **Logic:**
 
-- POST document creation request
-- Validate title
-- Create document with `source_type = blank`
-- Set status to `ready`
-- Create initial document version
-- Record usage
-- Redirect to `/documents/[id]`
-- Show success/error toast
+- Legacy blank documents and blank versions may still be displayed if they already exist.
+- New document creation is limited to upload and paste text flows.
 
 ---
 

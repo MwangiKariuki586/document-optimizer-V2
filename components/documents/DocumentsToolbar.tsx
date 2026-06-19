@@ -33,7 +33,6 @@ const TYPE_OPTIONS = [
   { value: "docx", label: "DOCX" },
   { value: "markdown", label: "Markdown" },
   { value: "txt", label: "TXT" },
-  { value: "blank", label: "Blank" },
 ];
 
 const FIDELITY_OPTIONS = [
@@ -73,12 +72,12 @@ export function DocumentsToolbar({
   onClearFilters,
   hasActiveFilters,
 }: DocumentsToolbarProps) {
-  const [localSearch, setLocalSearch] = useState(search);
-
-  // Sync local search when external search changes (e.g. clear filters)
-  useEffect(() => {
-    setLocalSearch(search);
-  }, [search]);
+  const [draftSearch, setDraftSearch] = useState({
+    base: search,
+    value: search,
+  });
+  const localSearch =
+    draftSearch.base === search ? draftSearch.value : search;
 
   // Debounce: push URL update 400ms after the user stops typing
   useEffect(() => {
@@ -99,7 +98,9 @@ export function DocumentsToolbar({
         <input
           type="search"
           value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
+          onChange={(e) =>
+            setDraftSearch({ base: search, value: e.target.value })
+          }
           placeholder="Search documents…"
           className="h-9 w-full min-w-[160px] rounded-md border border-border bg-surface py-1.5 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-soft focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent"
           aria-label="Search documents"
@@ -108,7 +109,7 @@ export function DocumentsToolbar({
           <button
             type="button"
             onClick={() => {
-              setLocalSearch("");
+              setDraftSearch({ base: "", value: "" });
               onSearchChange("");
             }}
             className="absolute right-2 flex size-5 items-center justify-center rounded text-text-muted hover:text-text-primary"

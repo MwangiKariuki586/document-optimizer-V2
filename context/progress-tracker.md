@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 11 - Documents Library
-**Last completed:** Documents Library page — full UI and real data
-**Next:** Browser visual review of /documents page
+**Last completed:** Removed Create Blank from the current MVP creation flow
+**Next:** Browser visual review of /documents and /documents/new after blank removal
 
 ---
 
@@ -31,7 +31,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ### Phase 3 - Upload/Create Document Flow
 
 - [x] 09 Upload/Create Page - Full UI
-- [x] 10 Create Blank Document
+- [x] 10 Create Blank Document (removed from current MVP on 2026-06-19)
 - [x] 11 Paste Text Document
 - [x] 12 Upload Document
 
@@ -95,6 +95,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: The MVP is free and should not expose pricing, subscription, invoice, renewal, upgrade, or paid-plan account UI. Usage surfaces remain for operational activity tracking.
 - Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
 - Decision: `/documents` is now the Documents Library — a primary navigation page for managing all uploaded, pasted, and created documents with pagination, filtering, sorting, tabs, and row actions (rename/archive/delete). Supersedes the earlier decision to keep `/documents` as a redirect to `/dashboard`.
+- Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
 
 ---
 
@@ -109,6 +110,42 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-19
+Feature: Remove Create Blank from current MVP
+Status: Completed
+Files changed:
+  app/(app)/dashboard/page.tsx
+  app/api/documents/route.ts
+  components/dashboard/DashboardQuickActions.tsx
+  components/dashboard/RecentDocuments.tsx
+  components/documents/DocumentsLibraryWorkspace.tsx
+  components/documents/DocumentsTable.tsx
+  components/documents/DocumentsToolbar.tsx
+  components/upload/UploadTabs.tsx
+  components/upload/BlankDocumentForm.tsx (deleted)
+  lib/documents/document.service.ts
+  lib/documents/document.types.ts
+  lib/documents/document.validators.ts
+  lib/documents/document.validators.test.ts
+  lib/documents/new-document.routes.ts
+  context/architecture.md
+  context/build-plan.md
+  context/code-standards.md
+  context/library-docs.md
+  context/project-overview.md
+  context/ui-registry.md
+  context/ui-rules.md
+  context/progress-tracker.md
+What was completed:
+  Removed Create Blank from dashboard quick actions, Documents Library New Document menu,
+  Documents Library empty states, /documents/new tabs, and new-document tab routes.
+  Deleted BlankDocumentForm and removed the blank creation branch/schema/service from
+  POST /api/documents. Kept legacy blank display/version support for existing rows.
+Verification: npx tsc --noEmit passed; npm run lint passed; npx vitest run lib/documents/document.validators.test.ts lib/documents/document.service.test.ts passed. curl.exe -I /documents/new returned the expected Clerk 307 auth redirect. Browser visual QA could not run because the in-app Browser surface was unavailable (`iab` did not attach).
+Follow-up: Browser-review /dashboard, /documents, and /documents/new in a signed-in session.
+```
 
 ```txt
 Date: 2026-06-19

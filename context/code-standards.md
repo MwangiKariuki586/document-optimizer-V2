@@ -523,7 +523,6 @@ Create versions for:
 ```txt
 initial upload
 pasted content
-blank document creation
 manual snapshot
 AI result application
 suggestion application
