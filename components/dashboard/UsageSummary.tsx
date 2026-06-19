@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import type { CSSProperties } from "react";
+import { useMemo, useState } from "react";
 import { ArrowRight, ChevronDown } from "lucide-react";
-
-type UsageItem = {
-  label: string;
-  progressClass: string;
-  value: string;
-};
+import type {
+  DashboardUsageOverview,
+  DashboardUsageRange,
+} from "@/lib/dashboard/dashboard.service";
 
 type ExportFormatItem = {
   count: number;
@@ -18,75 +18,60 @@ type ExportFormatItem = {
 
 type UsageSummaryProps = {
   aiActionLimit: number;
-  aiActionsUsed: number;
   exportFormats: ExportFormatItem[];
-  usage: UsageItem[];
+  usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>;
 };
 
-function usageRingClass(percent: number): string {
-  if (percent >= 90) {
-    return "bg-[conic-gradient(var(--color-accent)_90%,var(--color-accent-light)_0)]";
-  }
-
-  if (percent >= 78) {
-    return "bg-[conic-gradient(var(--color-accent)_78%,var(--color-accent-light)_0)]";
-  }
-
-  if (percent >= 68) {
-    return "bg-[conic-gradient(var(--color-accent)_68%,var(--color-accent-light)_0)]";
-  }
-
-  if (percent >= 48) {
-    return "bg-[conic-gradient(var(--color-accent)_48%,var(--color-accent-light)_0)]";
-  }
-
-  if (percent >= 25) {
-    return "bg-[conic-gradient(var(--color-accent)_25%,var(--color-accent-light)_0)]";
-  }
-
-  return "bg-[conic-gradient(var(--color-accent)_8%,var(--color-accent-light)_0)]";
-}
-
 const dateRangeOptions = [
-  "Today",
   "This Week",
+  "Today",
   "This Month",
   "This Year",
 ] as const;
 
-type DateRangeOption = (typeof dateRangeOptions)[number];
+type BarStyle = CSSProperties & {
+  "--bar-width": string;
+};
 
 type DateRangeSelectProps = {
   label: string;
+  onChange: (range: DashboardUsageRange) => void;
+  options: DashboardUsageRange[];
+  value: DashboardUsageRange;
 };
 
-function isDateRangeOption(value: string): value is DateRangeOption {
-  return dateRangeOptions.some((option) => option === value);
+function isDateRangeOption(
+  value: string,
+  options: DashboardUsageRange[],
+): value is DashboardUsageRange {
+  return options.some((option) => option === value);
 }
 
-function DateRangeSelect({ label }: DateRangeSelectProps) {
-  const [selectedRange, setSelectedRange] =
-    useState<DateRangeOption>("This Month");
-
+function DateRangeSelect({
+  label,
+  onChange,
+  options,
+  value,
+}: DateRangeSelectProps) {
   return (
     <label className="relative inline-flex items-center">
       <span className="sr-only">{label}</span>
       <select
-        value={selectedRange}
+        value={value}
         onChange={(event) => {
-          if (isDateRangeOption(event.target.value)) {
-            setSelectedRange(event.target.value);
+          if (isDateRangeOption(event.target.value, options)) {
+            onChange(event.target.value);
           }
         }}
-        className="h-8 appearance-none rounded-md border border-border bg-surface py-1 pl-3 pr-8 text-xs font-medium text-text-secondary outline-none transition hover:bg-surface-secondary focus:border-accent focus:ring-2 focus:ring-accent"
+        className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary outline-none transition hover:bg-surface-secondary focus:border-accent focus:ring-2 focus:ring-accent"
       >
-        {dateRangeOptions.map((option) => (
+        {options.map((option) => (
           <option key={option} value={option}>
             {option}
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 size-3.5 text-text-muted" />
+      <ChevronDown className="pointer-events-none absolute right-3 size-4 text-text-muted" />
     </label>
   );
 }
@@ -99,60 +84,186 @@ const exportToneClasses: Record<ExportFormatItem["tone"], string> = {
   muted: "bg-text-soft",
 };
 
+function orderedRanges(
+  usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>,
+): DashboardUsageRange[] {
+  return dateRangeOptions.filter((option) => Boolean(usageOverview[option]));
+}
+
+function ringPercent(used: number, limit: number): number {
+  if (limit <= 0 || used <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((used / limit) * 100));
+}
+
+function visibleBarPercent(percent: number): number {
+  if (percent <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(12, percent));
+}
+
+function barStyle(percent: number): BarStyle {
+  return {
+    "--bar-width": `${visibleBarPercent(percent)}%`,
+  };
+}
+
+function UsageRing({
+  limit,
+  percent,
+  used,
+}: {
+  limit: number;
+  percent: number;
+  used: number;
+}) {
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const progress = percent > 0 ? Math.max(3, percent) : 0;
+  const dashOffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative mx-auto mt-4 flex size-[116px] items-center justify-center">
+      <svg
+        aria-hidden="true"
+        className="absolute inset-0 size-full -rotate-90"
+        viewBox="0 0 100 100"
+      >
+        <circle
+          cx="50"
+          cy="50"
+          fill="none"
+          r={radius}
+          stroke="var(--color-accent-light)"
+          strokeWidth="9"
+        />
+        <circle
+          cx="50"
+          cy="50"
+          fill="none"
+          r={radius}
+          stroke="var(--color-accent)"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="butt"
+          strokeWidth="9"
+        />
+      </svg>
+
+      <div className="relative flex size-[84px] flex-col items-center justify-center rounded-full bg-surface text-center">
+        <p className="text-2xl font-bold leading-7 text-text-primary">
+          {percent}%
+        </p>
+        <p className="text-xs leading-4 text-text-muted">
+          {used.toLocaleString("en-US")} / {limit.toLocaleString("en-US")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function exportGradient(exportFormats: ExportFormatItem[]): CSSProperties {
+  const total = exportFormats.reduce((sum, item) => sum + item.count, 0);
+
+  if (total <= 0) {
+    return {
+      background: "conic-gradient(var(--color-surface-tertiary) 0 100%)",
+    };
+  }
+
+  const colorByTone: Record<ExportFormatItem["tone"], string> = {
+    accent: "var(--color-accent)",
+    info: "var(--color-info)",
+    success: "var(--color-success)",
+    warning: "var(--color-warning)",
+    muted: "var(--color-text-soft)",
+  };
+  let cursor = 0;
+  const stops = exportFormats
+    .filter((item) => item.count > 0)
+    .map((item) => {
+      const next = cursor + (item.count / total) * 100;
+      const stop = `${colorByTone[item.tone]} ${cursor.toFixed(2)}% ${next.toFixed(2)}%`;
+      cursor = next;
+      return stop;
+    });
+
+  return {
+    background: `conic-gradient(${stops.join(", ")})`,
+  };
+}
+
 export function UsageSummary({
   aiActionLimit,
-  aiActionsUsed,
   exportFormats,
-  usage,
+  usageOverview,
 }: UsageSummaryProps) {
+  const ranges = useMemo(() => orderedRanges(usageOverview), [usageOverview]);
+  const defaultRange: DashboardUsageRange = ranges.includes("This Week")
+    ? "This Week"
+    : (ranges[0] ?? "This Month");
+  const [selectedRange, setSelectedRange] =
+    useState<DashboardUsageRange>(defaultRange);
+  const currentUsage =
+    usageOverview[selectedRange] ?? usageOverview["This Week"];
+  const usage = currentUsage.items;
   const totalExports = exportFormats.reduce((sum, item) => sum + item.count, 0);
-  const aiActionsPercent =
-    aiActionLimit > 0 ? Math.min(100, Math.round((aiActionsUsed / aiActionLimit) * 100)) : 0;
-  const aiActionsUsageText = `${aiActionsUsed.toLocaleString("en-US")} / ${aiActionLimit.toLocaleString("en-US")}`;
+  const aiActionsPercent = ringPercent(
+    currentUsage.aiActionsUsed,
+    aiActionLimit,
+  );
 
   return (
     <aside className="space-y-4">
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold leading-7 text-text-primary">
+          <h2 className="text-2xl font-bold leading-8 text-text-primary">
             Usage Overview
           </h2>
-          <DateRangeSelect label="Filter usage overview by date range" />
+          <DateRangeSelect
+            label="Filter usage overview by date range"
+            onChange={setSelectedRange}
+            options={ranges}
+            value={selectedRange}
+          />
         </div>
-        <div
-          className={`mx-auto mt-4 flex size-28 items-center justify-center rounded-full p-2.5 ${usageRingClass(aiActionsPercent)}`}
-        >
-          <div className="flex size-full flex-col items-center justify-center rounded-full bg-surface">
-            <p className="text-2xl font-bold text-text-primary">
-              {aiActionsPercent}%
-            </p>
-            <p className="mt-0.5 text-xs text-text-muted">
-              {aiActionsUsageText}
-            </p>
-            <p className="text-xs text-text-muted">AI actions used</p>
-          </div>
-        </div>
-        <div className="mt-4 space-y-3">
+
+        <UsageRing
+          limit={aiActionLimit}
+          percent={aiActionsPercent}
+          used={currentUsage.aiActionsUsed}
+        />
+
+        <div className="mt-5 space-y-4">
           {usage.map((item) => (
             <div key={item.label}>
-              <div className="mb-1.5 flex justify-between text-sm">
-                <span className="text-text-secondary">{item.label}</span>
-                <span className="font-medium text-text-primary">
+              <div className="mb-2 flex items-center justify-between gap-4 text-lg leading-6">
+                <span className="min-w-0 truncate text-text-secondary">
+                  {item.label}
+                </span>
+                <span className="shrink-0 font-semibold text-text-primary">
                   {item.value}
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-surface-tertiary">
-                <div className={`h-2 rounded-full bg-accent ${item.progressClass}`} />
+              <div className="h-2.5 overflow-hidden rounded-full bg-accent-lighter">
+                <div
+                  className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
+                  style={barStyle(item.percent)}
+                />
               </div>
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          className="mt-4 w-full rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light"
+        <Link
+          href="/account#usage"
+          className="mt-5 flex w-full items-center justify-center rounded-xl bg-accent-lighter px-4 py-3 text-base font-medium text-accent transition hover:bg-accent-light"
         >
           View Usage Details
-        </button>
+        </Link>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
@@ -161,7 +272,10 @@ export function UsageSummary({
         </h2>
 
         <div className="mt-5 grid items-center gap-5 sm:grid-cols-[132px_minmax(0,1fr)]">
-          <div className="mx-auto flex size-28 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_0_50%,var(--color-info)_50%_75%,var(--color-success)_75%_87%,var(--color-warning)_87%_95%,var(--color-text-soft)_95%_100%)] p-4">
+          <div
+            className="mx-auto flex size-28 items-center justify-center rounded-full p-4"
+            style={exportGradient(exportFormats)}
+          >
             <div className="flex size-full flex-col items-center justify-center rounded-full bg-surface">
               <p className="text-2xl font-bold leading-8 text-text-primary">
                 {totalExports}

@@ -640,24 +640,28 @@ Dashboard side panel for usage overview and export-format distribution.
 
 ```txt
 className="space-y-4"
-className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
-className="mx-auto mt-4 flex size-28 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_68%,var(--color-accent-light)_0)] p-2.5"
-className="mx-auto flex size-28 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_0_50%,var(--color-info)_50%_75%,var(--color-success)_75%_87%,var(--color-warning)_87%_95%,var(--color-text-soft)_95%_100%)] p-4"
+className="rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
+className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary"
+className="relative mx-auto mt-4 flex size-[116px] items-center justify-center"
+className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
+className="mx-auto flex size-28 items-center justify-center rounded-full p-4"
 className="mt-5 grid items-center gap-5 sm:grid-cols-[132px_minmax(0,1fr)]"
-className="h-8 appearance-none rounded-md border border-border bg-surface py-1 pl-3 pr-8 text-xs font-medium text-text-secondary"
 ```
 
 **Variants:**
 
 - Usage progress list.
-- Export-format donut chart with PDF, DOCX, TXT, MD, and Other legend rows.
-- Native date-range dropdown controls for Today, This Week, This Month, and This Year.
+- Dynamic SVG usage ring showing selected-range AI actions used against the dashboard action limit.
+- Dynamic usage progress bars driven by numeric percentages from the dashboard service.
+- Export-format donut chart with PDF, DOCX, TXT, MD, and Other legend rows using live count distribution.
+- Native date-range dropdown controls for Today, This Week, This Month, and This Year. Default visible range is This Week.
 
 **Rules:**
 
 - Use project accent tokens for chart-like dashboard visuals.
-- Date filters are local UI controls only until the real-data phase wires filtered queries.
-- Usage counts, AI action total, and export-format distribution are supplied by the dashboard service.
+- Date filters switch between precomputed user-scoped dashboard usage snapshots; do not treat the selector as static UI.
+- Usage counts, AI action total, usage bar percentages, and export-format distribution are supplied by the dashboard service.
+- `View Usage Details` links to `/account#usage`.
 
 ---
 

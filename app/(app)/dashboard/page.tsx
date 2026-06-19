@@ -177,9 +177,8 @@ export default async function DashboardPage() {
 
         <UsageSummary
           aiActionLimit={aiActionLimit}
-          aiActionsUsed={dashboardData.metrics.aiActionsThisMonth}
           exportFormats={dashboardData.exportFormats}
-          usage={dashboardData.usage}
+          usageOverview={dashboardData.usageOverview}
         />
       </div>
 

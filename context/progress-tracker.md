@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Clerk Account Popover Width Polish
+**Last completed:** Dashboard Usage Ring Size Polish
 **Next:** MVP complete - browser visual review before shipping
 
 ---
@@ -105,6 +105,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Ring Size Polish
+Status: Completed
+Files changed: components/dashboard/UsageSummary.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reduced the Usage Overview ring footprint from a large 144px chart to a compact 116px chart, tightened the ring stroke, and scaled down the centered percentage/count copy so the card content fits more naturally.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: Browser-verify /dashboard to confirm the smaller ring matches the intended visual scale.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Usage Overview Polish
+Status: Completed
+Files changed: app/(app)/dashboard/page.tsx, components/dashboard/UsageSummary.tsx, lib/dashboard/dashboard.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined the dashboard Usage Overview card to match the provided compact reference more closely, replaced static month-scoped usage props with precomputed Today/This Week/This Month/This Year usage snapshots, made the date selector update the ring and usage bars, switched the usage ring to a dynamic SVG chart, linked View Usage Details to /account#usage, and made the export-format donut reflect the live export distribution instead of fixed chart stops.
+Verification: npx tsc --noEmit passed. npm run lint passed cleanly.
+Follow-up: Browser-verify /dashboard at desktop and mobile widths, including the Usage Overview date selector and chart fit.
+```
 
 ```txt
 Date: 2026-06-19

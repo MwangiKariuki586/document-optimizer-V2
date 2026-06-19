@@ -31,7 +31,7 @@ type ExportRow = Pick<
 
 type SuggestionRow = Pick<
   Tables<"suggestions">,
-  "document_id" | "id" | "status" | "type"
+  "created_at" | "document_id" | "id" | "status" | "type"
 >;
 
 export type DashboardRecentDocument = {
@@ -53,7 +53,16 @@ export type DashboardRecentDocument = {
 
 export type DashboardUsageItem = {
   label: string;
-  progressClass: string;
+  percent: number;
+  value: string;
+};
+
+export type DashboardUsageRange = "Today" | "This Week" | "This Month" | "This Year";
+
+export type DashboardUsageOverview = {
+  aiActionsUsed: number;
+  items: DashboardUsageItem[];
+  rangeLabel: DashboardUsageRange;
   value: string;
 };
 
@@ -97,6 +106,7 @@ export type DashboardData = {
   recentDocuments: DashboardRecentDocument[];
   suggestions: DashboardSuggestionItem[];
   usage: DashboardUsageItem[];
+  usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>;
 };
 
 const emptyDashboardData: DashboardData = {
@@ -120,11 +130,57 @@ const emptyDashboardData: DashboardData = {
   recentDocuments: [],
   suggestions: [],
   usage: [
-    { label: "AI Suggestions", value: "0", progressClass: "w-0" },
-    { label: "Structure Analysis", value: "0", progressClass: "w-0" },
-    { label: "Tone & Clarity", value: "0", progressClass: "w-0" },
-    { label: "Enhancements", value: "0", progressClass: "w-0" },
+    { label: "AI Suggestions", value: "0", percent: 0 },
+    { label: "Structure Analysis", value: "0", percent: 0 },
+    { label: "Tone & Clarity", value: "0", percent: 0 },
+    { label: "Enhancements", value: "0", percent: 0 },
   ],
+  usageOverview: {
+    Today: {
+      aiActionsUsed: 0,
+      items: [
+        { label: "AI Suggestions", value: "0", percent: 0 },
+        { label: "Structure Analysis", value: "0", percent: 0 },
+        { label: "Tone & Clarity", value: "0", percent: 0 },
+        { label: "Enhancements", value: "0", percent: 0 },
+      ],
+      rangeLabel: "Today",
+      value: "0",
+    },
+    "This Week": {
+      aiActionsUsed: 0,
+      items: [
+        { label: "AI Suggestions", value: "0", percent: 0 },
+        { label: "Structure Analysis", value: "0", percent: 0 },
+        { label: "Tone & Clarity", value: "0", percent: 0 },
+        { label: "Enhancements", value: "0", percent: 0 },
+      ],
+      rangeLabel: "This Week",
+      value: "0",
+    },
+    "This Month": {
+      aiActionsUsed: 0,
+      items: [
+        { label: "AI Suggestions", value: "0", percent: 0 },
+        { label: "Structure Analysis", value: "0", percent: 0 },
+        { label: "Tone & Clarity", value: "0", percent: 0 },
+        { label: "Enhancements", value: "0", percent: 0 },
+      ],
+      rangeLabel: "This Month",
+      value: "0",
+    },
+    "This Year": {
+      aiActionsUsed: 0,
+      items: [
+        { label: "AI Suggestions", value: "0", percent: 0 },
+        { label: "Structure Analysis", value: "0", percent: 0 },
+        { label: "Tone & Clarity", value: "0", percent: 0 },
+        { label: "Enhancements", value: "0", percent: 0 },
+      ],
+      rangeLabel: "This Year",
+      value: "0",
+    },
+  },
 };
 
 const formatCount = new Intl.NumberFormat("en-US");
@@ -135,6 +191,29 @@ function getMonthStartIso(): string {
   monthStart.setHours(0, 0, 0, 0);
 
   return monthStart.toISOString();
+}
+
+function getTodayStartIso(): string {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  return todayStart.toISOString();
+}
+
+function getWeekStartIso(): string {
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 6);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return weekStart.toISOString();
+}
+
+function getYearStartIso(): string {
+  const yearStart = new Date();
+  yearStart.setMonth(0, 1);
+  yearStart.setHours(0, 0, 0, 0);
+
+  return yearStart.toISOString();
 }
 
 function formatRelativeDate(value: string): string {
@@ -243,21 +322,12 @@ function fidelityScore(status: string): number {
   }
 }
 
-function progressClass(count: number, denominator: number): string {
+function progressPercent(count: number, denominator: number): number {
   if (denominator <= 0 || count <= 0) {
-    return "w-0";
+    return 0;
   }
 
-  const percent = Math.min(100, Math.round((count / denominator) * 100));
-
-  if (percent >= 90) return "w-[90%]";
-  if (percent >= 78) return "w-[78%]";
-  if (percent >= 68) return "w-[68%]";
-  if (percent >= 62) return "w-[62%]";
-  if (percent >= 48) return "w-[48%]";
-  if (percent >= 36) return "w-[36%]";
-  if (percent >= 25) return "w-1/4";
-  return "w-[12%]";
+  return Math.min(100, Math.round((count / denominator) * 100));
 }
 
 function mapRecentDocument(row: DocumentRow): DashboardRecentDocument {
@@ -394,29 +464,73 @@ function buildUsage(
   const enhancementCount = aiRequests.filter((request) =>
     ["optimize", "rewrite", "simplify_language"].includes(request.action),
   ).length;
+  const denominator = Math.max(
+    suggestionCount,
+    structureCount,
+    toneCount,
+    enhancementCount,
+    1,
+  );
 
   return [
     {
       label: "AI Suggestions",
       value: formatCount.format(suggestionCount),
-      progressClass: progressClass(suggestionCount, 100),
+      percent: progressPercent(suggestionCount, denominator),
     },
     {
       label: "Structure Analysis",
       value: formatCount.format(structureCount),
-      progressClass: progressClass(structureCount, 100),
+      percent: progressPercent(structureCount, denominator),
     },
     {
       label: "Tone & Clarity",
       value: formatCount.format(toneCount),
-      progressClass: progressClass(toneCount, 100),
+      percent: progressPercent(toneCount, denominator),
     },
     {
       label: "Enhancements",
       value: formatCount.format(enhancementCount),
-      progressClass: progressClass(enhancementCount, 100),
+      percent: progressPercent(enhancementCount, denominator),
     },
   ];
+}
+
+function isSince(value: string, sinceIso: string): boolean {
+  return new Date(value).getTime() >= new Date(sinceIso).getTime();
+}
+
+function buildUsageOverview(
+  suggestions: SuggestionRow[],
+  aiRequests: AIRequestRow[],
+): Record<DashboardUsageRange, DashboardUsageOverview> {
+  const starts: Record<DashboardUsageRange, string> = {
+    Today: getTodayStartIso(),
+    "This Week": getWeekStartIso(),
+    "This Month": getMonthStartIso(),
+    "This Year": getYearStartIso(),
+  };
+
+  return Object.fromEntries(
+    (Object.keys(starts) as DashboardUsageRange[]).map((range) => {
+      const rangeSuggestions = suggestions.filter((row) =>
+        isSince(row.created_at, starts[range]),
+      );
+      const rangeAIRequests = aiRequests.filter((row) =>
+        isSince(row.created_at, starts[range]),
+      );
+
+      return [
+        range,
+        {
+          aiActionsUsed: rangeAIRequests.length,
+          items: buildUsage(rangeSuggestions, rangeAIRequests),
+          rangeLabel: range,
+          value: formatCount.format(rangeAIRequests.length),
+        },
+      ];
+    }),
+  ) as Record<DashboardUsageRange, DashboardUsageOverview>;
 }
 
 function buildExportFormats(exports: ExportRow[]): DashboardExportFormat[] {
@@ -525,7 +639,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         .select("document_id,action,status,created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(8),
+        .gte("created_at", getYearStartIso())
+        .limit(500),
       supabase
         .from("document_versions")
         .select("document_id,title,source,created_at")
@@ -540,11 +655,12 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         .limit(100),
       supabase
         .from("suggestions")
-        .select("id,document_id,type,status")
+        .select("id,document_id,type,status,created_at")
         .eq("user_id", userId)
         .eq("status", "pending")
         .order("created_at", { ascending: false })
-        .limit(20),
+        .gte("created_at", getYearStartIso())
+        .limit(500),
     ]);
 
   if (aiError || versionError || exportError || suggestionError) {
@@ -605,6 +721,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     recentDocuments: recentDocumentRows.map(mapRecentDocument),
     suggestions: mapSuggestions(suggestionRows, titleMap),
     usage: buildUsage(suggestionRows, aiRows),
+    usageOverview: buildUsageOverview(suggestionRows, aiRows),
   };
 }
 
