@@ -3,7 +3,6 @@ import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import { UploadTabs } from "@/components/upload/UploadTabs";
-import { SupportedFormats } from "@/components/upload/SupportedFormats";
 import { WhatHappensNext } from "@/components/upload/WhatHappensNext";
 import { UploadTips } from "@/components/upload/UploadTips";
 
@@ -22,9 +21,7 @@ export default function NewDocumentPage() {
         description="Upload an existing file, start from scratch, or paste your text to get started. We'll help you improve it with AI."
       />
 
-      {/* Main content grid: tabs (left) + sidebar (right) */}
-      <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
-        {/* UploadTabs — Upload / Create Blank / Paste Text */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:min-h-[max(420px,calc(100dvh-13rem))]">
         <Suspense
           fallback={
             <div className="min-h-[420px] rounded-2xl border border-border bg-surface shadow-card-soft" />
@@ -32,16 +29,12 @@ export default function NewDocumentPage() {
         >
           <UploadTabs />
         </Suspense>
-        <aside className="flex flex-col gap-4">
-          <SupportedFormats />
+        <aside className="flex flex-col gap-4 lg:self-start">
+          <UploadTips />
           <WhatHappensNext />
         </aside>
       </div>
 
-      {/* Tips section */}
-      <UploadTips />
-
-      {/* Footer note */}
       <p className="flex items-center justify-center gap-2 text-xs text-text-muted">
         <ShieldCheck className="size-3.5 text-success" aria-hidden="true" />
         Your original files are always preserved and secure.

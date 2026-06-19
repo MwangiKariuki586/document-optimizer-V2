@@ -821,11 +821,12 @@ Informational sidebar and helper sections on the upload page (supported formats,
 
 **Used on:**
 
-- `/documents/new`
+- `/documents/new` — `UploadTips` and `WhatHappensNext` in the right sidebar; supported formats are shown in the upload dropzone copy instead of `SupportedFormats`.
 
 **Rules:**
 
 - Static/presentational; no data wiring required for the current phase.
+- `UploadTips` uses the compact sidebar card pattern (280px column), not the former full-width banner layout.
 
 ---
 

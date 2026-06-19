@@ -102,7 +102,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 _Add notes here as the build progresses: workarounds, patterns, anything that differs from the context files._
 
-- 2026-06-14: Suggestions did not show because the connected Supabase project had no `suggestions` rows and no `ai_requests` rows; the real-data rail correctly renders only persisted suggestions. Tightened AI prompt output guidance so suggestion-friendly actions request 3-6 exact-substring suggestions, and added a fallback in `saveSuggestionsFromAIResult()` that creates a full-document pending suggestion when an AI result has `revisedMarkdown` but no granular `suggestions`.
+- 2026-06-19: New Document page sidebar shows compact `UploadTips` instead of `SupportedFormats` (formats remain in dropzone copy); upload workspace uses viewport min-height on the main grid.
 
 ---
 

@@ -35,11 +35,11 @@ export function UploadTabs() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface shadow-card-soft">
+    <div className="flex h-full min-h-[420px] flex-col rounded-2xl border border-border bg-surface shadow-card-soft">
       <div
         role="tablist"
         aria-label="Document creation method"
-        className="flex border-b border-border"
+        className="flex shrink-0 border-b border-border"
       >
         {TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
@@ -65,12 +65,13 @@ export function UploadTabs() {
         })}
       </div>
 
-      <div className="p-6">
+      <div className="flex min-h-0 flex-1 flex-col p-6">
         {activeTab === "upload" && (
           <div
             id="upload-panel-upload"
             role="tabpanel"
             aria-labelledby="upload-tab-upload"
+            className="flex min-h-0 flex-1 flex-col"
           >
             <UploadDropzone />
           </div>
@@ -80,6 +81,7 @@ export function UploadTabs() {
             id="upload-panel-blank"
             role="tabpanel"
             aria-labelledby="upload-tab-blank"
+            className="flex min-h-0 flex-1 flex-col"
           >
             <BlankDocumentForm />
           </div>
@@ -89,6 +91,7 @@ export function UploadTabs() {
             id="upload-panel-paste"
             role="tabpanel"
             aria-labelledby="upload-tab-paste"
+            className="flex min-h-0 flex-1 flex-col"
           >
             <PasteTextForm />
           </div>

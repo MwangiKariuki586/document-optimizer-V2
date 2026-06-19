@@ -62,12 +62,12 @@ export function BlankDocumentForm() {
   return (
     <form
       id="blank-document-form"
-      className="flex flex-col gap-6"
+      className="flex min-h-0 flex-1 flex-col gap-6"
       onSubmit={handleSubmit}
       aria-label="Create blank document form"
     >
       {/* Blank document illustration */}
-      <div className="flex flex-col items-center gap-4 rounded-xl border border-border-light bg-surface-muted py-10">
+      <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-4 rounded-xl border border-border-light bg-surface-muted py-10">
         <span
           className="flex size-16 items-center justify-center rounded-2xl bg-accent-light text-accent"
           aria-hidden="true"

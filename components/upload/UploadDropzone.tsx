@@ -107,7 +107,7 @@ export function UploadDropzone() {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col gap-5">
       <div
         id="upload-dropzone"
         role="button"
@@ -121,7 +121,7 @@ export function UploadDropzone() {
           if (e.key === "Enter" || e.key === " ") handleChooseFile();
         }}
         className={[
-          "flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors",
+          "flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors",
           isUploading
             ? "border-accent bg-accent-lighter"
             : isDragging
