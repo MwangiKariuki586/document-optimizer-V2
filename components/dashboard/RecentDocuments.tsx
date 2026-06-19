@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { FileText, MoreHorizontal, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { FileText, Plus } from "lucide-react";
 import {
   DocumentStatusBadge,
   type DocumentStatus,
@@ -33,6 +36,54 @@ const fileTypeClasses: Record<RecentDocument["type"], string> = {
   None: "bg-surface-secondary text-text-muted",
 };
 
+function RecentDocumentTableRow({ document }: { document: RecentDocument }) {
+  const router = useRouter();
+
+  return (
+    <tr
+      onClick={() => router.push(document.href)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          router.push(document.href);
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      className="cursor-pointer text-sm text-text-primary transition hover:bg-surface-secondary"
+    >
+      <td className="py-4 pr-4">
+        <div className="flex min-w-0 gap-3">
+          <span
+            className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${fileTypeClasses[document.type]}`}
+          >
+            <FileText className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate font-semibold">{document.title}</span>
+            <span className="mt-1 block text-sm text-text-secondary">
+              / {document.folder}
+            </span>
+          </span>
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <span className="rounded-md bg-surface-tertiary px-2 py-1 text-xs font-medium text-text-secondary">
+          {document.type}
+        </span>
+      </td>
+      <td className="px-4 py-4">
+        <DocumentStatusBadge status={document.status} />
+      </td>
+      <td className="px-4 py-4 text-text-secondary">{document.updated}</td>
+      <td className="px-4 py-4 text-text-secondary">{document.words}</td>
+      <td className="px-4 py-4">
+        <FidelityBadge status={document.fidelity} />
+      </td>
+    </tr>
+  );
+}
+
 export function RecentDocuments({ documents }: RecentDocumentsProps) {
   const visibleDocuments = documents.slice(0, 5);
 
@@ -49,7 +100,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         </div>
 
         <Link
-          href="/dashboard"
+          href="/documents"
           className="shrink-0 text-sm font-semibold text-accent transition hover:text-accent-dark"
         >
           View all documents
@@ -127,53 +178,11 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                   <th className="px-4 py-3">Last Updated</th>
                   <th className="px-4 py-3">Words</th>
                   <th className="px-4 py-3">Fidelity</th>
-                  <th className="py-3 pl-4 text-right">More</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light">
                 {visibleDocuments.map((document) => (
-                  <tr
-                    key={document.id}
-                    className="text-sm text-text-primary transition hover:bg-surface-secondary"
-                  >
-                    <td className="py-4 pr-4">
-                      <Link href={document.href} className="flex min-w-0 gap-3">
-                        <span
-                          className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${fileTypeClasses[document.type]}`}
-                        >
-                          <FileText className="size-5" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold">
-                            {document.title}
-                          </span>
-                          <span className="mt-1 block text-sm text-text-secondary">
-                            / {document.folder}
-                          </span>
-                        </span>
-                      </Link>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="rounded-md bg-surface-tertiary px-2 py-1 text-xs font-medium text-text-secondary">
-                        {document.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <DocumentStatusBadge status={document.status} />
-                    </td>
-                    <td className="px-4 py-4 text-text-secondary">
-                      {document.updated}
-                    </td>
-                    <td className="px-4 py-4 text-text-secondary">
-                      {document.words}
-                    </td>
-                    <td className="px-4 py-4">
-                      <FidelityBadge status={document.fidelity} />
-                    </td>
-                    <td className="py-4 pl-4 text-right text-text-muted">
-                      <MoreHorizontal className="ml-auto size-4" />
-                    </td>
-                  </tr>
+                  <RecentDocumentTableRow key={document.id} document={document} />
                 ))}
               </tbody>
             </table>

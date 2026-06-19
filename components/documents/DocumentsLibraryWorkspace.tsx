@@ -16,6 +16,7 @@ import type {
   DocumentsLibraryItem,
   DocumentsLibraryResult,
 } from "@/lib/documents/documents-library.service";
+import { newDocumentHref } from "@/lib/documents/new-document.routes";
 
 type DialogState =
   | { kind: "none" }
@@ -37,17 +38,17 @@ function NewDocumentDropdown() {
     {
       label: "Upload File",
       icon: FileUp,
-      href: "/documents/new",
+      href: newDocumentHref("upload"),
     },
     {
       label: "Paste Text",
       icon: ClipboardList,
-      href: "/documents/new",
+      href: newDocumentHref("paste"),
     },
     {
       label: "Create Blank",
       icon: FilePlus,
-      href: "/documents/new",
+      href: newDocumentHref("blank"),
     },
   ];
 

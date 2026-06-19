@@ -21,24 +21,25 @@ import {
   getEmptyDashboardData,
   type DashboardData,
 } from "@/lib/dashboard/dashboard.service";
+import { newDocumentHref } from "@/lib/documents/new-document.routes";
 
 const quickActions = [
   {
     title: "Upload Document",
     description: "Upload a file from your device",
-    href: "/documents/new",
+    href: newDocumentHref("upload"),
     icon: FileUp,
   },
   {
     title: "Create Blank Document",
     description: "Start with a clean slate",
-    href: "/documents/new",
+    href: newDocumentHref("blank"),
     icon: FileText,
   },
   {
     title: "Paste Text",
     description: "Paste text to optimize instantly",
-    href: "/documents/new",
+    href: newDocumentHref("paste"),
     icon: ClipboardList,
   },
 ];
@@ -100,15 +101,18 @@ export default async function DashboardPage() {
   const stats = [
     {
       label: "Total Documents",
+      meta: "Library",
       value: formatNumber(dashboardData.metrics.totalDocuments),
-      helper: `${formatNumber(dashboardData.metrics.documentsThisMonth)} this month`,
+      helper: "Across your workspace",
+      action: `${formatNumber(dashboardData.metrics.documentsThisMonth)} this month`,
       icon: FileText,
       tone: "info" as const,
     },
     {
       label: "AI Actions This Month",
+      meta: "Usage",
       value: `${formatNumber(dashboardData.metrics.aiActionsThisMonth)} / ${formatNumber(aiActionLimit)}`,
-      helper: "",
+      helper: "Monthly action allowance",
       icon: WandSparkles,
       progressClass: progressClass(
         dashboardData.metrics.aiActionsThisMonth,
@@ -118,15 +122,19 @@ export default async function DashboardPage() {
     },
     {
       label: "Exports",
+      meta: "Output",
       value: formatNumber(dashboardData.metrics.totalExports),
-      helper: `+${formatNumber(dashboardData.metrics.exportsThisMonth)} this month`,
+      helper: "Completed exports",
+      action: `+${formatNumber(dashboardData.metrics.exportsThisMonth)} this month`,
       icon: Download,
       tone: "success" as const,
     },
     {
       label: "Avg. Quality Score",
+      meta: "Quality",
       value: formatNumber(dashboardData.metrics.avgQualityScore),
-      helper: qualityLabel(dashboardData.metrics.avgQualityScore),
+      helper: "Document quality average",
+      action: qualityLabel(dashboardData.metrics.avgQualityScore),
       icon: Star,
       tone: "ai" as const,
     },

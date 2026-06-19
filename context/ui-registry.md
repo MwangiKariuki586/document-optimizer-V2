@@ -488,27 +488,33 @@ Shared KPI stat card grid used by the dashboard and account usage workspace.
 
 ```txt
 className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4"
-className="flex h-[120px] min-h-[120px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 pt-4 pb-3.5 shadow-card-soft"
-className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border-light"
-className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-text-primary"
-className="mt-1 text-3xl font-bold leading-8 text-text-primary"
-className="mb-2 text-xs text-text-secondary"
+className="flex min-h-[152px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft"
+className="flex size-7 shrink-0 items-center justify-center rounded-full"
+className="truncate text-sm font-semibold leading-5 text-text-primary"
+className="truncate text-xs leading-4 text-text-muted"
+className="border-t border-border-light"
+className="text-[2rem] font-bold leading-9 tracking-tight text-text-primary"
+className="mt-1 truncate text-sm leading-5 text-text-secondary"
+className="border-t border-border-light bg-surface-secondary px-4 py-2.5"
 className="h-1.5 rounded-full bg-surface-tertiary"
 ```
 
 **Variants:**
 
-- `accent`, `ai`, `info`, `success` tone variants for icon surfaces and progress bars.
-- Optional `progressClass` width utility for usage progress rows.
+- `accent`, `ai`, `info`, `success` tone variants for icon surfaces, footer actions, and progress bars.
+- Optional `meta` for the small header subtitle (for example `Status`, `Usage`).
+- Optional `action` for the muted footer link row with arrow and chevron.
+- Optional `progressClass` width utility for usage progress rows in the footer.
 - Values may render as a single stat or split on ` / ` for paired counts.
 
 **Rules:**
 
 - Dashboard and account pages must use this component for KPI stat rows; do not fork separate stat card markup.
 - Icons are supplied by the page or workspace adapter that maps service data into `StatCardItem`.
-- Non-progress helpers use the success arrow indicator pattern.
-- Cards stay fixed at 120px height so workspace grids remain stable.
-- Stat labels reserve a fixed two-line height (`min-h-10`) so values align across the row.
+- `helper` is supporting copy below the metric; `action` is optional footer link text.
+- Progress cards render the bar in the footer instead of an action link.
+- Cards use a minimum 152px height so workspace grids remain stable.
+- Header icons stay compact (`size-7` circle, `size-3.5` icon) for enterprise KPI styling.
 
 ### DashboardQuickActions
 

@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { DocumentsLibraryItem } from "@/lib/documents/documents-library.service";
+import { newDocumentHref } from "@/lib/documents/new-document.routes";
 
 type DocumentActionsMenuProps = {
   doc: DocumentsLibraryItem;
@@ -126,7 +127,7 @@ export function DocumentActionsMenu({
             <button
               role="menuitem"
               type="button"
-              onClick={() => action(() => router.push("/documents/new"))}
+              onClick={() => action(() => router.push(newDocumentHref("upload")))}
               className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-warning-foreground transition hover:bg-warning-muted"
             >
               <RotateCcw className="size-4 shrink-0" />

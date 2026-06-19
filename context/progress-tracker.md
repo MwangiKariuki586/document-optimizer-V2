@@ -147,6 +147,26 @@ Follow-up: User-owned browser visual review of /documents page.
 
 ```txt
 Date: 2026-06-19
+Feature: New document tab deep links
+Status: Completed
+Files changed: lib/documents/new-document.routes.ts, components/upload/UploadTabs.tsx, components/documents/DocumentsLibraryWorkspace.tsx, components/documents/DocumentsTable.tsx, components/documents/DocumentActionsMenu.tsx, app/(app)/dashboard/page.tsx, app/(app)/documents/new/page.tsx, context/progress-tracker.md
+What was completed: Added shared new-document tab route helpers and wired UploadTabs plus all New Document entry points to open upload, paste, or blank via ?tab= query params.
+Verification: npx tsc --noEmit passed.
+Follow-up: User-owned browser check of New Document dropdown and dashboard quick actions on /documents/new.
+```
+
+```txt
+Date: 2026-06-19
+Feature: StatCardGrid enterprise KPI layout
+Status: Completed
+Files changed: components/workspace/StatCardGrid.tsx, components/documents/DocumentsSummaryCards.tsx, app/(app)/dashboard/page.tsx, lib/usage/account-usage.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Refined StatCardGrid to match the enterprise KPI mockup with header icon/meta, divider, prominent metric body, supporting helper text, and muted footer action or progress row. Updated dashboard, documents library, and account stat data to use optional meta and action fields.
+Verification: npx tsc --noEmit passed.
+Follow-up: User-owned visual review of KPI cards on /dashboard, /account, and /documents.
+```
+
+```txt
+Date: 2026-06-19
 Feature: Shared StatCardGrid for Dashboard and Account
 Status: Completed
 Files changed: components/workspace/StatCardGrid.tsx, components/dashboard/DocumentStats.tsx, components/usage/AccountUsageWorkspace.tsx, app/(app)/dashboard/page.tsx, context/ui-registry.md, context/progress-tracker.md

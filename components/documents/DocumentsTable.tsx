@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FileText, FilePlus, ClipboardList, FileUp } from "lucide-react";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { FidelityBadge } from "@/components/documents/FidelityBadge";
@@ -6,6 +9,7 @@ import type { DocumentsLibraryItem } from "@/lib/documents/documents-library.ser
 import type { DocumentStatus } from "@/components/documents/DocumentStatusBadge";
 import type { FidelityStatus } from "@/components/documents/FidelityBadge";
 import { DocumentActionsMenu } from "@/components/documents/DocumentActionsMenu";
+import { newDocumentHref } from "@/lib/documents/new-document.routes";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -102,21 +106,21 @@ function NoDocumentsState() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
-              href="/documents/new"
+              href={newDocumentHref("upload")}
               className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
             >
               <FileUp className="size-4" />
               Upload Document
             </Link>
             <Link
-              href="/documents/new"
+              href={newDocumentHref("paste")}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-surface-secondary"
             >
               <ClipboardList className="size-4" />
               Paste Text
             </Link>
             <Link
-              href="/documents/new"
+              href={newDocumentHref("blank")}
               className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-surface-secondary"
             >
               <FilePlus className="size-4" />
@@ -173,11 +177,33 @@ function MobileDocumentCard({
   onArchive,
   onDelete,
 }: MobileDocumentCardProps) {
+  const router = useRouter();
   const label = fileTypeLabel(doc.fileType, doc.sourceType);
   const status = normalizeStatus(doc.status);
+  const isArchived = doc.status === "archived";
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card-soft">
+    <div
+      role={isArchived ? undefined : "link"}
+      tabIndex={isArchived ? undefined : 0}
+      onClick={() => {
+        if (!isArchived) {
+          router.push(`/documents/${doc.id}`);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (
+          !isArchived &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          router.push(`/documents/${doc.id}`);
+        }
+      }}
+      className={`flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card-soft ${
+        isArchived ? "" : "cursor-pointer transition hover:bg-surface-secondary"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-text-primary">
@@ -187,12 +213,14 @@ function MobileDocumentCard({
             {label} · {formatRelativeDate(doc.updatedAt)}
           </p>
         </div>
-        <DocumentActionsMenu
-          doc={doc}
-          onRename={onRename}
-          onArchive={onArchive}
-          onDelete={onDelete}
-        />
+        <div onClick={(event) => event.stopPropagation()}>
+          <DocumentActionsMenu
+            doc={doc}
+            onRename={onRename}
+            onArchive={onArchive}
+            onDelete={onDelete}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -206,19 +234,9 @@ function MobileDocumentCard({
         ) : null}
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-text-muted">
-          {doc.wordCount.toLocaleString("en-US")} words
-        </span>
-        {doc.status !== "archived" ? (
-          <Link
-            href={`/documents/${doc.id}`}
-            className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground transition hover:bg-accent-dark"
-          >
-            Open
-          </Link>
-        ) : null}
-      </div>
+      <p className="text-xs text-text-muted">
+        {doc.wordCount.toLocaleString("en-US")} words
+      </p>
     </div>
   );
 }
@@ -246,6 +264,7 @@ export function DocumentsTable({
   onArchiveDoc,
   onDeleteDoc,
 }: DocumentsTableProps) {
+  const router = useRouter();
   const isEmpty = !loading && documents.length === 0;
   const isFilteredEmpty = isEmpty && hasFilters;
   const isFullyEmpty = isEmpty && !hasFilters;
@@ -326,7 +345,14 @@ export function DocumentsTable({
                 return (
                   <tr
                     key={doc.id}
-                    className="transition hover:bg-surface-secondary"
+                    onClick={() => {
+                      if (!isArchived) {
+                        router.push(`/documents/${doc.id}`);
+                      }
+                    }}
+                    className={`transition hover:bg-surface-secondary ${
+                      isArchived ? "" : "cursor-pointer"
+                    }`}
                   >
                     <td className="px-4 py-3">
                       <div className="min-w-0">
@@ -370,16 +396,11 @@ export function DocumentsTable({
                         {doc.wordCount.toLocaleString("en-US")}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        {!isArchived ? (
-                          <Link
-                            href={`/documents/${doc.id}`}
-                            className="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground transition hover:bg-accent-dark"
-                          >
-                            Open
-                          </Link>
-                        ) : null}
+                    <td
+                      className="px-4 py-3"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end">
                         <DocumentActionsMenu
                           doc={doc}
                           onRename={() => onRenameDoc(doc)}
@@ -430,7 +451,7 @@ export function DocumentsTable({
               Upload a document, paste text, or create a blank document.
             </p>
             <Link
-              href="/documents/new"
+              href={newDocumentHref("upload")}
               className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
             >
               Upload Document

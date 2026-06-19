@@ -50,6 +50,7 @@ export type AccountProfile = {
 export type AccountStat = {
   helper: string;
   label: string;
+  meta?: string;
   progressClass?: string;
   tone: "accent" | "ai" | "info" | "success";
   value: string;
@@ -495,14 +496,28 @@ function buildEmptyData(profile: AccountProfile): AccountUsageData {
       {
         helper: "Tokens used this month",
         label: "AI usage",
+        meta: "Usage",
         tone: "accent",
         value: "0 tokens",
       },
-      { helper: "0 uploaded", label: "Documents processed", tone: "info", value: "0" },
-      { helper: "0 applied", label: "AI improvements", tone: "success", value: "0" },
+      {
+        helper: "0 uploaded",
+        label: "Documents processed",
+        meta: "Activity",
+        tone: "info",
+        value: "0",
+      },
+      {
+        helper: "0 applied",
+        label: "AI improvements",
+        meta: "Impact",
+        tone: "success",
+        value: "0",
+      },
       {
         helper: "Private files and exports",
         label: "Storage used",
+        meta: "Storage",
         tone: "ai",
         value: "0 KB used",
       },
@@ -610,24 +625,28 @@ export async function getAccountUsageData(
       {
         helper: "Tokens used this month",
         label: "AI usage",
+        meta: "Usage",
         tone: "accent",
         value: `${formatCount.format(tokenTotal)} tokens`,
       },
       {
         helper: `${formatCount.format(uploadedDocuments)} uploaded`,
         label: "Documents processed",
+        meta: "Activity",
         tone: "info",
         value: formatCount.format(documents.length),
       },
       {
         helper: `${formatCount.format(appliedSuggestions)} applied`,
         label: "AI improvements",
+        meta: "Impact",
         tone: "success",
         value: formatCount.format(suggestionRows.length),
       },
       {
         helper: "Private files and exports",
         label: "Storage used",
+        meta: "Storage",
         tone: "ai",
         value: `${formatStorage(storageUsedBytes)} used`,
       },

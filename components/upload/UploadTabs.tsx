@@ -1,25 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { Upload, FileText, Plus } from "lucide-react";
-import { UploadDropzone } from "@/components/upload/UploadDropzone";
-import { PasteTextForm } from "@/components/upload/PasteTextForm";
+import { FileText, Plus, Upload } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BlankDocumentForm } from "@/components/upload/BlankDocumentForm";
+import { PasteTextForm } from "@/components/upload/PasteTextForm";
+import { UploadDropzone } from "@/components/upload/UploadDropzone";
+import {
+  newDocumentHref,
+  parseNewDocumentTab,
+  type NewDocumentTab,
+} from "@/lib/documents/new-document.routes";
 
-type Tab = "upload" | "blank" | "paste";
-
-const TABS: { id: Tab; label: string; Icon: React.ElementType }[] = [
-  { id: "upload", label: "Upload File", Icon: Upload },
-  { id: "blank", label: "Create Blank", Icon: Plus },
-  { id: "paste", label: "Paste Text", Icon: FileText },
-];
+const TABS: { id: NewDocumentTab; label: string; Icon: React.ElementType }[] =
+  [
+    { id: "upload", label: "Upload File", Icon: Upload },
+    { id: "blank", label: "Create Blank", Icon: Plus },
+    { id: "paste", label: "Paste Text", Icon: FileText },
+  ];
 
 export function UploadTabs() {
-  const [activeTab, setActiveTab] = useState<Tab>("upload");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = parseNewDocumentTab(searchParams.get("tab"));
+
+  function setActiveTab(tab: NewDocumentTab) {
+    const nextHref = newDocumentHref(tab);
+    const currentTab = parseNewDocumentTab(searchParams.get("tab"));
+
+    if (tab === currentTab) {
+      return;
+    }
+
+    router.replace(nextHref, { scroll: false });
+  }
 
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-card-soft">
-      {/* Tab bar */}
       <div
         role="tablist"
         aria-label="Document creation method"
@@ -49,7 +65,6 @@ export function UploadTabs() {
         })}
       </div>
 
-      {/* Tab panels */}
       <div className="p-6">
         {activeTab === "upload" && (
           <div

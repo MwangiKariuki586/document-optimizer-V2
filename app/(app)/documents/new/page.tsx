@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
@@ -24,9 +25,13 @@ export default function NewDocumentPage() {
       {/* Main content grid: tabs (left) + sidebar (right) */}
       <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
         {/* UploadTabs — Upload / Create Blank / Paste Text */}
-        <UploadTabs />
-
-        {/* Sidebar */}
+        <Suspense
+          fallback={
+            <div className="min-h-[420px] rounded-2xl border border-border bg-surface shadow-card-soft" />
+          }
+        >
+          <UploadTabs />
+        </Suspense>
         <aside className="flex flex-col gap-4">
           <SupportedFormats />
           <WhatHappensNext />
