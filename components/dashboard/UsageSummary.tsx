@@ -224,7 +224,7 @@ export function UsageSummary({
 
   return (
     <aside className={`min-w-0 space-y-6 ${className ?? ""}`}>
-      <section className="flex h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+      <section className="flex h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
         <div className="flex shrink-0 items-center justify-between gap-4">
           <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Usage Overview
@@ -263,16 +263,18 @@ export function UsageSummary({
             </div>
           ))}
         </div>
-        <Link
-          href="/account#usage"
-          className="mt-auto flex w-full shrink-0 items-center justify-center gap-2 rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light"
-        >
-          View Usage Details
-          <ArrowRight className="size-4" />
-        </Link>
+        <div className="mt-auto shrink-0 pt-4">
+          <Link
+            href="/account#usage"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent-light"
+          >
+            View Usage Details
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
       </section>
 
-      <section className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+      <section className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Exports by Format
         </h2>

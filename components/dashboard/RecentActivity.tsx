@@ -37,14 +37,14 @@ export function RecentActivity({ activity }: RecentActivityProps) {
   const visibleActivity = activity.slice(0, 4);
 
   return (
-    <section className="flex h-[260px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft">
+    <section className="flex h-[280px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
       <div className="flex shrink-0 items-center justify-between gap-4">
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Recent Activity
         </h2>
       </div>
       {activity.length > 0 ? (
-        <div className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto">
+        <div className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto pb-2">
           {visibleActivity.map(
             ({ badge, description, kind, title, variant }) => {
               const Icon = activityIcons[kind];
@@ -60,10 +60,10 @@ export function RecentActivity({ activity }: RecentActivityProps) {
                     <Icon className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-text-primary">
+                    <p className="truncate text-sm font-semibold text-text-primary">
                       {title}
                     </p>
-                    <p className="mt-1 text-xs text-text-muted">
+                    <p className="mt-1 text-sm text-text-secondary">
                       {description}
                     </p>
                   </div>

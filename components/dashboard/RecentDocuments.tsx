@@ -37,10 +37,10 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
   const visibleDocuments = documents.slice(0, 5);
 
   return (
-    <section className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft">
+    <section className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
       <div className="flex shrink-0 items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold leading-8 text-text-primary">
+          <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Recent Documents
           </h2>
           <p className="mt-1 text-sm text-text-secondary">
@@ -50,7 +50,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
 
         <Link
           href="/dashboard"
-          className="shrink-0 text-sm font-medium text-accent transition hover:text-accent-dark"
+          className="shrink-0 text-sm font-semibold text-accent transition hover:text-accent-dark"
         >
           View all documents
         </Link>
@@ -77,7 +77,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         </div>
       ) : (
         <>
-          <div className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto md:hidden">
+          <div className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pb-2 md:hidden">
             {visibleDocuments.map((document) => (
               <Link
                 key={document.id}
@@ -96,7 +96,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                         <h3 className="truncate text-sm font-semibold text-text-primary">
                           {document.title}
                         </h3>
-                        <p className="mt-1 text-xs text-text-muted">
+                        <p className="mt-1 text-sm text-text-secondary">
                           / {document.folder} / {document.words} words
                         </p>
                       </div>
@@ -117,7 +117,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
             ))}
           </div>
 
-          <div className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto md:block">
+          <div className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto pb-2 md:block">
             <table className="w-full min-w-[760px] border-collapse">
               <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="border-b border-border-light text-left text-xs font-medium uppercase text-text-muted">
@@ -147,7 +147,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
                           <span className="block truncate font-semibold">
                             {document.title}
                           </span>
-                          <span className="mt-1 block text-xs text-text-muted">
+                          <span className="mt-1 block text-sm text-text-secondary">
                             / {document.folder}
                           </span>
                         </span>

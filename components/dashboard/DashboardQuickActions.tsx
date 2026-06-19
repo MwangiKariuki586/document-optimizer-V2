@@ -26,10 +26,10 @@ export function DashboardQuickActions({ actions }: DashboardQuickActionsProps) {
             <Icon className="size-5" />
           </span>
           <span className="min-w-0 flex-1 pr-8">
-            <span className="block truncate whitespace-nowrap text-xs font-semibold leading-4 text-text-primary">
+            <span className="block truncate whitespace-nowrap text-sm font-semibold leading-5 text-text-primary">
               {title}
             </span>
-            <span className="mt-2 block text-xs leading-4 text-text-secondary">
+            <span className="mt-1.5 block text-xs leading-4 text-text-secondary">
               {description}
             </span>
           </span>

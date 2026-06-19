@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Dashboard Card Scrollbar Visibility Fix
+**Last completed:** Shared StatCardGrid for Dashboard and Account
 **Next:** MVP complete - browser visual review before shipping
 
 ---
@@ -105,6 +105,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-19
+Feature: Shared StatCardGrid for Dashboard and Account
+Status: Completed
+Files changed: components/workspace/StatCardGrid.tsx, components/dashboard/DocumentStats.tsx, components/usage/AccountUsageWorkspace.tsx, app/(app)/dashboard/page.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Extracted a shared StatCardGrid KPI component and wired both /dashboard and /account to use the same stat card layout, typography, tone variants, and progress helper patterns.
+Verification: npx tsc --noEmit passed.
+Follow-up: User-owned visual review of KPI stat rows on /dashboard and /account.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard Card Bottom Padding Fix
+Status: Completed
+Files changed: components/dashboard/DocumentStats.tsx, components/dashboard/RecentDocuments.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/RecentActivity.tsx, components/dashboard/UsageSummary.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Standardized dashboard card padding to p-6, added scroll-region pb-2 breathing room, increased KPI and feed card heights after typography changes, and separated the Usage Overview CTA with a pt-4 footer wrapper.
+Verification: npx tsc --noEmit passed.
+Follow-up: User-owned visual review of dashboard card spacing on /dashboard.
+```
+
+```txt
+Date: 2026-06-19
+Feature: Dashboard and Account Typography Normalization
+Status: Completed
+Files changed: components/dashboard/DashboardQuickActions.tsx, components/dashboard/DocumentStats.tsx, components/dashboard/RecentDocuments.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/RecentActivity.tsx, components/usage/AccountUsageWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Aligned dashboard typography with account/usage and ui-tokens: card headings on Recent Documents, stat label/value scales on dashboard and account KPI cards, quick-action title size, feed secondary lines at text-sm, and consistent font-semibold list primaries.
+Verification: npx tsc --noEmit passed.
+Follow-up: User-owned visual review of /dashboard and /account typography parity.
+```
 
 ```txt
 Date: 2026-06-19

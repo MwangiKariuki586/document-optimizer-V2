@@ -8,8 +8,13 @@ import {
   Settings,
   Sparkles,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { AccountUsageTrendChart } from "@/components/usage/AccountUsageTrendChart";
+import {
+  StatCardGrid,
+  type StatCardItem,
+} from "@/components/workspace/StatCardGrid";
 import type {
   AccountActivityItem,
   AccountProfile,
@@ -19,30 +24,27 @@ import type {
   AccountUsageData,
 } from "@/lib/usage/account-usage.service";
 
-type StatCard = AccountUsageData["stats"][number];
-
 const quickActions = [
   { icon: Download, label: "Download usage report" },
   { icon: Cloud, label: "Manage storage" },
   { icon: Settings, label: "Account settings" },
 ];
 
-const statIconByLabel: Record<
-  string,
-  React.ComponentType<{ className?: string }>
-> = {
+const statIconByLabel: Record<string, LucideIcon> = {
   "AI improvements": Sparkles,
   "AI usage": Zap,
   "Documents processed": FileText,
   "Storage used": Cloud,
 };
 
-const toneClasses: Record<StatCard["tone"], string> = {
-  accent: "bg-accent-lighter text-accent",
-  ai: "bg-ai-muted text-ai-dark",
-  info: "bg-info-muted text-info-foreground",
-  success: "bg-success-muted text-success-foreground",
-};
+function accountStatItems(
+  stats: AccountUsageData["stats"],
+): StatCardItem[] {
+  return stats.map((stat) => ({
+    ...stat,
+    icon: statIconByLabel[stat.label] ?? Gauge,
+  }));
+}
 
 const categoryToneClasses: Record<AccountUsageCategory["tone"], string> = {
   accent: "bg-accent",
@@ -77,62 +79,6 @@ const documentToneClasses: Record<AccountRecentDocument["fileType"], string> = {
   PDF: "bg-error-muted text-error-foreground",
   TXT: "bg-surface-tertiary text-text-secondary",
 };
-
-function StatCards({ stats }: { stats: StatCard[] }) {
-  return (
-    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {stats.map((card) => {
-        const Icon = statIconByLabel[card.label] ?? Gauge;
-        const [primaryValue, secondaryValue] = card.value.split(" / ");
-
-        return (
-          <article
-            key={card.label}
-            className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 text-sm font-semibold leading-5 text-text-primary">
-                  {card.label}
-                </p>
-                <div
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${toneClasses[card.tone]}`}
-                >
-                  <Icon className="size-5" />
-                </div>
-              </div>
-
-              <p className="mt-3 flex min-w-0 flex-nowrap items-baseline gap-x-1.5 whitespace-nowrap text-[25px] font-bold leading-8 text-text-primary">
-                <span>{primaryValue}</span>
-                {secondaryValue ? (
-                  <>
-                    <span className="text-xl leading-7 text-text-primary">
-                      /
-                    </span>
-                    <span className="text-xl leading-7 text-text-primary">
-                      {secondaryValue}
-                    </span>
-                  </>
-                ) : null}
-              </p>
-            </div>
-
-            {card.progressClass ? (
-              <div className="mt-3 h-2 rounded-full bg-surface-tertiary">
-                <div
-                  className={`h-2 rounded-full bg-accent ${card.progressClass}`}
-                />
-              </div>
-            ) : null}
-            <p className="mt-3 text-xs leading-4 text-text-secondary">
-              {card.helper}
-            </p>
-          </article>
-        );
-      })}
-    </section>
-  );
-}
 
 function UsageByCategory({
   categories,
@@ -436,7 +382,7 @@ export function AccountUsageWorkspace({ data }: AccountUsageWorkspaceProps) {
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0 space-y-6">
         <div id="usage" className="space-y-4">
-          <StatCards stats={data.stats} />
+          <StatCardGrid stats={accountStatItems(data.stats)} />
 
           <div className="min-w-0 space-y-4">
             <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">

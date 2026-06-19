@@ -471,6 +471,45 @@ className="mx-auto max-w-[1200px] rounded-2xl border border-border bg-surface p-
 
 ## Dashboard Components
 
+### StatCardGrid
+
+**Path:** `components/workspace/StatCardGrid.tsx`
+
+**Purpose:**
+
+Shared KPI stat card grid used by the dashboard and account usage workspace.
+
+**Used on:**
+
+- `/dashboard` via `DocumentStats`
+- `/account` via `AccountUsageWorkspace`
+
+**Core classes:**
+
+```txt
+className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4"
+className="flex h-[120px] min-h-[120px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 pt-4 pb-3.5 shadow-card-soft"
+className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border-light"
+className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-text-primary"
+className="mt-1 text-3xl font-bold leading-8 text-text-primary"
+className="mb-2 text-xs text-text-secondary"
+className="h-1.5 rounded-full bg-surface-tertiary"
+```
+
+**Variants:**
+
+- `accent`, `ai`, `info`, `success` tone variants for icon surfaces and progress bars.
+- Optional `progressClass` width utility for usage progress rows.
+- Values may render as a single stat or split on ` / ` for paired counts.
+
+**Rules:**
+
+- Dashboard and account pages must use this component for KPI stat rows; do not fork separate stat card markup.
+- Icons are supplied by the page or workspace adapter that maps service data into `StatCardItem`.
+- Non-progress helpers use the success arrow indicator pattern.
+- Cards stay fixed at 120px height so workspace grids remain stable.
+- Stat labels reserve a fixed two-line height (`min-h-10`) so values align across the row.
+
 ### DashboardQuickActions
 
 **Path:** `components/dashboard/DashboardQuickActions.tsx`
@@ -489,7 +528,8 @@ Three primary dashboard action cards linking users into the document creation fl
 className="grid min-w-0 gap-4 lg:grid-cols-3"
 className="group relative flex h-[94px] min-w-0 items-center gap-4 rounded-xl border border-border bg-surface px-5 py-4 shadow-card-soft transition hover:border-border-strong hover:shadow-card"
 className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border-light bg-accent-lighter text-accent shadow-card-soft"
-className="block truncate whitespace-nowrap text-xs font-semibold leading-4 text-text-primary"
+className="block truncate whitespace-nowrap text-sm font-semibold leading-5 text-text-primary"
+className="mt-1.5 block text-xs leading-4 text-text-secondary"
 className="absolute bottom-4 right-4 flex size-6 items-center justify-center rounded-md bg-accent-lighter text-accent"
 ```
 
@@ -503,6 +543,7 @@ className="absolute bottom-4 right-4 flex size-6 items-center justify-center rou
 - Use lucide icons and token-based accent surfaces only.
 - Arrow control is a small visual affordance anchored to the lower-right of each card.
 - Cards use a fixed 94px height so the dashboard action row stays stable.
+- Title copy uses card small-body scale (`text-sm font-semibold`); descriptions stay compact at `text-xs`.
 
 ### DocumentStats
 
@@ -510,7 +551,7 @@ className="absolute bottom-4 right-4 flex size-6 items-center justify-center rou
 
 **Purpose:**
 
-Dashboard stat card grid for document count, AI actions, exports, and quality score.
+Dashboard adapter for the shared `StatCardGrid` KPI row.
 
 **Used on:**
 
@@ -519,23 +560,17 @@ Dashboard stat card grid for document count, AI actions, exports, and quality sc
 **Core classes:**
 
 ```txt
-className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4"
-className="flex h-[112px] min-w-0 flex-col justify-between rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft"
-className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border-light"
-className="whitespace-nowrap text-[11px] font-semibold leading-4 text-text-secondary"
-className="mt-1 text-[26px] font-bold leading-8 text-text-primary"
+Re-exports `StatCardGrid` from `components/workspace/StatCardGrid.tsx`
 ```
 
 **Variants:**
 
-- `accent`, `ai`, `info`, `success` icon/progress variants.
+- None
 
 **Rules:**
 
-- Use token variants only.
-- Progress widths are supplied as fixed Tailwind width classes.
-- Non-progress helpers use a small success arrow indicator.
-- Cards use a fixed 112px height so KPI metrics do not shift the dashboard grid.
+- Pass `StatCardItem[]` with lucide icons and tone variants from the dashboard page.
+- Do not add dashboard-only stat card markup here; extend `StatCardGrid` instead.
 
 ### RecentDocuments
 
@@ -552,9 +587,9 @@ Recent document overview with desktop table and mobile document cards.
 **Core classes:**
 
 ```txt
-className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto md:hidden"
-className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto md:block"
+className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
+className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pb-2 md:hidden"
+className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto pb-2 md:block"
 ```
 
 **Variants:**
@@ -570,6 +605,7 @@ className="scrollbar-hidden mt-5 hidden min-h-0 flex-1 overflow-auto md:block"
 - Always show document status and fidelity badges.
 - Accepts real dashboard records with DOCX, PDF, MD, TXT, or None file types.
 - The card always keeps a 360px height, caps visible documents to five, and lets only the row/table area scroll with hidden scrollbars.
+- Card title uses the shared card-heading scale (`text-lg font-semibold leading-7`), not section-heading scale.
 - Empty and filled states must preserve the same card height.
 
 ### RecentActivity
@@ -587,8 +623,8 @@ Recent dashboard activity list with compact status badges and icons.
 **Core classes:**
 
 ```txt
-className="flex h-[260px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto"
+className="flex h-[280px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
+className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto pb-2"
 className="flex min-h-0 flex-1 flex-col justify-center py-5"
 ```
 
@@ -605,6 +641,7 @@ className="flex min-h-0 flex-1 flex-col justify-center py-5"
 - The card must render a real empty state instead of a blank panel when activity is unavailable.
 - Show at most four activity items in the card. Use View all for deeper activity.
 - Internal list scrolling keeps overflow behavior but hides scrollbar chrome via `scrollbar-hidden`.
+- List primary lines use `text-sm font-semibold`; secondary/meta lines use `text-sm text-text-secondary`.
 - Must match SuggestionsReady height so the bottom dashboard row stays aligned.
 
 ### SuggestionsReady
@@ -622,8 +659,8 @@ Dashboard panel showing pending improvement suggestions.
 **Core classes:**
 
 ```txt
-className="flex h-[260px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-card-soft"
-className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto"
+className="flex h-[280px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
+className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto pb-2"
 className="flex min-h-0 flex-1 flex-col justify-center py-5"
 ```
 
@@ -640,6 +677,7 @@ className="flex min-h-0 flex-1 flex-col justify-center py-5"
 - Hide the Review All Suggestions action when no suggestions are ready.
 - Show at most three suggestions in the card. Use Review All Suggestions for deeper review.
 - Internal list scrolling keeps overflow behavior but hides scrollbar chrome via `scrollbar-hidden`.
+- List primary lines use `text-sm font-semibold`; secondary/meta lines use `text-sm text-text-secondary`.
 - Must match RecentActivity height so the bottom dashboard row stays aligned.
 
 ### UsageSummary
@@ -658,14 +696,14 @@ Dashboard side panel for usage overview and export-format distribution.
 
 ```txt
 className="min-w-0 space-y-6"
-className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="flex h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
 className="text-lg font-semibold leading-7 text-text-primary"
 className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary"
 className="relative mx-auto mt-2 flex size-[92px] items-center justify-center"
 className="mb-1 flex items-center justify-between gap-4 text-sm leading-5"
 className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
 className="mt-auto flex w-full shrink-0 items-center justify-center rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent"
-className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
 className="mx-auto flex size-24 items-center justify-center rounded-full p-3"
 className="mt-4 grid min-h-0 flex-1 items-center gap-4 sm:grid-cols-[112px_minmax(0,1fr)]"
 ```
@@ -1407,18 +1445,14 @@ Full account and usage overview workspace with Clerk-backed profile summary, Sup
 **Core classes:**
 
 ```txt
-className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)_320px]"
-className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft md:p-6"
-className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
-className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
-className="mt-3 flex min-w-0 flex-nowrap items-baseline gap-x-1.5 whitespace-nowrap text-[25px] font-bold leading-8 text-text-primary"
+className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
 className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
 ```
 
 **Variants:**
 
 - Sidebar account navigation with active Overview state.
-- Usage stat cards for AI usage, documents processed, AI improvements, and storage used.
+- Usage stat cards reuse `StatCardGrid` from `components/workspace/StatCardGrid.tsx`; map `AccountStat` rows to `StatCardItem` with label-based lucide icons.
 - Chart-style sections for trend, category donut, category bars, and health score.
 - Right utility rail with quick actions, storage, and recent documents as the third desktop column.
 

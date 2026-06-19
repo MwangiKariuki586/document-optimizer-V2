@@ -103,32 +103,32 @@ export default async function DashboardPage() {
       value: formatNumber(dashboardData.metrics.totalDocuments),
       helper: `${formatNumber(dashboardData.metrics.documentsThisMonth)} this month`,
       icon: FileText,
-      variant: "info" as const,
+      tone: "info" as const,
     },
     {
       label: "AI Actions This Month",
-      value: formatNumber(dashboardData.metrics.aiActionsThisMonth),
-      helper: `${formatNumber(dashboardData.metrics.aiActionsThisMonth)} of ${formatNumber(aiActionLimit)}`,
+      value: `${formatNumber(dashboardData.metrics.aiActionsThisMonth)} / ${formatNumber(aiActionLimit)}`,
+      helper: "",
       icon: WandSparkles,
       progressClass: progressClass(
         dashboardData.metrics.aiActionsThisMonth,
         aiActionLimit,
       ),
-      variant: "accent" as const,
+      tone: "accent" as const,
     },
     {
       label: "Exports",
       value: formatNumber(dashboardData.metrics.totalExports),
       helper: `+${formatNumber(dashboardData.metrics.exportsThisMonth)} this month`,
       icon: Download,
-      variant: "success" as const,
+      tone: "success" as const,
     },
     {
       label: "Avg. Quality Score",
       value: formatNumber(dashboardData.metrics.avgQualityScore),
       helper: qualityLabel(dashboardData.metrics.avgQualityScore),
       icon: Star,
-      variant: "ai" as const,
+      tone: "ai" as const,
     },
   ];
 
