@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { updateDocumentContent } from "@/lib/documents/document.service";
+import { deleteDocument } from "@/lib/documents/documents-library.service";
 import {
   documentIdParamSchema,
   updateDocumentSchema,
@@ -77,6 +78,48 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]]", error);
+
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: RouteContext,
+) {
+  try {
+    const userId = await getAuthenticatedUserId();
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "You must be signed in to do that." },
+        { status: 401 },
+      );
+    }
+
+    const parsedParams = documentIdParamSchema.safeParse(await params);
+
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            parsedParams.error.issues[0]?.message ?? "Invalid document id.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const { id } = parsedParams.data;
+
+    await deleteDocument(userId, id);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[api/documents/[id]/delete]", error);
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },

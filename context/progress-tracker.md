@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 10 - Final Review and Hardening
-**Last completed:** Shared StatCardGrid for Dashboard and Account
-**Next:** MVP complete - browser visual review before shipping
+**Phase:** Phase 11 - Documents Library
+**Last completed:** Documents Library page — full UI and real data
+**Next:** Browser visual review of /documents page
 
 ---
 
@@ -75,6 +75,10 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 29 UI State Review
 - [x] 30 MVP Testing Pass
 
+### Phase 11 - Documents Library
+
+- [x] 31 Documents Library Page — Full UI and Real Data
+
 ---
 
 ## Decisions Made During Build
@@ -90,7 +94,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Browser-based visual and interaction testing is delegated to the user by default. Agents should run code-level verification and list the route/flow that needs user browser review unless the user explicitly asks the agent to perform browser testing.
 - Decision: The MVP is free and should not expose pricing, subscription, invoice, renewal, upgrade, or paid-plan account UI. Usage surfaces remain for operational activity tracking.
 - Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
-- Decision: `/documents` is intentionally not a standalone MVP page. Document list-style entry points should route through `/dashboard`, `/documents/new`, or an owned `/documents/[id]` workspace.
+- Decision: `/documents` is now the Documents Library — a primary navigation page for managing all uploaded, pasted, and created documents with pagination, filtering, sorting, tabs, and row actions (rename/archive/delete). Supersedes the earlier decision to keep `/documents` as a redirect to `/dashboard`.
 
 ---
 
@@ -105,6 +109,41 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-19
+Feature: Documents Library Page
+Status: Completed
+Files changed:
+  lib/documents/documents-library.service.ts (new)
+  app/(app)/documents/page.tsx (replaced redirect with real page)
+  app/api/documents/[id]/route.ts (added DELETE handler)
+  app/api/documents/[id]/rename/route.ts (new)
+  app/api/documents/[id]/archive/route.ts (new)
+  components/documents/DocumentsLibraryWorkspace.tsx (new)
+  components/documents/DocumentsSummaryCards.tsx (new)
+  components/documents/DocumentsTabs.tsx (new)
+  components/documents/DocumentsToolbar.tsx (new)
+  components/documents/DocumentsTable.tsx (new)
+  components/documents/DocumentActionsMenu.tsx (new)
+  components/documents/DocumentsPagination.tsx (new)
+  components/documents/RenameDocumentDialog.tsx (new)
+  components/documents/ArchiveDocumentDialog.tsx (new)
+  components/documents/DeleteDocumentDialog.tsx (new)
+  components/layout/AppSidebar.tsx (added /documents nav item)
+  context/ui-registry.md (registered all new components)
+  context/ui-rules.md (added pagination rule, updated nav)
+  context/progress-tracker.md (updated phase and decisions)
+What was completed:
+  Full Documents Library at /documents with server-side paginated data,
+  tab filtering (All/Needs Review/Suggestions Ready/Ready to Export/Archived),
+  search/status/type/fidelity/sort toolbar, desktop table + mobile cards,
+  row actions (open, review suggestions, versions, export, rename, archive, delete),
+  summary stat cards, pagination (10/page), empty states, and all three dialogs.
+  AppSidebar updated with Documents nav item.
+Verification: npx tsc --noEmit passed. No linter errors.
+Follow-up: User-owned browser visual review of /documents page.
+```
 
 ```txt
 Date: 2026-06-19

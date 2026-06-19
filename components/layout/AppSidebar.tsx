@@ -6,6 +6,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Download,
+  Files,
   FileText,
   Gauge,
   History,
@@ -77,6 +78,14 @@ const primaryItems: NavItem[] = [
     icon: Gauge,
     label: "Dashboard",
     match: (pathname) => pathname === "/dashboard",
+  },
+
+  {
+    href: "/documents",
+    icon: Files,
+    label: "Documents",
+    match: (pathname) =>
+      pathname === "/documents" || pathname.startsWith("/documents?"),
   },
 
   {

@@ -249,7 +249,7 @@ className="flex items-center gap-3 rounded-md px-3 py-2"
 - Used by `app/(app)/layout.tsx`; all authenticated gated pages inherit it.
 - Collapsed is the default state.
 - Active item uses `text-accent`.
-- `/documents` is intentionally not a standalone navigation target; list-style document entry points route through `/dashboard`, `/documents/new`, or an owned `/documents/[id]` workspace.
+- `/documents` is the Documents Library and is a primary navigation target in the sidebar.
 - Do not add a second persistent page-level navigation rail inside authenticated pages.
 - Clerk `UserButton` uses platform-token appearance overrides for the account popover and profile modal. The expanded sidebar account chip shows the signed-in user's name beside the avatar, centered as a compact row. Portal-rendered Clerk surfaces are backed by `.cl-userButton*`, `.cl-popover*`, `.cl-userProfile*`, and `.cl-navbar*` overrides in `app/globals.css` to remove default footer/card/sidebar chrome, keep the account popover at a compact 292px width with truncated identifiers, and align borders, shadows, hover states, active nav, and modal backdrop with the app theme.
 
@@ -1739,3 +1739,290 @@ components/ui/AIActionsPanel.tsx
 - Keep public and authenticated navigation visually consistent
 - Register every completed reusable component
 - Update this file when component classes or variants change
+
+---
+
+## Documents Library Components
+
+### DocumentsLibraryWorkspace
+
+**Path:** `components/documents/DocumentsLibraryWorkspace.tsx`
+
+**Purpose:**
+
+Client orchestrator for the Documents Library page. Owns URL state via `useSearchParams`/`useRouter`, manages rename/archive/delete dialog state, and composes `PageHeader`, summary cards, tabs, toolbar, table, and pagination. Calls `router.refresh()` after dialog actions to get fresh server data.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+Passes data from server page; no unique structural classes — uses PageShell layout.
+```
+
+**Rules:**
+
+- All filter/search/sort/page changes update URL params and reset page to 1 where appropriate.
+- Dialog success triggers `router.refresh()` for fresh server data.
+- Contains `NewDocumentDropdown` for the header primary action.
+
+---
+
+### DocumentsSummaryCards
+
+**Path:** `components/documents/DocumentsSummaryCards.tsx`
+
+**Purpose:**
+
+Adapts the shared `StatCardGrid` with the four Documents Library summary cards: Total Documents, Ready, Suggestions Pending, and Formatting Review.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+Delegates to StatCardGrid — no unique layout classes.
+```
+
+**Rules:**
+
+- Reuses `StatCardGrid` from `components/workspace/StatCardGrid.tsx`.
+- Do not add a separate card layout for the documents library summary.
+
+---
+
+### DocumentsTabs
+
+**Path:** `components/documents/DocumentsTabs.tsx`
+
+**Purpose:**
+
+Filter tabs for the Documents Library: All Documents, Needs Review, Suggestions Ready, Ready to Export, and Archived. Shows count badges on each tab.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+className="flex items-end gap-1 overflow-x-auto border-b border-border-light"
+className="flex shrink-0 items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1.5 text-sm font-medium transition"
+active: "border-accent text-accent"
+inactive: "border-transparent text-text-secondary hover:border-border hover:text-text-primary"
+```
+
+**Rules:**
+
+- Active tab uses `border-accent text-accent`.
+- Count badges use `bg-accent-light text-accent` (active) or `bg-surface-tertiary text-text-muted` (inactive).
+
+---
+
+### DocumentsToolbar
+
+**Path:** `components/documents/DocumentsToolbar.tsx`
+
+**Purpose:**
+
+Search, filter, and sort toolbar for the Documents Library. Includes debounced search input, status/type/fidelity/sort selects, and a clear-filters button.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+className="flex flex-wrap items-center gap-2"
+Search input: h-9 w-full rounded-md border border-border bg-surface
+Select: h-9 appearance-none rounded-md border border-border bg-surface
+```
+
+**Rules:**
+
+- Search debounces URL updates by 400ms.
+- Fidelity filter is hidden below `xl` to reduce toolbar crowding.
+- Clear filters button appears only when active non-default filters are present.
+
+---
+
+### DocumentsTable
+
+**Path:** `components/documents/DocumentsTable.tsx`
+
+**Purpose:**
+
+Documents library table with desktop table layout and mobile card list. Includes skeleton loading rows, a full empty state (no documents), and a filtered empty state (no results for current filters). Uses `DocumentStatusBadge`, `FidelityBadge`, and `DocumentActionsMenu` per row.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+Desktop table: min-w-full table-fixed, th: text-[11px] font-semibold uppercase tracking-normal text-text-muted
+Row hover: hover:bg-surface-secondary
+Mobile card: rounded-xl border border-border bg-surface p-4 shadow-card-soft
+```
+
+**Variants:**
+
+- Desktop/tablet table with 8 columns.
+- Mobile card list.
+- Skeleton rows during loading.
+- Full empty state with three creation action links.
+- Filtered empty state with clear-filters button.
+
+**Rules:**
+
+- Always shows `DocumentStatusBadge` and `FidelityBadge`.
+- Open button links to `/documents/[id]`, hidden for archived documents.
+- Empty state occupies the table area without collapsing the outer card.
+
+---
+
+### DocumentActionsMenu
+
+**Path:** `components/documents/DocumentActionsMenu.tsx`
+
+**Purpose:**
+
+Three-dot row actions dropdown for each document in the library table. Shows smart contextual actions based on document status and suggestions count. Triggers rename, archive, and delete dialogs via callbacks.
+
+**Used on:**
+
+- `/documents` (via `DocumentsTable`)
+
+**Core classes:**
+
+```txt
+className="relative"
+Menu: absolute right-0 top-full z-40 mt-1.5 min-w-[180px] rounded-xl border border-border bg-surface py-1 shadow-popover
+Review Suggestions: text-ai-dark hover:bg-ai-muted (shown when pending suggestions exist)
+Delete: text-error-foreground hover:bg-error-muted
+```
+
+**Variants:**
+
+- Suggestions-ready state: Review Suggestions appears first in ai-tinted style.
+- Archived state: Restore replaces Archive; Rename is hidden.
+- Ready state: Export action is available.
+- Failed state: Retry Processing appears.
+
+**Rules:**
+
+- Closes on Escape or outside click.
+- Never triggers destructive actions directly; always delegates to confirmation dialogs.
+
+---
+
+### DocumentsPagination
+
+**Path:** `components/documents/DocumentsPagination.tsx`
+
+**Purpose:**
+
+Pagination controls for the Documents Library table. Shows result range, total count, previous/next buttons, and page number buttons with ellipsis for large page counts.
+
+**Used on:**
+
+- `/documents`
+
+**Core classes:**
+
+```txt
+className="flex flex-col items-center justify-between gap-3 sm:flex-row"
+Active page: bg-accent text-accent-foreground
+Inactive page: border border-border bg-surface text-text-secondary hover:bg-surface-secondary
+```
+
+**Rules:**
+
+- Hidden when total is 0 or only 1 page.
+- Previous disabled on page 1; Next disabled on last page.
+- Ellipsis (…) shown for page ranges beyond 7 pages.
+
+---
+
+### RenameDocumentDialog
+
+**Path:** `components/documents/RenameDocumentDialog.tsx`
+
+**Purpose:**
+
+Modal dialog for renaming a document. Validates using `documentTitleSchema` before calling `PATCH /api/documents/[id]/rename`.
+
+**Used on:**
+
+- `/documents` (via `DocumentsLibraryWorkspace`)
+
+**Core classes:**
+
+```txt
+className="fixed inset-0 z-50 flex items-center justify-center p-4"
+Panel: max-w-md rounded-2xl border border-border bg-surface p-6 shadow-popover
+```
+
+**Rules:**
+
+- Pre-fills input with current title and selects all text on open.
+- Calls `onSuccess()` + `onClose()` after successful rename.
+
+---
+
+### ArchiveDocumentDialog
+
+**Path:** `components/documents/ArchiveDocumentDialog.tsx`
+
+**Purpose:**
+
+Confirmation dialog for archiving or restoring a document. Calls `PATCH /api/documents/[id]/archive` with `{ action: "archive" | "restore" }`.
+
+**Used on:**
+
+- `/documents` (via `DocumentsLibraryWorkspace`)
+
+**Core classes:**
+
+```txt
+className="fixed inset-0 z-50 flex items-center justify-center p-4"
+Panel: max-w-md rounded-2xl border border-border bg-surface p-6 shadow-popover
+```
+
+**Rules:**
+
+- Uses `action` prop to determine whether to archive or restore.
+- Shows appropriate icon and copy for each action.
+
+---
+
+### DeleteDocumentDialog
+
+**Path:** `components/documents/DeleteDocumentDialog.tsx`
+
+**Purpose:**
+
+Confirmation dialog for permanently deleting a document. Calls `DELETE /api/documents/[id]`. Warns that versions, suggestions, and exports are also removed.
+
+**Used on:**
+
+- `/documents` (via `DocumentsLibraryWorkspace`)
+
+**Core classes:**
+
+```txt
+className="fixed inset-0 z-50 flex items-center justify-center p-4"
+Panel: max-w-md rounded-2xl border border-border bg-surface p-6 shadow-popover
+Delete button: bg-error-muted text-error-foreground hover:bg-error-light
+```
+
+**Rules:**
+
+- Always requires explicit confirmation click — no auto-delete.
+- Uses `bg-error-muted` button styling to communicate destructive intent without a full red button.

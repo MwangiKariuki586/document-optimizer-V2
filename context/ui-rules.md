@@ -53,7 +53,7 @@ Features    How It Works    Resources    Log in    Get Started
 Authenticated workspace sidebar navigation:
 
 ```txt
-Dashboard    New Document    Usage    Account
+Dashboard    Documents    New Document    Account
 ```
 
 Rules:
@@ -63,7 +63,7 @@ Rules:
 - Inactive items use `text-text-secondary`
 - Authenticated sidebar is collapsed by default and expands on demand
 - Document routes may add contextual sidebar links for Editor, Versions, and Export
-- Do not add or link to a standalone `/documents` list page unless the product direction changes
+- `/documents` is the Documents Library and is a primary nav item
 - Do not reintroduce a top authenticated navbar
 
 ---
@@ -389,6 +389,8 @@ For document lists:
 - Header text: uppercase, 12px, font-weight 500, `text-text-muted`
 - Row text: 14px, `text-text-primary`
 - Hover state: `bg-surface-secondary`
+
+Large document lists must use pagination. Do not render all documents at once in the Documents Library. Default page size is 10. Preserve active filters, search, sort, and tab when changing pages. Reset to page 1 when filters or search change. Use skeleton rows during loading. Use the empty state inside the table area when no results exist — do not collapse the page layout.
 
 For recent activity:
 
