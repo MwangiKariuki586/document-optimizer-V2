@@ -1702,6 +1702,53 @@ className="h-3 rounded-full bg-surface-tertiary"
 - Use for page-level and section-level loading areas.
 - Do not use CometSpinner for large page loading.
 
+### Dashboard skeleton components
+
+**Paths:**
+
+- `components/feedback/SkeletonStatGrid.tsx`
+- `components/feedback/SkeletonTable.tsx`
+- `components/feedback/SkeletonPanel.tsx`
+- `components/feedback/SkeletonUsageSummary.tsx`
+
+**Purpose:**
+
+Shared structural placeholders for route-level loading states that mirror the dashboard KPI grid, document table, list panels, and usage rail.
+
+**Used on:**
+
+- `/dashboard` loading boundary
+- `/account` loading boundary
+- `/documents` loading boundary
+
+**Rules:**
+
+- Keep fixed heights, responsive columns, and component order aligned with the loaded page to prevent layout movement.
+- `SkeletonPanel` accepts only an optional `rows` count; it does not render section labels during loading.
+- Do not wrap `SkeletonUsageSummary` in another `aside` landmark.
+- Route loading boundaries should reuse the loaded page's stable header copy and responsive shell width.
+
+### Document route loading boundaries
+
+**Paths:**
+
+- `app/(app)/documents/new/loading.tsx`
+- `app/(app)/documents/[id]/loading.tsx`
+- `app/(app)/documents/[id]/preview/loading.tsx`
+- `app/(app)/documents/[id]/versions/loading.tsx`
+- `app/(app)/documents/[id]/export/loading.tsx`
+
+**Purpose:**
+
+Route-specific skeleton screens for document creation and document workspaces. Each boundary preserves the final route's responsive columns, full-height behavior, panel order, and stable header content while server data resolves.
+
+**Rules:**
+
+- Full-height editor, preview, versions, and export loading screens must use the same `max-w-[1600px]` shell and desktop overflow behavior as their loaded workspaces.
+- `/documents/new` must preserve the creation panel, 280px guidance rail, and secure-file footer geometry.
+- Use structural placeholders only; do not expose unknown document titles, versions, preview content, or export metadata during loading.
+- Every route-level skeleton must expose `aria-busy="true"` and a concise loading label on its primary workspace region.
+
 ### CometSpinner
 
 **Path:** `components/loading-ui/CometSpinner.tsx`

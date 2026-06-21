@@ -113,6 +113,36 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-21
+Feature: Remaining Documents route loading screens
+Status: Completed
+Files changed: app/(app)/documents/new/loading.tsx, app/(app)/documents/[id]/loading.tsx, app/(app)/documents/[id]/preview/loading.tsx, app/(app)/documents/[id]/versions/loading.tsx, app/(app)/documents/[id]/export/loading.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added route-specific loading boundaries for document creation, editor, AI/suggestion preview, version history, and export. Each skeleton mirrors the loaded workspace shell, responsive columns, panel order, fixed-height behavior, and stable page copy without rendering unknown document data.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed; every /documents page now has a matching loading.tsx boundary.
+Follow-up: User-owned browser review of each /documents route transition under throttled loading.
+```
+
+```txt
+Date: 2026-06-21
+Feature: Account, Documents, and Coming Soon loading-state alignment
+Status: Completed
+Files changed: app/(app)/account/loading.tsx, app/(app)/documents/loading.tsx, app/(app)/coming-soon/loading.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced generic loading cards with route-specific skeleton structures matching the loaded account analytics and utility layout, Documents Library header/KPI/filter/table layout, and centered Coming Soon content. Restored stable page header copy and responsive container geometry across all three routes.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed.
+Follow-up: User-owned browser review of the three route transitions under throttled loading.
+```
+
+```txt
+Date: 2026-06-21
+Feature: Dashboard loading-state layout alignment
+Status: Completed
+Files changed: app/(app)/dashboard/loading.tsx, components/feedback/SkeletonPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Matched the dashboard loading boundary to the loaded page by adding quick-action placeholders, restoring section order and final header copy, removing the unused SkeletonPanel label prop, and removing nested aside landmarks around the usage skeleton.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed; no remaining SkeletonPanel label declarations or usages were found.
+Follow-up: User-owned browser review of the /dashboard transition under throttled loading.
+```
+
+```txt
+Date: 2026-06-21
 Feature: Shared Coming Soon route for inactive account actions
 Status: Completed
 Files changed: app/(app)/coming-soon/page.tsx, components/usage/AccountUsageWorkspace.tsx, proxy.ts, context/project-overview.md, context/architecture.md, context/ui-registry.md, context/progress-tracker.md
