@@ -39,6 +39,9 @@ async function getAccountProfile(): Promise<AccountProfile> {
   return {
     email,
     initials: initialsFromName(name, email),
+    lastActiveAt: user?.lastSignInAt
+      ? new Date(user.lastSignInAt).toISOString()
+      : null,
     name,
   };
 }

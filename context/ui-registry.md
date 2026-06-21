@@ -1461,7 +1461,7 @@ Right-side export summary rail with selected document, format, options, document
 
 **Purpose:**
 
-Full account and usage overview workspace with Clerk-backed profile summary, Supabase-backed usage stat cards, AI usage trend, usage by category, recent activity, free workspace summary, quick actions, storage summary, and recent documents. The page-level title/actions live in `PageHeader`.
+Full account and usage overview workspace with Supabase-backed usage analytics and a Clerk-aware account utility rail. The rail groups profile/workspace identity, account controls, storage management, data/privacy protections, and active-session access. The page-level title/actions live in `PageHeader`.
 
 **Used on:**
 
@@ -1471,26 +1471,26 @@ Full account and usage overview workspace with Clerk-backed profile summary, Sup
 
 ```txt
 className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]"
-className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
+className="rounded-xl border border-border bg-surface p-4 shadow-card-soft"
 ```
 
 **Variants:**
 
-- Sidebar account navigation with active Overview state.
 - Usage stat cards reuse `StatCardGrid` from `components/workspace/StatCardGrid.tsx`; map `AccountStat` rows to `StatCardItem` with label-based lucide icons.
 - Chart-style sections for trend, category donut, category bars, and health score.
-- Right utility rail with quick actions, storage, and recent documents as the third desktop column.
+- Sticky 320px utility rail with five compact account-management cards.
 
 **Rules:**
 
 - Receives `AccountUsageData` from `lib/usage/account-usage.service.ts`.
 - `/account` resolves Clerk profile details with `currentUser()` and scopes all Supabase usage reads to the authenticated Clerk user id.
-- `/account` uses a wider `max-w-[1600px]` page container so the left account rail, center usage workspace, and right utility rail can stay aligned as three columns.
+- `/account` uses a wider `max-w-[1600px]` page container so the analytics workspace and right utility rail remain aligned.
 - The account workspace presents the MVP as free and must not include pricing, subscription, invoice, upgrade, renewal, or paid-plan controls.
 - Uses token colors and existing card/button/badge patterns only.
 - Keeps `/account#usage` anchored to the usage content for the authenticated nav.
-- Routes planned but inactive account/usage actions to `/coming-soon` with an
-  allowlisted `feature` query value; do not leave visible controls inert.
+- Profile information, email/sign-in, security, and connected-account controls open Clerk's working user-profile modal.
+- Do not display inactive account, export-management, notification, or privacy-setting actions when they are not prioritized for the active MVP.
+- Session/access uses Clerk client state for provider, last-active time, and sign-out; it must not display fabricated account metadata.
 
 ### AccountUsageTrendChart
 

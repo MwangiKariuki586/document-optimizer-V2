@@ -47,6 +47,7 @@ type UsageRow = Pick<
 export type AccountProfile = {
   email: string;
   initials: string;
+  lastActiveAt?: string | null;
   name: string;
 };
 

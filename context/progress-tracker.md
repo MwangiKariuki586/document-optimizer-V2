@@ -113,6 +113,26 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-21
+Feature: Remove unprioritized account utility actions
+Status: Completed
+Files changed: components/usage/AccountUsageWorkspace.tsx, app/(app)/account/loading.tsx, app/(app)/coming-soon/page.tsx, context/ui-registry.md, context/progress-tracker.md, design-qa.md
+What was completed: Wired Manage Profile, Profile Information, Email and Sign-in, Security Settings, and Connected Accounts to Clerk's working user-profile modal. Removed Notification Preferences, Review Exported Files, Clean Old Exports, and Review Privacy Settings instead of advertising them as Coming Soon. Kept Manage Uploaded Files linked to the working Documents Library.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed; repository search confirmed no removed account utility action still routes to Coming Soon. Visual QA remains blocked by the unavailable in-app browser connection.
+Follow-up: Browser-review the revised account rail when the in-app browser is available.
+```
+
+```txt
+Date: 2026-06-21
+Feature: Account utility rail redesign
+Status: Code complete; visual QA blocked
+Files changed: components/usage/AccountUsageWorkspace.tsx, app/(app)/account/page.tsx, app/(app)/account/loading.tsx, app/(app)/coming-soon/page.tsx, lib/usage/account-usage.service.ts, design-qa.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the previous free-workspace, quick-action, storage, and recent-document rail with five compact reference-matched cards for profile/workspace identity, account controls, storage management, data/privacy, and session/access. Added Clerk-backed provider, last-active, and sign-out behavior; linked available document management directly and routed inactive settings through allowlisted Coming Soon features.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed. Product Design visual QA is blocked because the in-app browser connection could not be established; design-qa.md records final result: blocked.
+Follow-up: Capture and compare /account at desktop and stacked responsive widths when the in-app browser is available.
+```
+
+```txt
+Date: 2026-06-21
 Feature: Remaining Documents route loading screens
 Status: Completed
 Files changed: app/(app)/documents/new/loading.tsx, app/(app)/documents/[id]/loading.tsx, app/(app)/documents/[id]/preview/loading.tsx, app/(app)/documents/[id]/versions/loading.tsx, app/(app)/documents/[id]/export/loading.tsx, context/ui-registry.md, context/progress-tracker.md

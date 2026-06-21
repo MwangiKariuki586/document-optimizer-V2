@@ -24,10 +24,11 @@ export default function AccountLoading() {
             <SkeletonBlock className="min-h-[340px]" lines={5} />
           </div>
 
-          <aside className="space-y-4">
+          <aside className="space-y-3">
             <SkeletonBlock lines={3} />
             <SkeletonBlock lines={4} />
             <SkeletonBlock lines={3} />
+            <SkeletonBlock lines={4} />
             <SkeletonBlock lines={4} />
           </aside>
         </div>

@@ -9,7 +9,6 @@ export const metadata = {
 };
 
 const featureTitles: Record<string, string> = {
-  "account-settings": "Account settings",
   "download-usage-report": "Usage reports",
   "manage-storage": "Storage management",
   "readiness-insights": "Readiness insights",

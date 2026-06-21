@@ -1,22 +1,36 @@
 "use client";
 
+import { useClerk, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
   BarChart3,
+  BriefcaseBusiness,
   CheckCircle2,
+  ChevronRight,
+  CircleUserRound,
   Cloud,
+  CloudUpload,
   Download,
   FileText,
   Gauge,
+  History,
+  KeyRound,
+  Link2,
   ListChecks,
+  LockKeyhole,
+  LogOut,
+  Mail,
   MessageSquareText,
-  Settings,
+  Monitor,
   ShieldAlert,
+  ShieldCheck,
+  ShieldUser,
   Sparkles,
   TrendingUp,
+  UserRound,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -30,30 +44,11 @@ import type {
   AccountActivityItem,
   AccountHealth,
   AccountProfile,
-  AccountRecentDocument,
   AccountStorage,
   AccountUsageCategory,
   AccountUsageData,
   AccountUsageTrendRange,
 } from "@/lib/usage/account-usage.service";
-
-const quickActions = [
-  {
-    href: "/coming-soon?feature=download-usage-report",
-    icon: Download,
-    label: "Download usage report",
-  },
-  {
-    href: "/coming-soon?feature=manage-storage",
-    icon: Cloud,
-    label: "Manage storage",
-  },
-  {
-    href: "/coming-soon?feature=account-settings",
-    icon: Settings,
-    label: "Account settings",
-  },
-];
 
 const statIconByLabel: Record<string, LucideIcon> = {
   "AI improvements": Sparkles,
@@ -123,14 +118,6 @@ const activityToneByType: Record<AccountActivityItem["type"], string> = {
   export: "bg-warning-muted text-warning-foreground",
   suggestion: "bg-success-muted text-success-foreground",
   upload: "bg-accent-lighter text-accent",
-};
-
-const documentToneClasses: Record<AccountRecentDocument["fileType"], string> = {
-  DOCX: "bg-info-muted text-info-foreground",
-  MD: "bg-ai-muted text-ai-dark",
-  None: "bg-surface-tertiary text-text-secondary",
-  PDF: "bg-error-muted text-error-foreground",
-  TXT: "bg-surface-tertiary text-text-secondary",
 };
 
 function UsageByCategory({
@@ -347,18 +334,69 @@ function HealthScore({
 
 function AccountUtilityPanel({
   profile,
-  recentDocuments,
   storage,
 }: {
   profile: AccountProfile;
-  recentDocuments: AccountRecentDocument[];
   storage: AccountStorage;
 }) {
+  const { openUserProfile, signOut } = useClerk();
+  const { user } = useUser();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const isGoogleAccount = user?.externalAccounts.some((account) =>
+    account.provider.toLowerCase().includes("google"),
+  );
+  const lastActiveAt = profile.lastActiveAt
+    ? new Date(profile.lastActiveAt)
+    : null;
+  const lastActiveLabel = lastActiveAt
+    ? lastActiveAt.toLocaleString("en-US", {
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        month: "short",
+      })
+    : "Current session";
+
+  const accountControls = [
+    {
+      icon: CircleUserRound,
+      label: "Profile information",
+    },
+    {
+      icon: Mail,
+      label: "Email and sign-in",
+    },
+    {
+      icon: LockKeyhole,
+      label: "Security settings",
+    },
+    {
+      icon: Link2,
+      label: "Connected accounts",
+    },
+  ];
+
+  const privacyItems = [
+    { icon: LockKeyhole, label: "Original files stay private" },
+    { icon: Link2, label: "Exports use secure links" },
+    { icon: Sparkles, label: "AI changes require preview" },
+    { icon: History, label: "Version history protects edits" },
+  ];
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut({ redirectUrl: "/" });
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
   return (
-    <aside className="space-y-4">
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+    <aside className="space-y-3 xl:sticky xl:top-6 xl:self-start">
+      <section className="rounded-xl border border-border bg-surface p-4 shadow-card-soft">
         <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground shadow-card-soft">
             {profile.initials}
           </div>
           <div className="min-w-0">
@@ -368,98 +406,137 @@ function AccountUtilityPanel({
             <p className="truncate text-xs text-text-muted">{profile.email}</p>
           </div>
         </div>
-        <div className="mt-4 rounded-xl border border-accent-light bg-accent-muted p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-accent">
-            <BadgeCheck className="size-4" />
-            Free workspace
+        <div className="mt-4 flex items-start gap-3 border-t border-border-light pt-4">
+          <BriefcaseBusiness className="mt-0.5 size-4 shrink-0 text-accent" />
+          <div>
+            <p className="text-xs font-semibold text-text-primary">
+              Personal workspace
+            </p>
+            <p className="mt-1 text-xs leading-5 text-text-secondary">
+              Free document optimization platform
+            </p>
           </div>
-          <p className="mt-2 text-xs leading-5 text-text-secondary">
-            All document optimization tools are available for free.
-          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => openUserProfile()}
+          className="mt-4 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-accent-light bg-accent-muted px-3 text-xs font-medium text-accent transition hover:bg-accent-lighter"
+        >
+          <UserRound className="size-4" />
+          Manage profile
+        </button>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-4 shadow-card-soft">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+          <ShieldUser className="size-4 text-accent" />
+          Account controls
+        </h2>
+        <div className="mt-3 space-y-1">
+          {accountControls.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => openUserProfile()}
+              className="group flex min-h-9 w-full items-center gap-3 rounded-md px-1.5 text-left text-xs font-medium text-text-primary transition hover:bg-surface-secondary"
+            >
+              <item.icon className="size-3.5 shrink-0 text-accent" />
+              <span className="min-w-0 flex-1">{item.label}</span>
+              <ChevronRight className="size-3.5 text-text-muted transition group-hover:translate-x-0.5 group-hover:text-accent" />
+            </button>
+          ))}
         </div>
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-        <h2 className="text-lg font-semibold leading-7 text-text-primary">
-          Quick actions
+      <section className="rounded-xl border border-border bg-surface p-4 shadow-card-soft">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+          <Cloud className="size-4 text-accent" />
+          Storage management
         </h2>
-        <div className="mt-4 space-y-2">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-
-            return (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="flex w-full items-center gap-3 rounded-md border border-border-light bg-surface px-3 py-2 text-left text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
-              >
-                <Icon className="size-4 text-accent" />
-                <span className="min-w-0 flex-1">{action.label}</span>
-                <ArrowRight className="size-4 text-text-muted" />
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-        <h2 className="text-lg font-semibold leading-7 text-text-primary">
-          Storage
-        </h2>
-        <p className="mt-4 text-sm text-text-secondary">
-          <span className="font-semibold text-text-primary">
+        <p className="mt-4 text-xs text-text-secondary">
+          <span className="text-base font-bold text-text-primary">
             {storage.usedLabel}
           </span>{" "}
           used
         </p>
-        <p className="mt-2 text-sm leading-5 text-text-secondary">
+        <p className="mt-1 text-xs leading-5 text-text-secondary">
           Original files and exports are stored privately.
         </p>
-        <Link
-          href="/coming-soon?feature=manage-storage"
-          className="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent-lighter"
-        >
-          Manage storage
-        </Link>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold leading-7 text-text-primary">
-            Recent documents
-          </h2>
+        <div className="mt-3 h-1.5 rounded-full bg-accent-light" />
+        <div className="mt-3 border-t border-border-light pt-3">
           <Link
             href="/documents"
-            className="text-sm font-semibold text-accent transition hover:text-accent-dark"
+            className="group flex min-h-9 items-center gap-3 rounded-md px-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-secondary"
           >
-            View all
+            <CloudUpload className="size-3.5 shrink-0 text-accent" />
+            <span className="min-w-0 flex-1">Manage uploaded files</span>
+            <ChevronRight className="size-3.5 text-text-muted transition group-hover:translate-x-0.5 group-hover:text-accent" />
           </Link>
         </div>
-        {recentDocuments.length > 0 ? (
-          <div className="mt-4 space-y-3">
-            {recentDocuments.map((document) => (
-              <Link
-                key={document.id}
-                href={`/documents/${document.id}`}
-                className="flex min-w-0 items-center gap-3"
-              >
-                <span
-                  className={`flex size-8 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${documentToneClasses[document.fileType]}`}
-                >
-                  {document.fileType}
-                </span>
-                <p className="min-w-0 flex-1 truncate text-sm font-medium text-text-primary">
-                  {document.title}
-                </p>
-                <span className="text-xs text-text-muted">{document.when}</span>
-              </Link>
-            ))}
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-4 shadow-card-soft">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+          <ShieldCheck className="size-4 text-accent" />
+          Data &amp; privacy
+        </h2>
+        <div className="mt-3 space-y-2.5">
+          {privacyItems.map((item) => (
+            <div key={item.label} className="flex items-center gap-3 px-1.5">
+              <item.icon className="size-3.5 shrink-0 text-accent" />
+              <span className="text-xs text-text-secondary">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-surface p-4 shadow-card-soft">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+          <KeyRound className="size-4 text-accent" />
+          Session &amp; access
+        </h2>
+        <div className="mt-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <BadgeCheck className="mt-0.5 size-4 shrink-0 text-success" />
+            <div>
+              <p className="text-xs font-medium text-text-primary">
+                Signed in with {isGoogleAccount ? "Google" : "email"}
+              </p>
+              <p className="mt-1 text-[11px] text-text-muted">
+                {profile.email}
+              </p>
+            </div>
           </div>
-        ) : (
-          <p className="mt-4 rounded-xl bg-surface-secondary p-4 text-sm text-text-secondary">
-            No recent documents yet.
-          </p>
-        )}
+          <div className="flex items-start gap-3">
+            <History className="mt-0.5 size-4 shrink-0 text-accent" />
+            <div>
+              <p className="text-xs font-medium text-text-primary">
+                Last active
+              </p>
+              <p className="mt-1 text-[11px] text-text-muted">
+                {lastActiveLabel}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Monitor className="mt-0.5 size-4 shrink-0 text-accent" />
+            <div>
+              <p className="text-xs font-medium text-text-primary">
+                Active device
+              </p>
+              <p className="mt-1 text-[11px] text-text-muted">This browser</p>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          disabled={isSigningOut}
+          className="mt-5 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-error-light bg-surface px-3 text-xs font-medium text-error-foreground transition hover:bg-error-muted disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <LogOut className="size-4" />
+          {isSigningOut ? "Signing out..." : "Sign out"}
+        </button>
       </section>
     </aside>
   );
@@ -488,7 +565,6 @@ export function AccountUsageWorkspace({ data }: AccountUsageWorkspaceProps) {
 
       <AccountUtilityPanel
         profile={data.profile}
-        recentDocuments={data.recentDocuments}
         storage={data.storage}
       />
     </div>
