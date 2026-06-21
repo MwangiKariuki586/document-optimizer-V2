@@ -12,11 +12,7 @@ export default function BackToPrevious({ children, className }: Props) {
   const router = useRouter();
 
   return (
-    <button
-      type="button"
-      onClick={() => router.back()}
-      className={className}
-    >
+    <button type="button" onClick={() => router.back()} className={className}>
       <ArrowLeft className="size-4" aria-hidden="true" />
       {children}
     </button>
