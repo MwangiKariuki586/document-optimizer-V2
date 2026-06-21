@@ -516,6 +516,41 @@ className="h-1.5 rounded-full bg-surface-tertiary"
 - Cards use a minimum 152px height so workspace grids remain stable.
 - Header icons stay compact (`size-7` circle, `size-3.5` icon) for enterprise KPI styling.
 
+### DateRangeSelect
+
+**Path:** `components/workspace/DateRangeSelect.tsx`
+
+**Purpose:**
+
+Shared controlled date-range dropdown for analytics, usage, activity, and other time-filtered platform sections.
+
+**Used on:**
+
+- `/account` usage by category
+- `/account` document readiness
+- `/account` AI usage trend
+- `/dashboard` usage overview
+
+**Core classes:**
+
+```txt
+className="flex h-10 min-w-[132px] items-center justify-between gap-3 rounded-xl border bg-surface py-2 pl-4 pr-3"
+className="absolute right-0 top-[calc(100%+4px)] z-50 min-w-full overflow-hidden rounded-md border border-border bg-surface p-1 shadow-popover"
+className="w-full rounded-sm px-3 py-2 text-left text-sm font-medium text-text-primary"
+```
+
+**Variants:**
+
+- Defaults to the shared `DATE_RANGE_OPTIONS` list: Today, This Week, This Month, and This Year.
+- Accepts an optional subset through the `options` prop.
+
+**Rules:**
+
+- Keep the component controlled through `value` and `onChange` so each consumer owns its filtered data.
+- Reuse this component instead of native date-range selects so option surfaces remain consistent across browsers.
+- Preserve outside-click and Escape-key dismissal behavior.
+- Date-range labels and the shared `DateRangeOption` type live in `lib/date-range.ts`.
+
 ### DashboardQuickActions
 
 **Path:** `components/dashboard/DashboardQuickActions.tsx`
@@ -720,7 +755,7 @@ className="mt-4 grid min-h-0 flex-1 items-center gap-4 sm:grid-cols-[112px_minma
 - Dynamic SVG usage ring with a `border`-token track stroke, `accent` progress stroke, and a bordered inner surface disc showing selected-range AI actions used against the dashboard action limit.
 - Dynamic usage progress bars driven by numeric percentages from the dashboard service.
 - Export-format donut chart with PDF, DOCX, TXT, MD, and Other legend rows using live count distribution.
-- Native date-range dropdown controls for Today, This Week, This Month, and This Year. Default visible range is This Week.
+- Shared `DateRangeSelect` control for Today, This Week, This Month, and This Year. Default visible range is This Week.
 
 **Rules:**
 
@@ -1454,6 +1489,8 @@ className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
 - The account workspace presents the MVP as free and must not include pricing, subscription, invoice, upgrade, renewal, or paid-plan controls.
 - Uses token colors and existing card/button/badge patterns only.
 - Keeps `/account#usage` anchored to the usage content for the authenticated nav.
+- Routes planned but inactive account/usage actions to `/coming-soon` with an
+  allowlisted `feature` query value; do not leave visible controls inert.
 
 ### AccountUsageTrendChart
 
@@ -1471,7 +1508,6 @@ Client-side AI usage line chart with a working date-range selector for Today, Th
 
 ```txt
 className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft"
-className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-9 text-sm font-medium text-text-secondary"
 className="mt-5 grid h-64 grid-cols-[44px_minmax(0,1fr)] gap-4"
 className="absolute inset-x-0 top-0 bottom-8 h-[calc(100%-2rem)] w-full overflow-visible"
 ```
@@ -1485,6 +1521,7 @@ className="absolute inset-x-0 top-0 bottom-8 h-[calc(100%-2rem)] w-full overflow
 **Rules:**
 
 - Receives precomputed trend series from `AccountUsageData.trends`.
+- Uses the shared controlled `DateRangeSelect` for range selection.
 - The selector changes local chart state only; no document or usage mutation happens.
 - Keep the visual close to `context/designs/account and usage.png`: line chart, horizontal grid, y-axis labels, x-axis date labels, and compact callout.
 

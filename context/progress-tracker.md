@@ -112,6 +112,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 _Add completed work notes here after each feature._
 
 ```txt
+Date: 2026-06-21
+Feature: Shared Coming Soon route for inactive account actions
+Status: Completed
+Files changed: app/(app)/coming-soon/page.tsx, components/usage/AccountUsageWorkspace.tsx, proxy.ts, context/project-overview.md, context/architecture.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added the authenticated /coming-soon placeholder with allowlisted contextual feature titles. Replaced inactive account usage breakdown, readiness insights, activity history, usage report, storage, and account-settings controls with links to the shared route while preserving working document navigation.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed; npm run build passed and registered /coming-soon.
+Follow-up: User-owned browser review of the inactive account controls and /coming-soon presentation.
+```
+
+```txt
 Date: 2026-06-19
 Feature: Remove Create Blank from current MVP
 Status: Completed

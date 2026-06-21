@@ -1,33 +1,58 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
+  BarChart3,
+  CheckCircle2,
   Cloud,
   Download,
   FileText,
   Gauge,
+  ListChecks,
+  MessageSquareText,
   Settings,
+  ShieldAlert,
   Sparkles,
+  TrendingUp,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import { AccountUsageTrendChart } from "@/components/usage/AccountUsageTrendChart";
+import { DateRangeSelect } from "@/components/workspace/DateRangeSelect";
 import {
   StatCardGrid,
   type StatCardItem,
 } from "@/components/workspace/StatCardGrid";
 import type {
   AccountActivityItem,
+  AccountHealth,
   AccountProfile,
   AccountRecentDocument,
   AccountStorage,
   AccountUsageCategory,
   AccountUsageData,
+  AccountUsageTrendRange,
 } from "@/lib/usage/account-usage.service";
 
 const quickActions = [
-  { icon: Download, label: "Download usage report" },
-  { icon: Cloud, label: "Manage storage" },
-  { icon: Settings, label: "Account settings" },
+  {
+    href: "/coming-soon?feature=download-usage-report",
+    icon: Download,
+    label: "Download usage report",
+  },
+  {
+    href: "/coming-soon?feature=manage-storage",
+    icon: Cloud,
+    label: "Manage storage",
+  },
+  {
+    href: "/coming-soon?feature=account-settings",
+    icon: Settings,
+    label: "Account settings",
+  },
 ];
 
 const statIconByLabel: Record<string, LucideIcon> = {
@@ -37,9 +62,7 @@ const statIconByLabel: Record<string, LucideIcon> = {
   "Storage used": Cloud,
 };
 
-function accountStatItems(
-  stats: AccountUsageData["stats"],
-): StatCardItem[] {
+function accountStatItems(stats: AccountUsageData["stats"]): StatCardItem[] {
   return stats.map((stat) => ({
     ...stat,
     icon: statIconByLabel[stat.label] ?? Gauge,
@@ -51,6 +74,36 @@ const categoryToneClasses: Record<AccountUsageCategory["tone"], string> = {
   info: "bg-info",
   success: "bg-success",
   warning: "bg-warning",
+};
+
+const readinessIconByTone: Record<
+  AccountHealth["overview"][number]["tone"],
+  LucideIcon
+> = {
+  accent: ShieldAlert,
+  info: MessageSquareText,
+  success: CheckCircle2,
+  warning: ListChecks,
+};
+
+const readinessToneClasses: Record<
+  AccountHealth["overview"][number]["tone"],
+  string
+> = {
+  accent: "bg-accent-lighter text-accent",
+  info: "bg-info-muted text-info",
+  success: "bg-success-muted text-success",
+  warning: "bg-warning-muted text-warning",
+};
+
+const readinessValueClasses: Record<
+  AccountHealth["overview"][number]["tone"],
+  string
+> = {
+  accent: "text-accent",
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
 };
 
 const activityIconByType: Record<
@@ -81,20 +134,54 @@ const documentToneClasses: Record<AccountRecentDocument["fileType"], string> = {
 };
 
 function UsageByCategory({
-  categories,
+  categoriesByRange,
 }: {
-  categories: AccountUsageCategory[];
+  categoriesByRange: Record<AccountUsageTrendRange, AccountUsageCategory[]>;
 }) {
-  return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-      <h2 className="text-lg font-semibold leading-7 text-text-primary">
-        Usage by category
-      </h2>
+  const [selectedRange, setSelectedRange] =
+    useState<AccountUsageTrendRange>("This Month");
+  const categories = categoriesByRange[selectedRange];
 
-      <div className="mt-6 grid gap-5 sm:grid-cols-[160px_minmax(0,1fr)] sm:items-center">
-        <div className="mx-auto flex size-36 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_0_45%,var(--color-info)_45%_70%,var(--color-success)_70%_90%,var(--color-warning)_90%_100%)] p-5">
+  return (
+    <section className="flex h-full min-h-[500px] flex-col rounded-2xl border border-border bg-surface px-6 py-4 shadow-card-soft">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold leading-8 text-text-primary">
+          Usage by category
+        </h2>
+        <DateRangeSelect
+          ariaLabel="Category date range"
+          onChange={setSelectedRange}
+          value={selectedRange}
+        />
+      </div>
+
+      <div className="mt-8 grid flex-1 gap-8 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center">
+        <div className="space-y-6">
+          {categories.map((item) => (
+            <div key={item.label}>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`size-3 rounded-full ${categoryToneClasses[item.tone]}`}
+                />
+                <span className="min-w-0 flex-1 text-sm font-semibold text-text-primary">
+                  {item.label}
+                </span>
+                <span className="text-sm font-medium text-text-secondary">
+                  {item.percentage} ({item.value})
+                </span>
+              </div>
+              <div className="ml-6 mt-3 h-2 rounded-full bg-accent-lighter">
+                <div
+                  className={`h-2 rounded-full ${categoryToneClasses[item.tone]} ${item.progressClass}`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mx-auto flex size-40 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_0_45%,var(--color-info)_45%_70%,var(--color-success)_70%_90%,var(--color-warning)_90%_100%)] p-5">
           <div className="flex size-full flex-col items-center justify-center rounded-full bg-surface">
-            <p className="text-2xl font-bold text-text-primary">
+            <p className="text-3xl font-bold text-text-primary">
               {categories
                 .reduce(
                   (sum, item) => sum + Number(item.value.replace(/,/g, "")),
@@ -102,26 +189,19 @@ function UsageByCategory({
                 )
                 .toLocaleString("en-US")}
             </p>
-            <p className="text-xs text-text-secondary">Total events</p>
+            <p className="mt-1 text-sm text-text-secondary">Total events</p>
           </div>
         </div>
-
-        <div className="space-y-3">
-          {categories.map((item) => (
-            <div key={item.label} className="flex items-center gap-3">
-              <span
-                className={`size-3 rounded-full ${categoryToneClasses[item.tone]}`}
-              />
-              <span className="min-w-0 flex-1 text-sm font-medium text-text-primary">
-                {item.label}
-              </span>
-              <span className="text-sm text-text-secondary">
-                {item.percentage} ({item.value})
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
+
+      <Link
+        href="/coming-soon?feature=usage-breakdown"
+        className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-accent-lighter px-4 text-sm font-semibold text-accent transition hover:bg-accent-light"
+      >
+        <BarChart3 className="size-5" />
+        View full breakdown
+        <ArrowRight className="size-5" />
+      </Link>
     </section>
   );
 }
@@ -133,12 +213,12 @@ function RecentActivityList({ activity }: { activity: AccountActivityItem[] }) {
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Recent activity
         </h2>
-        <button
-          type="button"
+        <Link
+          href="/coming-soon?feature=recent-activity"
           className="text-sm font-semibold text-accent transition hover:text-accent-dark"
         >
           View all
-        </button>
+        </Link>
       </div>
       {activity.length > 0 ? (
         <div className="mt-4 divide-y divide-border-light">
@@ -187,69 +267,80 @@ function RecentActivityList({ activity }: { activity: AccountActivityItem[] }) {
   );
 }
 
-function CategoryBreakdown({
-  categories,
+function HealthScore({
+  healthByRange,
 }: {
-  categories: AccountUsageCategory[];
+  healthByRange: Record<AccountUsageTrendRange, AccountHealth>;
 }) {
-  return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold leading-7 text-text-primary">
-          Top AI improvement categories
-        </h2>
-        <button
-          type="button"
-          className="text-sm font-semibold text-accent transition hover:text-accent-dark"
-        >
-          View details
-        </button>
-      </div>
-      <div className="mt-5 space-y-4">
-        {categories.map((item) => (
-          <div
-            key={item.label}
-            className="grid grid-cols-[82px_1fr_auto] gap-3"
-          >
-            <span className="text-sm font-medium text-text-primary">
-              {item.label}
-            </span>
-            <div className="mt-1.5 h-2 rounded-full bg-surface-tertiary">
-              <div
-                className={`h-2 rounded-full ${categoryToneClasses[item.tone]} ${item.progressClass}`}
-              />
-            </div>
-            <span className="text-sm text-text-secondary">
-              {item.percentage} ({item.value})
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+  const [selectedRange, setSelectedRange] =
+    useState<AccountUsageTrendRange>("This Month");
+  const health = healthByRange[selectedRange];
 
-function HealthScore({ health }: { health: AccountUsageData["health"] }) {
   return (
-    <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
-      <div className="grid gap-4 sm:grid-cols-[104px_minmax(0,1fr)] sm:items-center">
-        <div className="flex size-24 items-center justify-center rounded-full bg-[conic-gradient(var(--color-success)_0_28%,var(--color-accent)_28%_86%,var(--color-accent-light)_86%_100%)] p-3">
-          <div className="flex size-full items-center justify-center rounded-full bg-surface text-2xl font-bold text-text-primary">
-            {health.score}
+    <section className="flex h-full min-h-[500px] flex-col rounded-2xl border border-border bg-surface px-6 py-4 shadow-card-soft">
+      <div className="flex items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold leading-8 text-text-primary">
+          Document Readiness
+        </h2>
+        <DateRangeSelect
+          ariaLabel="Readiness date range"
+          onChange={setSelectedRange}
+          value={selectedRange}
+        />
+      </div>
+
+      <div className="mt-7 grid flex-1 gap-6 sm:grid-cols-[144px_minmax(0,1fr)] sm:items-center">
+        <div className="flex size-36 items-center justify-center rounded-full bg-[conic-gradient(var(--color-success)_0_28%,var(--color-accent)_28%_86%,var(--color-accent-light)_86%_100%)] p-4">
+          <div className="flex size-full  items-center justify-center rounded-full bg-surface">
+            <span className="text-3xl font-bold text-text-primary">
+              {health.score}
+            </span>
+            <span className="mt-1 text-sm text-text-secondary">/ 100</span>
           </div>
         </div>
-        <div>
-          <h2 className="text-lg font-semibold leading-7 text-text-primary">
-            Document health score
-          </h2>
-          <p className="mt-1 text-lg font-semibold text-text-primary">
-            {health.label}
-          </p>
-          <p className="mt-1 text-sm text-success-foreground">
-            {health.helper}
-          </p>
+        <div className="min-w-0">
+          <div className="mt-4 space-y-2">
+            {health.overview.map((item) => {
+              const Icon = readinessIconByTone[item.tone];
+
+              return (
+                <div
+                  key={item.label}
+                  className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-border-light px-3 py-2.5"
+                >
+                  <span
+                    className={`flex size-10 items-center justify-center rounded-full ${readinessToneClasses[item.tone]}`}
+                  >
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-text-primary">
+                      {item.label}
+                    </p>
+                    <p className="truncate text-xs text-text-secondary">
+                      {item.helper}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-xl font-bold ${readinessValueClasses[item.tone]}`}
+                  >
+                    {item.value}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      <Link
+        href="/coming-soon?feature=readiness-insights"
+        className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-xl bg-accent-lighter px-4 text-sm font-semibold text-accent transition hover:bg-accent-light"
+      >
+        <TrendingUp className="size-5" />
+        View readiness insights
+        <ArrowRight className="size-5" />
+      </Link>
     </section>
   );
 }
@@ -297,15 +388,15 @@ function AccountUtilityPanel({
             const Icon = action.icon;
 
             return (
-              <button
+              <Link
                 key={action.label}
-                type="button"
+                href={action.href}
                 className="flex w-full items-center gap-3 rounded-md border border-border-light bg-surface px-3 py-2 text-left text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
               >
                 <Icon className="size-4 text-accent" />
                 <span className="min-w-0 flex-1">{action.label}</span>
                 <ArrowRight className="size-4 text-text-muted" />
-              </button>
+              </Link>
             );
           })}
         </div>
@@ -324,12 +415,12 @@ function AccountUtilityPanel({
         <p className="mt-2 text-sm leading-5 text-text-secondary">
           Original files and exports are stored privately.
         </p>
-        <button
-          type="button"
+        <Link
+          href="/coming-soon?feature=manage-storage"
           className="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-accent transition hover:bg-accent-lighter"
         >
           Manage storage
-        </button>
+        </Link>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
@@ -337,18 +428,19 @@ function AccountUtilityPanel({
           <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Recent documents
           </h2>
-          <button
-            type="button"
+          <Link
+            href="/documents"
             className="text-sm font-semibold text-accent transition hover:text-accent-dark"
           >
             View all
-          </button>
+          </Link>
         </div>
         {recentDocuments.length > 0 ? (
           <div className="mt-4 space-y-3">
             {recentDocuments.map((document) => (
-              <div
-                key={document.title}
+              <Link
+                key={document.id}
+                href={`/documents/${document.id}`}
                 className="flex min-w-0 items-center gap-3"
               >
                 <span
@@ -360,7 +452,7 @@ function AccountUtilityPanel({
                   {document.title}
                 </p>
                 <span className="text-xs text-text-muted">{document.when}</span>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
@@ -385,17 +477,11 @@ export function AccountUsageWorkspace({ data }: AccountUsageWorkspaceProps) {
           <StatCardGrid stats={accountStatItems(data.stats)} />
 
           <div className="min-w-0 space-y-4">
-            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-              <AccountUsageTrendChart trends={data.trends} />
-              <UsageByCategory categories={data.categories} />
+            <div className="grid gap-4 lg:grid-cols-2">
+              <UsageByCategory categoriesByRange={data.categories} />
+              <HealthScore healthByRange={data.health} />
             </div>
-            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
-              <RecentActivityList activity={data.activity} />
-              <div className="space-y-4">
-                <CategoryBreakdown categories={data.categories} />
-                <HealthScore health={data.health} />
-              </div>
-            </div>
+            <AccountUsageTrendChart trends={data.trends} />
           </div>
         </div>
       </div>

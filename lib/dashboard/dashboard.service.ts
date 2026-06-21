@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { DateRangeOption } from "@/lib/date-range";
 import type { Tables } from "@/lib/supabase/types";
 
 type DocumentRow = Pick<
@@ -57,7 +58,7 @@ export type DashboardUsageItem = {
   value: string;
 };
 
-export type DashboardUsageRange = "Today" | "This Week" | "This Month" | "This Year";
+export type DashboardUsageRange = DateRangeOption;
 
 export type DashboardUsageOverview = {
   aiActionsUsed: number;

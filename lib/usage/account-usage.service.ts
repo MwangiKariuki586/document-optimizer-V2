@@ -1,13 +1,16 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { DateRangeOption } from "@/lib/date-range";
 import type { Tables } from "@/lib/supabase/types";
 
 type DocumentRow = Pick<
   Tables<"documents">,
   | "created_at"
   | "file_type"
+  | "fidelity_status"
   | "id"
   | "original_file_key"
   | "source_type"
+  | "status"
   | "title"
   | "updated_at"
   | "word_count"
@@ -74,6 +77,7 @@ export type AccountActivityItem = {
 
 export type AccountRecentDocument = {
   fileType: "DOCX" | "PDF" | "TXT" | "MD" | "None";
+  id: string;
   title: string;
   when: string;
 };
@@ -82,11 +86,7 @@ export type AccountStorage = {
   usedLabel: string;
 };
 
-export type AccountUsageTrendRange =
-  | "This Month"
-  | "This Week"
-  | "This Year"
-  | "Today";
+export type AccountUsageTrendRange = DateRangeOption;
 
 export type AccountUsageTrendPoint = {
   label: string;
@@ -101,14 +101,23 @@ export type AccountUsageTrendSeries = {
   yAxisMax: number;
 };
 
-export type AccountUsageData = {
-  activity: AccountActivityItem[];
-  categories: AccountUsageCategory[];
-  health: {
+export type AccountHealth = {
+  description: string;
+  helper: string;
+  label: string;
+  overview: Array<{
     helper: string;
     label: string;
-    score: number;
-  };
+    tone: "accent" | "info" | "success" | "warning";
+    value: number;
+  }>;
+  score: number;
+};
+
+export type AccountUsageData = {
+  activity: AccountActivityItem[];
+  categories: Record<AccountUsageTrendRange, AccountUsageCategory[]>;
+  health: Record<AccountUsageTrendRange, AccountHealth>;
   profile: AccountProfile;
   recentDocuments: AccountRecentDocument[];
   stats: AccountStat[];
@@ -124,6 +133,30 @@ function getMonthStartIso(): string {
   monthStart.setHours(0, 0, 0, 0);
 
   return monthStart.toISOString();
+}
+
+export function getUsageRangeStartIso(
+  range: AccountUsageTrendRange,
+  now = new Date(),
+): string {
+  const start = new Date(now);
+
+  if (range === "Today") {
+    start.setHours(0, 0, 0, 0);
+  } else if (range === "This Week") {
+    const day = start.getDay();
+    const daysSinceMonday = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - daysSinceMonday);
+    start.setHours(0, 0, 0, 0);
+  } else if (range === "This Month") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+  } else {
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+  }
+
+  return start.toISOString();
 }
 
 function getYearStartIso(): string {
@@ -257,6 +290,97 @@ function buildCategories(aiRows: AIRequestRow[], suggestionRows: SuggestionRow[]
       value: formatCount.format(value),
     };
   });
+}
+
+function buildHealth(
+  documents: DocumentRow[],
+  suggestionRows: SuggestionRow[],
+  exportRows: ExportRow[],
+): AccountHealth {
+  const appliedSuggestions = suggestionRows.filter(
+    (row) => row.status === "applied",
+  ).length;
+  const pendingSuggestions = suggestionRows.filter(
+    (row) => row.status === "pending",
+  ).length;
+  const formattingReview = documents.filter((row) =>
+    ["Limited Formatting", "Formatting Review Needed"].includes(
+      row.fidelity_status ?? "",
+    ),
+  ).length;
+  const readyToExport = documents.filter(
+    (row) =>
+      row.status === "ready" &&
+      !["Limited Formatting", "Formatting Review Needed"].includes(
+        row.fidelity_status ?? "",
+      ),
+  ).length;
+  const needsReview = Math.max(
+    formattingReview,
+    documents.length - readyToExport,
+  );
+  const completedExports = exportRows.filter(
+    (row) => row.status === "completed",
+  ).length;
+  const score =
+    documents.length > 0
+      ? Math.min(
+          100,
+          60 +
+            Math.min(30, Math.round(appliedSuggestions / 2)) +
+            Math.min(10, completedExports),
+        )
+      : 0;
+
+  return {
+    description:
+      score >= 85
+        ? "Your documents are optimized and consistently ready for export."
+        : score >= 70
+          ? "Most documents are ready, but a few still need formatting or suggestion review."
+          : score > 0
+            ? "Several documents still need formatting or suggestion review."
+            : "No document activity was recorded in this period.",
+    helper:
+      score > 0
+        ? `${formatCount.format(appliedSuggestions)} improvements applied in this period`
+        : "Choose a wider range to view document readiness.",
+    label:
+      score >= 85
+        ? "Great"
+        : score >= 70
+          ? "Good"
+          : score > 0
+            ? "Needs review"
+            : "No score yet",
+    overview: [
+      {
+        helper: "Documents optimized and ready.",
+        label: "Ready to export",
+        tone: "success",
+        value: readyToExport,
+      },
+      {
+        helper: "AI suggestions or content review needed.",
+        label: "Needs review",
+        tone: "warning",
+        value: needsReview,
+      },
+      {
+        helper: "Formatting or fidelity issues detected.",
+        label: "Formatting review",
+        tone: "accent",
+        value: formattingReview,
+      },
+      {
+        helper: "Suggestions available to review.",
+        label: "Pending suggestions",
+        tone: "info",
+        value: pendingSuggestions,
+      },
+    ],
+    score,
+  };
 }
 
 function formatCompactTokenValue(value: number): string {
@@ -482,13 +606,22 @@ function buildActivity(
 }
 
 function buildEmptyData(profile: AccountProfile): AccountUsageData {
+  const emptyCategories = buildCategories([], []);
+  const emptyHealth = buildHealth([], [], []);
+
   return {
     activity: [],
-    categories: buildCategories([], []),
+    categories: {
+      Today: emptyCategories,
+      "This Week": emptyCategories,
+      "This Month": emptyCategories,
+      "This Year": emptyCategories,
+    },
     health: {
-      helper: "Create documents to build a health score.",
-      label: "No score yet",
-      score: 0,
+      Today: emptyHealth,
+      "This Week": emptyHealth,
+      "This Month": emptyHealth,
+      "This Year": emptyHealth,
     },
     profile,
     recentDocuments: [],
@@ -550,7 +683,7 @@ export async function getAccountUsageData(
   ] = await Promise.all([
     supabase
       .from("documents")
-      .select("id,title,source_type,file_type,original_file_key,word_count,created_at,updated_at")
+      .select("id,title,source_type,file_type,fidelity_status,status,original_file_key,word_count,created_at,updated_at")
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(100),
@@ -565,7 +698,7 @@ export async function getAccountUsageData(
       .from("suggestions")
       .select("type,status,created_at")
       .eq("user_id", userId)
-      .gte("created_at", monthStartIso)
+      .gte("created_at", yearStartIso)
       .order("created_at", { ascending: false })
       .limit(200),
     supabase
@@ -593,31 +726,62 @@ export async function getAccountUsageData(
   const exportRows = (exportData ?? []) as ExportRow[];
   const usageRows = (usageData ?? []) as UsageRow[];
   const monthAiRows = aiRows.filter((row) => row.created_at >= monthStartIso);
+  const monthSuggestionRows = suggestionRows.filter(
+    (row) => row.created_at >= monthStartIso,
+  );
   const monthUsageRows = usageRows.filter((row) => row.created_at >= monthStartIso);
   const tokenTotal = Math.max(sumTokens(monthAiRows), sumTokens(monthUsageRows));
-  const appliedSuggestions = suggestionRows.filter((row) => row.status === "applied").length;
+  const appliedSuggestions = monthSuggestionRows.filter(
+    (row) => row.status === "applied",
+  ).length;
   const uploadedDocuments = documents.filter((row) => row.source_type === "upload").length;
   const storageUsedBytes = estimateStorageUsedBytes(documents, exportRows);
   const recentDocuments = documents.slice(0, 4).map((document) => ({
     fileType: normalizeFileType(document.file_type),
+    id: document.id,
     title: document.title,
     when: formatRelativeDate(document.updated_at),
   }));
-  const healthScore =
-    documents.length > 0
-      ? Math.min(100, 60 + Math.min(30, Math.round(appliedSuggestions / 2)) + Math.min(10, exportRows.length))
-      : 0;
+  const now = new Date();
+  const rangeStarts: Record<AccountUsageTrendRange, string> = {
+    Today: getUsageRangeStartIso("Today", now),
+    "This Week": getUsageRangeStartIso("This Week", now),
+    "This Month": getUsageRangeStartIso("This Month", now),
+    "This Year": getUsageRangeStartIso("This Year", now),
+  };
+
+  function categoriesForRange(range: AccountUsageTrendRange) {
+    const start = rangeStarts[range];
+
+    return buildCategories(
+      aiRows.filter((row) => row.created_at >= start),
+      suggestionRows.filter((row) => row.created_at >= start),
+    );
+  }
+
+  function healthForRange(range: AccountUsageTrendRange) {
+    const start = rangeStarts[range];
+
+    return buildHealth(
+      documents.filter((row) => row.updated_at >= start),
+      suggestionRows.filter((row) => row.created_at >= start),
+      exportRows.filter((row) => row.created_at >= start),
+    );
+  }
 
   return {
     activity: buildActivity(documents, aiRows, exportRows, suggestionRows),
-    categories: buildCategories(monthAiRows, suggestionRows),
+    categories: {
+      Today: categoriesForRange("Today"),
+      "This Week": categoriesForRange("This Week"),
+      "This Month": categoriesForRange("This Month"),
+      "This Year": categoriesForRange("This Year"),
+    },
     health: {
-      helper:
-        healthScore > 0
-          ? `${formatCount.format(appliedSuggestions)} improvements applied this month`
-          : "Create documents to build a health score.",
-      label: healthScore >= 85 ? "Great" : healthScore >= 70 ? "Good" : healthScore > 0 ? "Needs review" : "No score yet",
-      score: healthScore,
+      Today: healthForRange("Today"),
+      "This Week": healthForRange("This Week"),
+      "This Month": healthForRange("This Month"),
+      "This Year": healthForRange("This Year"),
     },
     profile,
     recentDocuments,

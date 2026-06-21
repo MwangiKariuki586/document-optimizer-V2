@@ -58,8 +58,10 @@
 │   │   │       │   └── page.tsx            → Version history
 │   │   │       └── export/
 │   │   │           └── page.tsx            → Export flow
-│   │   └── account/
-│   │       └── page.tsx                    → Account and usage
+│   │   ├── account/
+│   │   │   └── page.tsx                    → Account and usage
+│   │   └── coming-soon/
+│   │       └── page.tsx                    → Planned feature placeholder
 │   └── api/
 │       ├── documents/
 │       │   ├── route.ts                    → Document list/create
@@ -453,7 +455,7 @@ Access rules:
 ## Authentication
 
 - Provider: Clerk
-- Protected routes: `/dashboard`, `/documents/new`, `/documents/[id]`, `/documents/[id]/preview`, `/documents/[id]/versions`, `/documents/[id]/export`, `/account`
+- Protected routes: `/dashboard`, `/documents/new`, `/documents/[id]`, `/documents/[id]/preview`, `/documents/[id]/versions`, `/documents/[id]/export`, `/account`, `/coming-soon`
 - Public routes: `/`, `/login`
 - Middleware protects authenticated app routes
 - On login → redirect to `/dashboard`

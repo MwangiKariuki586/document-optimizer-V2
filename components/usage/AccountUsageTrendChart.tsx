@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { DateRangeSelect } from "@/components/workspace/DateRangeSelect";
 import type {
   AccountUsageTrendRange,
   AccountUsageTrendSeries,
@@ -10,13 +10,6 @@ import type {
 type AccountUsageTrendChartProps = {
   trends: Record<AccountUsageTrendRange, AccountUsageTrendSeries>;
 };
-
-const rangeOptions: AccountUsageTrendRange[] = [
-  "This Month",
-  "This Week",
-  "Today",
-  "This Year",
-];
 
 function pointToCoordinates(
   value: number,
@@ -97,23 +90,11 @@ export function AccountUsageTrendChart({
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           AI usage trend
         </h2>
-        <label className="relative inline-flex items-center">
-          <span className="sr-only">Usage trend date range</span>
-          <select
-            value={selectedRange}
-            onChange={(event) =>
-              setSelectedRange(event.target.value as AccountUsageTrendRange)
-            }
-            className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-9 text-sm font-medium text-text-secondary outline-none transition hover:bg-surface-secondary focus:border-accent focus:ring-2 focus:ring-accent"
-          >
-            {rangeOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-3 size-4 text-text-muted" />
-        </label>
+        <DateRangeSelect
+          ariaLabel="Usage trend date range"
+          onChange={setSelectedRange}
+          value={selectedRange}
+        />
       </div>
 
       <div className="mt-5 grid h-64 grid-cols-[44px_minmax(0,1fr)] gap-4">

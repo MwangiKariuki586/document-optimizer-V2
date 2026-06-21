@@ -32,6 +32,7 @@ The goal is to help users produce clearer, stronger, export-ready documents with
 /documents/[id]/versions  → Version history and restore flow
 /documents/[id]/export    → Export flow
 /account                  → Account and usage page
+/coming-soon              → Placeholder for planned authenticated features
 ```
 
 ---
@@ -209,6 +210,8 @@ There is no standalone `/documents` list page in the current MVP flow; document 
   - token usage where available
 - The MVP is free to use. Account usage should read as operational activity
   tracking, not as paid-plan, subscription, renewal, upgrade, or invoice UI.
+- Planned account and usage actions that are not functional yet route to the
+  shared authenticated `/coming-soon` page instead of rendering inert controls.
 
 ---
 

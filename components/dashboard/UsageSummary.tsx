@@ -3,7 +3,9 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { DateRangeSelect } from "@/components/workspace/DateRangeSelect";
+import { DATE_RANGE_OPTIONS } from "@/lib/date-range";
 import type {
   DashboardUsageOverview,
   DashboardUsageRange,
@@ -23,59 +25,9 @@ type UsageSummaryProps = {
   usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>;
 };
 
-const dateRangeOptions = [
-  "This Week",
-  "Today",
-  "This Month",
-  "This Year",
-] as const;
-
 type BarStyle = CSSProperties & {
   "--bar-width": string;
 };
-
-type DateRangeSelectProps = {
-  label: string;
-  onChange: (range: DashboardUsageRange) => void;
-  options: DashboardUsageRange[];
-  value: DashboardUsageRange;
-};
-
-function isDateRangeOption(
-  value: string,
-  options: DashboardUsageRange[],
-): value is DashboardUsageRange {
-  return options.some((option) => option === value);
-}
-
-function DateRangeSelect({
-  label,
-  onChange,
-  options,
-  value,
-}: DateRangeSelectProps) {
-  return (
-    <label className="relative inline-flex items-center">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => {
-          if (isDateRangeOption(event.target.value, options)) {
-            onChange(event.target.value);
-          }
-        }}
-        className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary outline-none transition hover:bg-surface-secondary focus:border-accent focus:ring-2 focus:ring-accent"
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 size-4 text-text-muted" />
-    </label>
-  );
-}
 
 const exportToneClasses: Record<ExportFormatItem["tone"], string> = {
   accent: "bg-accent",
@@ -88,7 +40,7 @@ const exportToneClasses: Record<ExportFormatItem["tone"], string> = {
 function orderedRanges(
   usageOverview: Record<DashboardUsageRange, DashboardUsageOverview>,
 ): DashboardUsageRange[] {
-  return dateRangeOptions.filter((option) => Boolean(usageOverview[option]));
+  return DATE_RANGE_OPTIONS.filter((option) => Boolean(usageOverview[option]));
 }
 
 function ringPercent(used: number, limit: number): number {
@@ -230,7 +182,7 @@ export function UsageSummary({
             Usage Overview
           </h2>
           <DateRangeSelect
-            label="Filter usage overview by date range"
+            ariaLabel="Filter usage overview by date range"
             onChange={setSelectedRange}
             options={ranges}
             value={selectedRange}
