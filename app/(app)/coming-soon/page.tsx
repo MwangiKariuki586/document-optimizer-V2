@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { ArrowLeft, Clock3 } from "lucide-react";
+import { Clock3 } from "lucide-react";
+import BackToPrevious from "@/components/BackToPrevious";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
 
@@ -50,13 +50,9 @@ export default async function ComingSoonPage({
             You can continue using the available document, AI, version, export,
             and usage tools while this feature is being prepared.
           </p>
-          <Link
-            href="/dashboard"
-            className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Back to dashboard
-          </Link>
+          <BackToPrevious className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark">
+            Back
+          </BackToPrevious>
         </div>
       </section>
     </PageShell>
