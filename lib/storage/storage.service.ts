@@ -73,6 +73,22 @@ export async function removeOriginalFile(
   }
 }
 
+export async function downloadOriginalFile(
+  supabase: SupabaseClient<Database>,
+  fileKey: string,
+): Promise<Buffer> {
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTS_BUCKET)
+    .download(fileKey);
+
+  if (error || !data) {
+    console.error("[storage/download-original]", error?.message);
+    throw new Error("Failed to download the uploaded file");
+  }
+
+  return Buffer.from(await data.arrayBuffer());
+}
+
 export async function uploadExportFile(
   supabase: SupabaseClient<Database>,
   input: UploadExportInput,

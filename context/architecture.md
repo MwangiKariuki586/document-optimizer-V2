@@ -217,6 +217,24 @@ Dashboard/editor revalidates or redirects
 
 ### Document Upload
 
+Current uploads use a durable asynchronous ingestion pipeline:
+
+```txt
+Browser validates metadata and computes SHA-256
+  -> init API creates an idempotent processing document/ingestion
+  -> browser uploads directly to private Storage with signed resumable TUS
+  -> completion API verifies the object and enqueues pgmq work
+  -> Node worker validates signature/complexity and parses the file
+  -> transactional finalization checks per-user checksum duplicates
+  -> user chooses Open Existing or Continue as New when required
+  -> document, initial version, usage, and ingestion finalize atomically
+```
+
+`document_ingestions` is the durable state machine. Browser checksums are
+preflight hints; only worker-computed SHA-256 is authoritative. Queue messages
+contain ingestion IDs only and are accessible exclusively to the service-role
+worker. The older synchronous flow below is retained only as rollback context.
+
 ```txt
 User uploads file
         ↓

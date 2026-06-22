@@ -433,6 +433,12 @@ Rules:
 
 ## Loading States
 
+Upload processing is durable and must expose its actual stage. Show checksum
+preparation, transfer percentage with pause/resume, queued/parsing status, and
+terminal failure separately. A detected duplicate must interrupt processing
+with explicit Open Existing and Continue as New actions; never silently discard
+or auto-copy the file.
+
 Use the correct loading pattern for the size of the action.
 
 ### Page or Section Loading

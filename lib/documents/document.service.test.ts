@@ -111,10 +111,11 @@ describe("document service MVP flows", () => {
   });
 
   it("creates pasted documents with normalized content, an initial version, and usage", async () => {
-    const documents = createBuilder("documents", {
-      single: { id: "document-id", title: "Pasted Draft" },
-    });
-    const { supabase } = createSupabaseMock([documents]);
+    const rpc = vi.fn(async () => ({
+      data: [{ document_id: "document-id", document_title: "Pasted Draft" }],
+      error: null,
+    }));
+    const supabase = { rpc } as unknown as SupabaseClient<Database>;
     createSupabaseServerClientMock.mockReturnValue(supabase);
 
     const result = await createPasteDocument({
@@ -124,34 +125,13 @@ describe("document service MVP flows", () => {
     });
 
     expect(result).toEqual({ id: "document-id", title: "Pasted Draft" });
-    expect(documents.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user_id: "user-id",
-        title: "Pasted Draft",
-        source_type: "paste",
-        current_markdown: "First line\n\nSecond line",
-        fidelity_status: "Plain Text Only",
-        word_count: 4,
-      }),
-    );
-    expect(createDocumentVersionMock).toHaveBeenCalledWith(
-      supabase,
-      expect.objectContaining({
-        documentId: "document-id",
-        userId: "user-id",
-        source: "paste",
-        contentMarkdown: "First line\n\nSecond line",
-      }),
-    );
-    expect(recordUsageEventMock).toHaveBeenCalledWith(
-      supabase,
-      expect.objectContaining({
-        userId: "user-id",
-        eventType: "document_create",
-        documentId: "document-id",
-        metadata: { source_type: "paste" },
-      }),
-    );
+    expect(rpc).toHaveBeenCalledWith("create_paste_document_atomic", {
+      p_user_id: "user-id",
+      p_title: "Pasted Draft",
+      p_content: "First line\n\nSecond line",
+      p_editor_json: expect.objectContaining({ type: "doc" }),
+      p_word_count: 4,
+    });
   });
 
   it("updates manual editor content only through the owned document row", async () => {

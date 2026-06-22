@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 11 - Documents Library
-**Last completed:** Removed Create Blank from the current MVP creation flow
-**Next:** Browser visual review of /documents and /documents/new after blank removal
+**Phase:** Phase 12 - Performance and Scalability
+**Last completed:** Moved durable upload processing into the upload zone
+**Next:** User browser review of the continuous upload-to-editor transition
 
 ---
 
@@ -79,6 +79,10 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 31 Documents Library Page — Full UI and Real Data
 
+### Phase 12 - Performance and Scalability
+
+- [x] 32 Asynchronous Document Ingestion and Duplicate Protection
+
 ---
 
 ## Decisions Made During Build
@@ -110,6 +114,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-22
+Feature: Inline Upload Processing Flow
+Status: Completed
+Files changed: components/upload/UploadDropzone.tsx, components/upload/UploadTabs.tsx, app/(app)/documents/[id]/page.tsx, lib/ingestion/ingestion.types.ts, lib/ingestion/ingestion.service.ts, context/ui-registry.md, context/progress-tracker.md; deleted components/upload/DocumentProcessingWorkspace.tsx
+What was completed: Removed the standalone processing screen from the normal creation journey. The upload zone now owns transfer, queued/downloading/parsing, worker duplicate review, failure, retry, delete, and automatic ready-editor navigation. Active document routes redirect back to the matching upload-zone state as a recovery fallback, and Paste Text is disabled while that processing state is active.
+Verification: TypeScript, tests, lint, and production build completed after the flow change. The local worker remains active and recent ingestion jobs complete in roughly 1.7-2.5 seconds.
+Follow-up: Browser-review /documents/new during one upload and confirm the inline transition feels right before further visual tuning.
+```
+
+```txt
+Date: 2026-06-22
+Feature: Signed TUS Upload Authentication Fix
+Status: Completed
+Files changed: components/upload/UploadDropzone.tsx, context/library-docs.md, context/progress-tracker.md
+What was completed: Corrected presigned resumable uploads to use Supabase Storage's /upload/resumable/sign endpoint instead of the user-JWT /upload/resumable endpoint. Kept x-signature as the sole signed-upload credential and reused the checksum-scoped idempotency key after an in-page retry. Removed two empty provisional ingestions/documents created by the failed authorization attempts.
+Verification: Direct signed TUS POST returned 201, PATCH returned 204, the object appeared in private Storage, and the diagnostic object was removed. Awaiting-upload cleanup count is zero.
+Follow-up: Re-upload from /documents/new, then start the external ingestion worker so queued files advance to ready.
+```
+
+```txt
+Date: 2026-06-22
+Feature: 32 Asynchronous Document Ingestion and Duplicate Protection
+Status: Completed in code and database; external worker deployment and user-owned browser QA remain
+Files changed: Supabase ingestion migrations, lib/ingestion, worker/document-ingestion.worker.ts, Dockerfile.worker, upload/processing components, upload and ingestion API routes, document service/types/tests, project context files
+What was completed: Replaced the default multipart upload path with browser SHA-256 preflight, idempotent ingestion initialization, signed direct resumable Storage uploads, pgmq-backed Node parsing, worker-side checksum/signature/complexity validation, per-user duplicate detection with explicit Open Existing/Continue as New choices, processing/retry UI, atomic upload finalization, and atomic paste creation. Added a provider-neutral worker container, queue permissions, active-ingestion limits, cleanup of abandoned uploads, and replay-safe version/usage writes.
+Verification: Supabase migrations applied; pgmq queue and RLS table verified; transactional duplicate/continue/replay assertions passed with rollback; worker empty-queue smoke test passed; npm test passed (18 files, 84 tests); npx tsc --noEmit passed; npm run lint passed with one pre-existing unrelated warning; npm run build passed.
+Follow-up: Deploy Dockerfile.worker with Supabase service credentials, then browser-verify direct TUS upload, pause/resume, processing, duplicate choices, failed retry, and all four formats.
+```
 
 ```txt
 Date: 2026-06-22
@@ -1292,7 +1326,7 @@ _Add blockers here when implementation cannot continue without a decision, depen
 ## Next Actions
 
 ```txt
-1. Start Phase 10 / 30 MVP Testing Pass.
-2. Add and run MVP-level tests for document creation, upload validation, ownership, AI validation, version restore, export validation, and usage records.
-3. Use the existing no-standalone-/documents route decision when reviewing navigation and dashboard entry points.
+1. Deploy the ingestion worker container with concurrency 2 and required Supabase secrets.
+2. Live-test direct TUS upload, processing, duplicate resolution, retry, and deletion for all supported formats.
+3. Run the planned 20-upload / 10-parse concurrency benchmark after worker deployment.
 ```

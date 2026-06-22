@@ -2,7 +2,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import {
   createDocumentVersion,
-  type VersionSource,
 } from "@/lib/versions/versions.service";
 import {
   countWords,
@@ -33,58 +32,6 @@ function getNumericMetadataValue(metadata: Json, key: string): number | null {
 
   const value = metadata[key];
   return typeof value === "number" ? value : null;
-}
-
-type DocumentCreationConfig = {
-  userId: string;
-  documentPayload: TablesInsert<"documents">;
-  versionSource: VersionSource;
-  versionContentMarkdown: string;
-  versionEditorJson: Json;
-  versionNotes: string;
-};
-
-async function createDocumentWithInitialVersion(
-  config: DocumentCreationConfig,
-): Promise<CreatedDocument> {
-  const supabase = createSupabaseServerClient();
-
-  const { data: document, error: documentError } = await supabase
-    .from("documents")
-    .insert(config.documentPayload)
-    .select("id,title")
-    .single();
-
-  if (documentError || !document) {
-    console.error("[documents/create]", documentError?.message);
-    throw new Error("Failed to create document");
-  }
-
-  try {
-    await createDocumentVersion(supabase, {
-      documentId: document.id,
-      userId: config.userId,
-      title: document.title,
-      source: config.versionSource,
-      contentMarkdown: config.versionContentMarkdown,
-      editorJson: config.versionEditorJson,
-      notes: config.versionNotes,
-    });
-  } catch (error) {
-    // Roll back the orphaned document so the user can retry cleanly.
-    await supabase.from("documents").delete().eq("id", document.id);
-    console.error("[documents/create]", error);
-    throw new Error("Failed to create document");
-  }
-
-  await recordUsageEvent(supabase, {
-    userId: config.userId,
-    eventType: "document_create",
-    documentId: document.id,
-    metadata: { source_type: config.documentPayload.source_type },
-  });
-
-  return { id: document.id, title: document.title };
 }
 
 // Loads a single document scoped to its owner. Returns null when the document
@@ -277,25 +224,20 @@ export async function createPasteDocument(
   const editorJson = plainTextToEditorJson(content);
   const wordCount = countWords(content);
 
-  return createDocumentWithInitialVersion({
-    userId: input.userId,
-    documentPayload: {
-      user_id: input.userId,
-      title,
-      status: "ready",
-      source_type: "paste",
-      file_type: "none",
-      extracted_text: content,
-      editor_json: editorJson,
-      current_markdown: content,
-      fidelity_status: "Plain Text Only",
-      word_count: wordCount,
-    },
-    versionSource: "paste",
-    versionContentMarkdown: content,
-    versionEditorJson: editorJson,
-    versionNotes: "Document created from pasted text",
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("create_paste_document_atomic", {
+    p_user_id: input.userId,
+    p_title: title,
+    p_content: content,
+    p_editor_json: editorJson,
+    p_word_count: wordCount,
   });
+  const document = data?.[0];
+  if (error || !document) {
+    console.error("[documents/create-paste]", error?.message);
+    throw new Error("Failed to create document");
+  }
+  return { id: document.document_id, title: document.document_title };
 }
 
 export async function createUploadedDocument(

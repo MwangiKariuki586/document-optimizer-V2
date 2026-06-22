@@ -289,6 +289,13 @@ Wire document upload and parsing.
 - Record usage
 - Redirect to `/documents/[id]`
 - Show warning toast if formatting is limited
+- Initialize uploads with an idempotency key and browser SHA-256 checksum
+- Upload directly to private Storage using signed resumable TUS
+- Parse files in the durable Node ingestion worker through `pgmq`
+- Detect verified checksum duplicates per authenticated user
+- Require an explicit Open Existing or Continue as New decision
+- Render queued, processing, failed, retry, and duplicate-review states on `/documents/[id]`
+- Finalize document, initial version, usage, and ingestion atomically
 
 ---
 

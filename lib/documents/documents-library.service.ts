@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { removeOriginalFile } from "@/lib/storage/storage.service";
 
 export type DocumentsLibraryItem = {
   id: string;
@@ -374,6 +375,31 @@ export async function deleteDocument(
 ): Promise<boolean> {
   const supabase = createSupabaseServerClient();
 
+  const { data: document, error: loadError } = await supabase
+    .from("documents")
+    .select("id,original_file_key")
+    .eq("id", documentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (loadError) {
+    console.error("[documents/delete/load]", loadError.message);
+    throw new Error("Failed to delete document");
+  }
+
+  if (!document) return false;
+
+  const { error: ingestionError } = await supabase
+    .from("document_ingestions")
+    .delete()
+    .eq("document_id", documentId)
+    .eq("user_id", userId);
+
+  if (ingestionError) {
+    console.error("[documents/delete/ingestion]", ingestionError.message);
+    throw new Error("Failed to delete document");
+  }
+
   const { error } = await supabase
     .from("documents")
     .delete()
@@ -383,6 +409,10 @@ export async function deleteDocument(
   if (error) {
     console.error("[documents/delete]", error.message);
     throw new Error("Failed to delete document");
+  }
+
+  if (document.original_file_key) {
+    await removeOriginalFile(supabase, document.original_file_key);
   }
 
   return true;

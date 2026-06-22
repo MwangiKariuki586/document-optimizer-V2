@@ -475,6 +475,12 @@ Rules:
 - Save formatting metadata where possible
 - Set fidelity status after parsing
 - Warn users when editable formatting may be limited
+- Do not proxy file bytes through Next.js; use signed direct Storage uploads
+- Treat browser SHA-256 as preflight only and recompute it in the worker
+- Scope duplicate checksum lookups to the authenticated user
+- Keep queue messages identifier-only; never include file bytes or credentials
+- Make queue delivery, retries, duplicate resolution, versions, and usage writes idempotent
+- Enforce file, extracted-character, editor-node, PDF-page, and DOCX expansion limits before finalization
 
 Expected parser output:
 
@@ -504,6 +510,8 @@ Rules:
 - Keep original files preserved
 - Do not expose permanent public document URLs
 - Validate ownership before generating signed URLs
+- Use resumable TUS uploads for original documents and show real progress
+- Preserve failed originals for retry; remove abandoned incomplete uploads after 24 hours
 
 Path pattern:
 

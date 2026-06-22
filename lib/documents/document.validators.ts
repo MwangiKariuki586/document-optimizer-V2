@@ -18,6 +18,7 @@ export const documentTitleSchema = z
 // (only titles/names/labels use the allowlist). Stored via the parameterized
 // Supabase client, so it is safe from SQL injection.
 export const DOCUMENT_CONTENT_MAX = 100_000;
+export const DOCUMENT_LINE_MAX = 20_000;
 
 export const documentContentSchema = z
   .string({ message: "Content is required" })
@@ -26,6 +27,10 @@ export const documentContentSchema = z
   .max(
     DOCUMENT_CONTENT_MAX,
     `Content must be ${DOCUMENT_CONTENT_MAX.toLocaleString("en-US")} characters or fewer`,
+  )
+  .refine(
+    (content) => content.split(/\r\n|\r|\n/).length <= DOCUMENT_LINE_MAX,
+    `Content must contain ${DOCUMENT_LINE_MAX.toLocaleString("en-US")} lines or fewer`,
   );
 
 // Editor body content may be empty after manual editing, but is still capped.

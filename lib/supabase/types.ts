@@ -84,6 +84,7 @@ export type Database = {
           editor_json: Json | null
           formatting_metadata: Json
           id: string
+          ingestion_id: string | null
           notes: string | null
           source: string
           title: string
@@ -97,6 +98,7 @@ export type Database = {
           editor_json?: Json | null
           formatting_metadata?: Json
           id?: string
+          ingestion_id?: string | null
           notes?: string | null
           source: string
           title: string
@@ -110,6 +112,7 @@ export type Database = {
           editor_json?: Json | null
           formatting_metadata?: Json
           id?: string
+          ingestion_id?: string | null
           notes?: string | null
           source?: string
           title?: string
@@ -137,6 +140,10 @@ export type Database = {
           formatting_metadata: Json
           id: string
           original_file_key: string | null
+          original_file_name: string | null
+          original_file_size: number | null
+          original_mime_type: string | null
+          file_checksum: string | null
           source_type: string
           status: string
           title: string
@@ -154,6 +161,10 @@ export type Database = {
           formatting_metadata?: Json
           id?: string
           original_file_key?: string | null
+          original_file_name?: string | null
+          original_file_size?: number | null
+          original_mime_type?: string | null
+          file_checksum?: string | null
           source_type: string
           status?: string
           title: string
@@ -171,6 +182,10 @@ export type Database = {
           formatting_metadata?: Json
           id?: string
           original_file_key?: string | null
+          original_file_name?: string | null
+          original_file_size?: number | null
+          original_mime_type?: string | null
+          file_checksum?: string | null
           source_type?: string
           status?: string
           title?: string
@@ -179,6 +194,110 @@ export type Database = {
           word_count?: number
         }
         Relationships: []
+      }
+      document_ingestions: {
+        Row: {
+          attempt_count: number
+          client_checksum: string
+          completed_at: string | null
+          created_at: string
+          declared_mime_type: string
+          detected_mime_type: string | null
+          document_id: string | null
+          duplicate_document_id: string | null
+          duplicate_resolution: string
+          error_code: string | null
+          error_message: string | null
+          file_size: number
+          file_type: string
+          heartbeat_at: string | null
+          id: string
+          idempotency_key: string
+          metrics: Json
+          original_file_name: string
+          processing_started_at: string | null
+          queue_message_id: number | null
+          stage: string
+          status: string
+          storage_key: string | null
+          updated_at: string
+          upload_completed_at: string | null
+          user_id: string
+          verified_checksum: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          client_checksum: string
+          completed_at?: string | null
+          created_at?: string
+          declared_mime_type: string
+          detected_mime_type?: string | null
+          document_id?: string | null
+          duplicate_document_id?: string | null
+          duplicate_resolution?: string
+          error_code?: string | null
+          error_message?: string | null
+          file_size: number
+          file_type: string
+          heartbeat_at?: string | null
+          id?: string
+          idempotency_key: string
+          metrics?: Json
+          original_file_name: string
+          processing_started_at?: string | null
+          queue_message_id?: number | null
+          stage?: string
+          status?: string
+          storage_key?: string | null
+          updated_at?: string
+          upload_completed_at?: string | null
+          user_id: string
+          verified_checksum?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          client_checksum?: string
+          completed_at?: string | null
+          declared_mime_type?: string
+          detected_mime_type?: string | null
+          document_id?: string | null
+          duplicate_document_id?: string | null
+          duplicate_resolution?: string
+          error_code?: string | null
+          error_message?: string | null
+          file_size?: number
+          file_type?: string
+          heartbeat_at?: string | null
+          id?: string
+          idempotency_key?: string
+          metrics?: Json
+          original_file_name?: string
+          processing_started_at?: string | null
+          queue_message_id?: number | null
+          stage?: string
+          status?: string
+          storage_key?: string | null
+          updated_at?: string
+          upload_completed_at?: string | null
+          user_id?: string
+          verified_checksum?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_ingestions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_ingestions_duplicate_document_id_fkey"
+            columns: ["duplicate_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exports: {
         Row: {
@@ -353,6 +472,7 @@ export type Database = {
           estimated_cost: number | null
           event_type: string
           id: string
+          ingestion_id: string | null
           input_tokens: number | null
           metadata: Json
           model: string | null
@@ -366,6 +486,7 @@ export type Database = {
           estimated_cost?: number | null
           event_type: string
           id?: string
+          ingestion_id?: string | null
           input_tokens?: number | null
           metadata?: Json
           model?: string | null
@@ -379,6 +500,7 @@ export type Database = {
           estimated_cost?: number | null
           event_type?: string
           id?: string
+          ingestion_id?: string | null
           input_tokens?: number | null
           metadata?: Json
           model?: string | null
@@ -401,7 +523,49 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      archive_document_ingestion_message: {
+        Args: { p_message_id: number }
+        Returns: boolean
+      }
+      create_paste_document_atomic: {
+        Args: {
+          p_content: string
+          p_editor_json: Json
+          p_title: string
+          p_user_id: string
+          p_word_count: number
+        }
+        Returns: { document_id: string; document_title: string }[]
+      }
+      enqueue_document_ingestion: {
+        Args: { p_delay_seconds?: number; p_ingestion_id: string }
+        Returns: number
+      }
+      finalize_document_ingestion: {
+        Args: {
+          p_current_markdown: string
+          p_detected_mime_type: string
+          p_editor_json: Json
+          p_extracted_text: string
+          p_fidelity_status: string
+          p_formatting_metadata: Json
+          p_ingestion_id: string
+          p_metrics?: Json
+          p_verified_checksum: string
+          p_word_count: number
+        }
+        Returns: { existing_document_id: string | null; result_status: string }[]
+      }
+      read_document_ingestion_queue: {
+        Args: { p_quantity?: number; p_visibility_timeout?: number }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          message_id: number
+          read_count: number
+          visible_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

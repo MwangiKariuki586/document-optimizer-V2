@@ -20,8 +20,13 @@ export function UploadTabs() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = parseNewDocumentTab(searchParams.get("tab"));
+  const processingDocumentId = searchParams.get("processingDocumentId");
 
   function setActiveTab(tab: NewDocumentTab) {
+    if (processingDocumentId) {
+      return;
+    }
+
     const nextHref = newDocumentHref(tab);
     const currentTab = parseNewDocumentTab(searchParams.get("tab"));
 
@@ -48,9 +53,10 @@ export function UploadTabs() {
               role="tab"
               aria-selected={isActive}
               aria-controls={`upload-panel-${id}`}
+              disabled={Boolean(processingDocumentId) && !isActive}
               onClick={() => setActiveTab(id)}
               className={[
-                "flex flex-1 items-center justify-center gap-2 border-b-2 px-4 py-4 text-sm font-medium transition-colors sm:flex-none sm:justify-start",
+                "flex flex-1 items-center justify-center gap-2 border-b-2 px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:justify-start",
                 isActive
                   ? "border-accent text-accent"
                   : "border-transparent text-text-secondary hover:text-text-primary",
@@ -71,7 +77,7 @@ export function UploadTabs() {
             aria-labelledby="upload-tab-upload"
             className="flex min-h-0 flex-1 flex-col"
           >
-            <UploadDropzone />
+            <UploadDropzone initialDocumentId={processingDocumentId} />
           </div>
         )}
         {activeTab === "paste" && (

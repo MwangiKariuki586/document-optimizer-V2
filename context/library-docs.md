@@ -315,6 +315,18 @@ exports
 
 ### Upload Pattern
 
+Original document uploads now use a signed direct TUS flow. The server calls
+`createSignedUploadUrl` for the owner-scoped Storage key; the browser sends 6 MB
+chunks to the direct Storage hostname at `/storage/v1/upload/resumable/sign`
+with the returned token in `x-signature`.
+Next.js receives metadata and completion requests only, never file bytes.
+
+The ingestion worker uses `pgmq.read` with a visibility timeout, downloads the
+private original with the service role, recomputes SHA-256, and invokes the
+transactional finalization function. Browser roles have no queue access. The
+buffer upload snippet below remains applicable only to server-generated exports
+and the disabled legacy upload fallback.
+
 ```typescript
 const { data, error } = await supabase.storage
   .from("documents")

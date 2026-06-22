@@ -8,6 +8,17 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.ASYNC_UPLOADS_ENABLED !== "false") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Direct upload initialization is required.",
+          initializeAt: "/api/uploads/init",
+        },
+        { status: 410 },
+      );
+    }
+
     const userId = await getAuthenticatedUserId();
 
     if (!userId) {

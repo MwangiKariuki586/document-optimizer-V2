@@ -795,7 +795,7 @@ Tabbed container for the two current MVP document creation methods (Upload File,
 
 **Purpose:**
 
-Drag-and-drop / choose-file zone that uploads a file to `POST /api/upload`, shows uploading + parsing state, and redirects to the new document.
+Drag-and-drop / choose-file zone that owns the full upload lifecycle: fingerprinting, resumable transfer, queued/parsing progress, duplicate review, failure recovery, and final redirect to the ready editor.
 
 **Used on:**
 
@@ -804,14 +804,21 @@ Drag-and-drop / choose-file zone that uploads a file to `POST /api/upload`, show
 **Variants:**
 
 - idle — drop zone with Choose File button
-- uploading — CometSpinner with "Uploading & analyzing…" and the file name
+- uploading / paused — transfer percentage with pause/resume
+- processing — queued, downloading, and parsing status inside the dropzone
+- duplicate — Open Existing or Continue as New actions
+- failed — Retry Processing or Delete actions
 - error — `InlineAlert` (error) below the zone
 
 **Rules:**
 
-- Client-side validates type/size via `validateUpload` before sending (server re-validates).
-- Sends `multipart/form-data`; does not set `Content-Type` manually.
-- Shows a warning toast when the API returns formatting warnings.
+- Client-side validates type/size and computes SHA-256 before initialization.
+- Never sends file bytes through Next.js; initialization and completion use JSON APIs.
+- Shows real TUS progress with pause/resume.
+- Polls the owner-scoped ingestion endpoint every two seconds after upload.
+- Navigates to the editor only after atomic processing completion.
+- Duplicate choices remain explicit and scoped to the authenticated user.
+- `/documents/[id]` redirects active ingestions back to this upload state instead of rendering a separate processing page.
 - Keep the idle drop zone at a compact `min-h-[240px]` baseline so Choose File remains above the fold.
 
 ### PasteTextForm
