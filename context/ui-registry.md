@@ -787,6 +787,7 @@ Tabbed container for the two current MVP document creation methods (Upload File,
 
 - Holds the active-tab state and renders `UploadDropzone` or `PasteTextForm`.
 - Uses `role="tablist"` / `role="tab"` / `role="tabpanel"` for accessibility.
+- Sizes to the active tab's content and sits in an `items-start` page grid; it must not stretch to the taller guidance rail or viewport height.
 
 ### UploadDropzone
 
@@ -811,6 +812,7 @@ Drag-and-drop / choose-file zone that uploads a file to `POST /api/upload`, show
 - Client-side validates type/size via `validateUpload` before sending (server re-validates).
 - Sends `multipart/form-data`; does not set `Content-Type` manually.
 - Shows a warning toast when the API returns formatting warnings.
+- Keep the idle drop zone at a compact `min-h-[240px]` baseline so Choose File remains above the fold.
 
 ### PasteTextForm
 
@@ -828,6 +830,7 @@ Creates a document from pasted text via `POST /api/documents` (`sourceType: "pas
 
 - Title uses the shared allowlist; content is required and capped at `DOCUMENT_CONTENT_MAX`.
 - Shows live word/character count; uses `LoadingButton` and `appToast`.
+- The content field starts at `h-44` and remains vertically resizable; do not let it flex-fill the viewport and push Create Document below the fold.
 
 ### SupportedFormats / WhatHappensNext / RecentUploads / UploadTips
 

@@ -121,7 +121,7 @@ export function UploadDropzone() {
           if (e.key === "Enter" || e.key === " ") handleChooseFile();
         }}
         className={[
-          "flex min-h-[260px] flex-1 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors",
+          "flex min-h-[240px] flex-1 flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-6 transition-colors",
           isUploading
             ? "border-accent bg-accent-lighter"
             : isDragging

@@ -11,11 +11,11 @@ export default function NewDocumentLoading() {
       />
 
       <div
-        className="grid gap-5 lg:min-h-[max(420px,calc(100dvh-13rem))] lg:grid-cols-[minmax(0,1fr)_280px]"
+        className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_280px]"
         aria-busy="true"
         aria-label="Loading document creation workspace"
       >
-        <section className="flex min-h-[420px] flex-col rounded-2xl border border-border bg-surface shadow-card-soft">
+        <section className="flex w-full flex-col rounded-2xl border border-border bg-surface shadow-card-soft">
           <div className="grid grid-cols-2 border-b border-border p-2">
             {Array.from({ length: 2 }).map((_, index) => (
               <div
@@ -25,7 +25,7 @@ export default function NewDocumentLoading() {
             ))}
           </div>
           <div className="flex min-h-0 flex-1 items-center justify-center p-6">
-            <div className="flex h-full min-h-[300px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-6">
+            <div className="flex h-full min-h-[240px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-6">
               <div className="size-12 animate-pulse rounded-xl bg-surface-tertiary" />
               <div className="mt-5 h-5 w-56 max-w-full animate-pulse rounded bg-surface-tertiary" />
               <div className="mt-3 h-3 w-72 max-w-full animate-pulse rounded bg-surface-tertiary" />

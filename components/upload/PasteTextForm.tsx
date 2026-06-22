@@ -110,7 +110,7 @@ export function PasteTextForm() {
       </div>
 
       {/* Pasted content */}
-      <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor="paste-content"
           className="text-sm font-medium text-text-primary"
@@ -125,7 +125,7 @@ export function PasteTextForm() {
           rows={8}
           maxLength={DOCUMENT_CONTENT_MAX}
           disabled={isSubmitting}
-          className="min-h-[180px] w-full flex-1 resize-none rounded-lg border border-border bg-surface p-4 text-sm text-text-primary placeholder:text-text-soft focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-70 lg:min-h-0"
+          className="h-44 min-h-44 w-full resize-y rounded-lg border border-border bg-surface p-4 text-sm text-text-primary placeholder:text-text-soft focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-70"
         />
         {/* Word and character count */}
         <p className="self-end text-xs text-text-muted">

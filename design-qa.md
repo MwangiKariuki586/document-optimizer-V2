@@ -1,48 +1,49 @@
-# Design QA: Account utility rail
+# Design QA: Compact document creation workspace
 
-- Source visual truth: user-provided account settings rail screenshot in the active conversation
-- Implementation target: `components/usage/AccountUsageWorkspace.tsx` on `/account`
+- Source visual truth: user-provided Upload File and Paste Text screenshots in the active conversation
+- Implementation target: `/documents/new`
 - Implementation screenshot: unavailable; the in-app browser connection could not be established
-- Intended viewport: desktop account page with a 320px utility rail
-- State: authenticated account with Clerk profile and session data
+- Intended viewport: standard desktop/laptop viewport
+- State: Upload File and Paste Text tabs before submission
 
 ## Full-view comparison evidence
 
-Blocked. The source screenshot is available in the conversation, but a rendered `/account` screenshot could not be captured from the required in-app browser. No visual-match claim can be made from code inspection alone.
+Blocked. The source screenshots show the primary Choose File and Create Document actions falling below the initial viewport, but a rendered implementation screenshot could not be captured from the required in-app browser.
 
 ## Focused region comparison evidence
 
-Blocked for the same reason. The intended focus region is the complete right utility rail containing profile, account controls, storage management, data/privacy, and session/access cards.
+Blocked. The intended focus regions are the upload dropzone and the paste textarea/action area.
 
 ## Findings
 
-- [P1] Rendered layout has not been visually compared
-  - Location: `/account` right utility rail.
+- [P1] Above-the-fold action visibility has not been visually confirmed
+  - Location: `/documents/new` creation card.
   - Evidence: implementation screenshot is unavailable.
-  - Impact: spacing, density, card height, typography, and sticky behavior may still differ from the reference.
-  - Fix: capture `/account` at the desktop viewport and compare the 320px rail against the supplied screenshot.
+  - Impact: viewport-specific layout interactions may still hide a primary action at some laptop heights.
+  - Fix: capture both tabs at a standard laptop viewport and confirm Choose File and Create Document are visible without scrolling.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: code uses existing project typography tokens; rendered weight, line height, and truncation remain unverified.
-- Spacing and layout rhythm: five-card structure and compact padding are implemented; rendered vertical rhythm remains unverified.
-- Colors and visual tokens: implementation uses existing accent, border, surface, text, success, and error tokens; rendered contrast remains unverified.
-- Image quality and asset fidelity: no custom imagery is required; profile initials and Lucide icons use existing product patterns. Rendered icon scale remains unverified.
-- Copy and content: reference card structure is implemented with live profile, storage, provider, and last-sign-in values plus MVP-safe account-management copy.
+- Fonts and typography: unchanged from the existing implementation; rendered wrapping remains unverified.
+- Spacing and layout rhythm: viewport stretch was removed and compact height baselines were introduced; rendered action visibility remains unverified.
+- Colors and visual tokens: unchanged project tokens; rendered contrast remains unverified.
+- Image quality and asset fidelity: no raster image assets are required; existing Lucide interface icons remain unchanged.
+- Copy and content: all existing labels, validation, helper copy, and actions are preserved.
 
 ## Patches made
 
-- Replaced the previous account utility content with five reference-matched cards.
-- Added Clerk-backed provider, last-sign-in, and sign-out behavior.
-- Added active navigation for uploaded files and allowlisted Coming Soon destinations for inactive settings.
-- Replaced Clerk-supported account links with the working Clerk user-profile modal and removed every unprioritized Coming Soon action from the rail.
-- Updated the account loading rail to five placeholder cards.
+- Removed the viewport-height minimum from the page grid.
+- Reduced UploadTabs from a 420px to a 400px minimum baseline.
+- Removed UploadTabs' minimum height entirely and top-aligned the page grid so the guidance rail cannot stretch the creation card.
+- Reduced the upload dropzone minimum from 260px to 240px and tightened vertical padding.
+- Changed the paste textarea from viewport flex-fill to a 176px vertically resizable field.
+- Updated the route loading skeleton to match the compact geometry.
 
 ## Implementation checklist
 
-- Capture the authenticated `/account` route in the in-app browser.
-- Compare the same rail width and desktop state with the source screenshot.
-- Correct any P0/P1/P2 spacing, typography, color, or responsive mismatches.
-- Repeat capture until the final result can be marked passed.
+- Capture Upload File and Paste Text at the same laptop viewport as the reference.
+- Confirm both primary actions are visible without scrolling.
+- Check mobile stacking and textarea resize behavior.
+- Correct any remaining P0/P1/P2 differences and repeat the comparison.
 
 final result: blocked

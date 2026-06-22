@@ -112,6 +112,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 _Add completed work notes here after each feature._
 
 ```txt
+Date: 2026-06-22
+Feature: Remove document creation card stretch whitespace
+Status: Code complete; visual QA blocked
+Files changed: app/(app)/documents/new/page.tsx, app/(app)/documents/new/loading.tsx, components/upload/UploadTabs.tsx, context/ui-registry.md, context/progress-tracker.md, design-qa.md
+What was completed: Top-aligned the /documents/new grid so the taller guidance rail no longer stretches the creation card, removed UploadTabs' remaining minimum height, and reduced the Suspense/loading geometry. This removes the whitespace below Create Document and allows the reduced 240px upload dropzone to take effect.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint completed with one existing unused RecentActivityList warning; git diff --check passed. Visual QA remains blocked by the unavailable in-app browser connection.
+Follow-up: Browser-review both creation tabs when the in-app browser is available.
+```
+
+```txt
+Date: 2026-06-21
+Feature: Compact document creation workspace
+Status: Code complete; visual QA blocked
+Files changed: app/(app)/documents/new/page.tsx, app/(app)/documents/new/loading.tsx, components/upload/UploadTabs.tsx, components/upload/UploadDropzone.tsx, components/upload/PasteTextForm.tsx, context/ui-registry.md, context/progress-tracker.md, design-qa.md
+What was completed: Removed the viewport-height stretch from /documents/new, reduced the creation card and upload dropzone baselines, and changed the paste textarea from flex-fill to a compact vertically resizable field. Choose File and Create Document now remain directly below their inputs instead of being pushed below the initial viewport.
+Verification: npx tsc --noEmit passed; npm run lint completed with one existing unused RecentActivityList warning; git diff --check passed. Visual QA remains blocked by the unavailable in-app browser connection and is recorded in design-qa.md.
+Follow-up: Browser-review both tabs at standard laptop height when the in-app browser is available.
+```
+
+```txt
 Date: 2026-06-21
 Feature: Remove unprioritized account utility actions
 Status: Completed

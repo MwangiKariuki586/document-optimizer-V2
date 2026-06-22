@@ -33,7 +33,7 @@ export function UploadTabs() {
   }
 
   return (
-    <div className="flex h-full min-h-[420px] flex-col rounded-2xl border border-border bg-surface shadow-card-soft">
+    <div className="flex w-full flex-col rounded-2xl border border-border bg-surface shadow-card-soft">
       <div
         role="tablist"
         aria-label="Document creation method"

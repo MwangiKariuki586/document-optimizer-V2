@@ -21,10 +21,10 @@ export default function NewDocumentPage() {
         description="Upload an existing file, start from scratch, or paste your text to get started. We'll help you improve it with AI."
       />
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:min-h-[max(420px,calc(100dvh-13rem))]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <Suspense
           fallback={
-            <div className="min-h-[420px] rounded-2xl border border-border bg-surface shadow-card-soft" />
+            <div className="min-h-[360px] rounded-2xl border border-border bg-surface shadow-card-soft" />
           }
         >
           <UploadTabs />
