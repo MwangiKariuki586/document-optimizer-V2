@@ -10,6 +10,7 @@ const MODEL_COSTS: Record<string, ModelCost> = {
   "gpt-4o": { inputPerMillion: 2.5, outputPerMillion: 10 },
   "gemini-2.0-flash": { inputPerMillion: 0.1, outputPerMillion: 0.4 },
   "gemini-2.5-flash": { inputPerMillion: 0.3, outputPerMillion: 2.5 },
+  "gemini-2.5-flash-lite": { inputPerMillion: 0.1, outputPerMillion: 0.4 },
 };
 
 export function estimateAICost(input: {

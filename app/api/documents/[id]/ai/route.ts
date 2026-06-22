@@ -11,6 +11,8 @@ type RouteContext = {
 };
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
+  const requestStartedAt = performance.now();
+
   try {
     const userId = await getAuthenticatedUserId();
 
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       hasRevisedMarkdown: Boolean(result.result.output.revisedMarkdown),
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         id: result.id,
@@ -114,6 +116,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         result: result.result,
       },
     });
+    response.headers.set(
+      "Server-Timing",
+      `ai;dur=${Math.round(performance.now() - requestStartedAt)}`,
+    );
+
+    return response;
   } catch (error) {
     console.error("[api/documents/[id]/ai]", error);
 

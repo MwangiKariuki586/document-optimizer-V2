@@ -391,7 +391,7 @@ export async function runGeminiAction(
   const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
   });
-  const model = input.model ?? "gemini-2.5-flash";
+  const model = input.model ?? "gemini-2.5-flash-lite";
 
   const response = await ai.models.generateContent({
     model,
@@ -400,6 +400,8 @@ export async function runGeminiAction(
       systemInstruction: AI_SYSTEM_PROMPT,
       temperature: 0.3,
       responseMimeType: "application/json",
+      responseJsonSchema: AI_RESPONSE_JSON_SCHEMA,
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
 
@@ -436,7 +438,14 @@ Use Gemini for:
 - Always use `lib/ai/ai-router.ts`
 - Gemini results must normalize into the shared `AIActionResult` shape
 - Provider-specific errors must be converted into safe app errors
+- Use `gemini-2.5-flash-lite` for the default low-latency document path
+- Disable Gemini 2.5 thinking for deterministic document transformations
+- Constrain responses with the shared AI output JSON schema before normalization
+- Retry transient default-model capacity failures once on the stable
+  `gemini-3.1-flash-lite` fallback; malformed default-model responses also use
+  that fallback, while explicitly requested models do not fall back
 - Record provider and model in `ai_requests`
+- Log provider, persistence, and total durations for performance diagnosis
 - Record usage where available
 - Always return preview-first results
 - Never automatically overwrite document content

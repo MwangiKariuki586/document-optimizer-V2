@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Moved durable upload processing into the upload zone
-**Next:** User browser review of the continuous upload-to-editor transition
+**Last completed:** Reduced interactive AI action latency and added provider fallback telemetry
+**Next:** User browser review of AI action latency and the continuous upload-to-editor transition
 
 ---
 
@@ -82,6 +82,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ### Phase 12 - Performance and Scalability
 
 - [x] 32 Asynchronous Document Ingestion and Duplicate Protection
+- [x] 33 Low-Latency AI Actions and Capacity Fallback
 
 ---
 
@@ -114,6 +115,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-22
+Feature: 33 Low-Latency AI Actions and Capacity Fallback
+Status: Code complete; authenticated browser verification remains
+Files changed: lib/ai/providers/gemini.provider.ts, lib/ai/providers/gemini.provider.test.ts, lib/ai/ai.service.ts, lib/ai/ai-cost.ts, lib/ai/ai-cost.test.ts, app/api/documents/[id]/ai/route.ts, context/architecture.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Replaced the 31.65-second Gemini 2.5 Flash default with the latency-oriented stable Gemini 2.5 Flash-Lite model, disabled thinking for deterministic Gemini 2.5 document transforms, constrained output with the application JSON schema, added one stable Gemini 3.1 Flash-Lite fallback for transient capacity or malformed-response failures, retained explicit model pinning, and added provider/persistence/total timing telemetry plus a Server-Timing response header.
+Verification: The reported production request was confirmed at 31.647 seconds for 982 input and 1,471 output tokens. The final live application provider/normalization path completed in 9.259 seconds for 909 input and 1,515 output tokens with six valid suggestions and full revised markdown, about 71% faster at comparable output size. Controlled simplified calls completed in 5.049 seconds on Gemini 2.5 Flash-Lite and 5.637 seconds on Gemini 3.1 Flash-Lite; Gemini 2.5 Flash also returned a transient 503 high-demand response during benchmarking. All 89 tests, TypeScript, lint with one pre-existing unrelated warning, production build, and diff checks passed after the final response-schema tightening.
+Follow-up: Run the same Optimize action from the authenticated editor and confirm the `ai` request duration and returned model in the browser/network response.
+```
 
 ```txt
 Date: 2026-06-22

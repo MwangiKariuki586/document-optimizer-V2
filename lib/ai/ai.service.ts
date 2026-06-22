@@ -176,6 +176,7 @@ export async function runDocumentAIAction(
   supabase: SupabaseClient<Database>,
   input: RunDocumentAIActionInput,
 ): Promise<RunDocumentAIActionResult | null> {
+  const actionStartedAt = performance.now();
   const document = await getOwnedDocument(
     supabase,
     input.userId,
@@ -203,7 +204,9 @@ export async function runDocumentAIAction(
   };
 
   try {
+    const providerStartedAt = performance.now();
     const result = await runAIAction(aiInput);
+    const providerDurationMs = Math.round(performance.now() - providerStartedAt);
     console.log("[ai/run-document-action] provider response", {
       documentId: input.documentId,
       requestId,
@@ -213,8 +216,10 @@ export async function runDocumentAIAction(
       hasRevisedMarkdown: Boolean(result.output.revisedMarkdown),
       provider: result.provider,
       model: result.model,
+      providerDurationMs,
     });
 
+    const persistenceStartedAt = performance.now();
     await markAIRequestCompleted(supabase, input.userId, requestId, result);
     const savedSuggestionCount = await saveSuggestionsFromAIResult(supabase, {
       userId: input.userId,
@@ -244,6 +249,16 @@ export async function runDocumentAIAction(
         action: result.action,
         mode: result.mode,
       },
+    });
+
+    console.log("[ai/run-document-action] completed", {
+      documentId: input.documentId,
+      requestId,
+      providerDurationMs,
+      persistenceDurationMs: Math.round(
+        performance.now() - persistenceStartedAt,
+      ),
+      totalDurationMs: Math.round(performance.now() - actionStartedAt),
     });
 
     return { status: "completed", id: requestId, result };

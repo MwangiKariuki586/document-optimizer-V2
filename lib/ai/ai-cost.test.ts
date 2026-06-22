@@ -23,6 +23,17 @@ describe("estimateAICost", () => {
     expect(cost).toBeUndefined();
   });
 
+  it("estimates the low-latency Gemini model cost", () => {
+    const cost = estimateAICost({
+      provider: "gemini",
+      model: "gemini-2.5-flash-lite",
+      inputTokens: 1_000_000,
+      outputTokens: 500_000,
+    });
+
+    expect(cost).toBe(0.3);
+  });
+
   it("returns undefined for unknown model pricing", () => {
     const cost = estimateAICost({
       provider: "openai",

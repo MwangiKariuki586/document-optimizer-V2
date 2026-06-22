@@ -525,6 +525,14 @@ Primary MVP provider: Gemini
 Optional future provider: OpenAI
 ```
 
+The default interactive document model is `gemini-2.5-flash-lite` with
+thinking disabled and a provider-side JSON response schema. This keeps preview
+actions latency-oriented while preserving reliable normalization and the
+provider abstraction. A transient capacity failure or malformed response on the
+default path may fall back once to stable `gemini-3.1-flash-lite`; explicitly
+requested models remain pinned and do not fall back. AI service logs separate provider,
+persistence, and total duration so latency regressions can be attributed.
+
 The provider abstraction stays in place so OpenAI can be re-enabled later without changing route handlers, services, or components. `lib/ai/providers/gemini.provider.ts` is the first real provider implementation for MVP. `lib/ai/providers/openai.provider.ts`, if present, is deferred/future-only and must not block MVP completion.
 
 ```typescript
