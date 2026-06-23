@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginPanel } from "@/components/auth/LoginPanel";
 
@@ -12,12 +13,32 @@ type LoginPageProps = {
   }>;
 };
 
-function getSafeRedirectPath(value: string | undefined): string {
+async function getAppUrl(): Promise<string> {
+  const requestHeaders = await headers();
+  const forwardedHost = requestHeaders.get("x-forwarded-host");
+  const host = forwardedHost ?? requestHeaders.get("host");
+
+  if (host) {
+    const forwardedProto = requestHeaders.get("x-forwarded-proto");
+    const protocol =
+      forwardedProto ?? (host.startsWith("localhost") ? "http" : "https");
+
+    return `${protocol}://${host}`;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
+
+async function getSafeRedirectPath(value: string | undefined): Promise<string> {
   if (!value) {
     return "/dashboard";
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = await getAppUrl();
 
   try {
     const target = new URL(value, appUrl);
@@ -40,7 +61,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     if (userId) {
       const { redirect_url } = await searchParams;
 
-      redirect(getSafeRedirectPath(redirect_url));
+      redirect(await getSafeRedirectPath(redirect_url));
     }
   }
 

@@ -105,6 +105,10 @@ originally requested.
 
 The `/login` page should also redirect already signed-in users server-side using
 a same-origin `redirect_url` value when present, falling back to `/dashboard`.
+The same-origin check should derive the current app origin from request headers
+first so Vercel preview deployments, production domains, and local development
+all validate against the URL the user actually opened. `VERCEL_URL` and
+`NEXT_PUBLIC_APP_URL` are fallbacks only.
 Local development uses `npm run dev` with `next dev --webpack` because the
 Node/Next web-streaming `controller[kState].transformAlgorithm is not a
 function` failure can leave authenticated refreshes on the loading shell under

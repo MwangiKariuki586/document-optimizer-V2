@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Removed redundant work from direct suggestion Ignore
+**Last completed:** Fixed login redirect origin handling for Vercel preview deployments
 **Next:** User browser review of suggestion Apply/Ignore and AI action latency
 
 ---
@@ -116,6 +116,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-23
+Feature: Vercel Preview Login Redirect Origin
+Status: Completed
+Files changed: app/(auth)/login/[[...rest]]/page.tsx, .env.example, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Updated the server-side login redirect safety check to derive the app origin from request headers first, then fall back to Vercel's deployment URL, then NEXT_PUBLIC_APP_URL/local development. This allows Clerk redirect_url values to validate correctly on Vercel's unique preview deployment URLs without hardcoding one preview URL per commit.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated warning in components/usage/AccountUsageWorkspace.tsx; git diff --check passed.
+Follow-up: On Vercel preview, sign in from a protected route and confirm the flow returns to that same preview deployment route instead of falling back to /dashboard unexpectedly.
+```
 
 ```txt
 Date: 2026-06-23

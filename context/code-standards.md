@@ -593,11 +593,13 @@ Never hardcode keys, URLs, or secrets.
 | `SUPABASE_SECRET_KEY`               | Server-only Supabase fallback secret |
 | `GEMINI_API_KEY`                    | Required MVP Gemini provider    |
 | `OPENAI_API_KEY`                    | Optional/future OpenAI provider |
-| `NEXT_PUBLIC_APP_URL`               | App URL redirects and links     |
+| `VERCEL_URL`                        | Vercel deployment URL fallback for server-side app origin detection |
+| `NEXT_PUBLIC_APP_URL`               | Local/manual app URL fallback for redirects and links |
 
 Rules:
 
 - `NEXT_PUBLIC_` variables are exposed to the browser
+- Vercel preview deployments should rely on request headers or `VERCEL_URL`, not a fixed `NEXT_PUBLIC_APP_URL`
 - Never prefix secret keys with `NEXT_PUBLIC_`
 - Never log environment variables
 - Never commit `.env.local`
