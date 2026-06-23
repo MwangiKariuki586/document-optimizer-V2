@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Reduced interactive AI action latency and added provider fallback telemetry
-**Next:** User browser review of AI action latency and the continuous upload-to-editor transition
+**Last completed:** Removed redundant work from direct suggestion Ignore
+**Next:** User browser review of suggestion Apply/Ignore and AI action latency
 
 ---
 
@@ -83,6 +83,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 32 Asynchronous Document Ingestion and Duplicate Protection
 - [x] 33 Low-Latency AI Actions and Capacity Fallback
+- [x] 34 Low-Latency Direct Suggestion Apply
 
 ---
 
@@ -115,6 +116,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-23
+Feature: 34 Low-Latency Direct Suggestion Ignore
+Status: Code complete; authenticated browser timing remains
+Files changed: components/editor/EditorWorkspace.tsx, context/architecture.md, context/progress-tracker.md
+What was completed: Removed the redundant full suggestions reload after a successful single-card Ignore. The existing authenticated ignore endpoint still owns the mutation and ownership check; the editor now marks the ignored card locally and clears the active suggestion highlight when needed.
+Verification: TypeScript, diff whitespace check, all 89 tests, and production build passed. Lint passed with one pre-existing unrelated warning in components/usage/AccountUsageWorkspace.tsx.
+Follow-up: Ignore one pending suggestion in the authenticated editor and confirm the button clears quickly without a second /api/documents/[id]/suggestions reload.
+```
+
+```txt
+Date: 2026-06-22
+Feature: 34 Low-Latency Direct Suggestion Apply
+Status: Code complete; authenticated browser timing remains
+Files changed: components/editor/EditorWorkspace.tsx, lib/suggestions/suggestions.service.ts, app/api/documents/[id]/suggestions/[suggestionId]/apply/route.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Removed the redundant suggestions API reload and full route refresh after a successful single-card Apply. The response now updates the editor, counts, version, save state, and applied suggestion status locally. Parallelized the independent suggestion/document ownership reads and added a Server-Timing header for the apply request while preserving the existing pre-change version snapshot and mutation safety sequence.
+Verification: Recent persisted applies showed roughly 0.8-1.2 seconds from version creation through usage recording, while the redundant suggestions reload previously took about 1.55 seconds and the route refresh added more work. Suggestion tests, TypeScript, lint with one pre-existing unrelated warning, and diff checks passed.
+Follow-up: Apply one pending suggestion in the authenticated editor and compare the suggestion-apply Server-Timing duration with the button's visible busy time.
+```
 
 ```txt
 Date: 2026-06-22

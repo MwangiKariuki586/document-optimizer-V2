@@ -291,8 +291,13 @@ Usage/activity is recorded
 
 Full AI action results and explicit batch suggestion reviews are finally applied
 from `/documents/[id]/preview`. Single suggestion Apply is an explicit editor
-action: it verifies ownership, snapshots the current document first, applies the
-single safe replacement, and refreshes the editor immediately. The preview
+action: it loads the owned pending suggestion and current document in parallel,
+validates replacement safety, snapshots the pre-change state, updates document
+content, marks the suggestion applied, and records usage. The returned
+editor/version state updates the client locally without a second suggestions
+fetch or full route refresh. Single suggestion Ignore only marks the pending
+suggestion ignored and updates the client suggestion state locally without
+refetching the full suggestions list. The preview
 workspace compares current vs proposed content, supports editable proposed
 results, and supports synchronous proportional scrolling. If the user edits the
 proposed result before applying, that edited markdown is the source of truth for

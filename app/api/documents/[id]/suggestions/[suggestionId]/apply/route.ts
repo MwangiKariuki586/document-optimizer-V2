@@ -16,6 +16,8 @@ type RouteContext = {
 };
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
+  const requestStartedAt = performance.now();
+
   try {
     const userId = await getAuthenticatedUserId();
 
@@ -80,7 +82,13 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    return NextResponse.json({ success: true, data: result });
+    const response = NextResponse.json({ success: true, data: result });
+    response.headers.set(
+      "Server-Timing",
+      `suggestion-apply;dur=${Math.round(performance.now() - requestStartedAt)}`,
+    );
+
+    return response;
   } catch (error) {
     console.error("[api/documents/[id]/suggestions/[suggestionId]/apply]", error);
 

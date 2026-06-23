@@ -724,19 +724,12 @@ export async function applySuggestion(
     editedMarkdown?: string;
   },
 ): Promise<ApplySuggestionResult | null> {
-  const suggestion = await getOwnedPendingSuggestion(supabase, input);
+  const [suggestion, currentMarkdown] = await Promise.all([
+    getOwnedPendingSuggestion(supabase, input),
+    getOwnedDocumentMarkdown(supabase, input.userId, input.documentId),
+  ]);
 
-  if (!suggestion) {
-    return null;
-  }
-
-  const currentMarkdown = await getOwnedDocumentMarkdown(
-    supabase,
-    input.userId,
-    input.documentId,
-  );
-
-  if (currentMarkdown === null) {
+  if (!suggestion || currentMarkdown === null) {
     return null;
   }
 
@@ -758,6 +751,15 @@ export async function applySuggestion(
     }
   }
 
+  const nextMarkdown =
+    editedMarkdown ??
+    applyReplacementsSafely(currentMarkdown, [
+      {
+        originalText: suggestion.original_text,
+        suggestedText: suggestion.suggested_text,
+      },
+    ]);
+
   const snapshot = await snapshotDocumentVersion(supabase, {
     userId: input.userId,
     documentId: input.documentId,
@@ -770,15 +772,6 @@ export async function applySuggestion(
   if (!snapshot) {
     return null;
   }
-
-  const nextMarkdown =
-    editedMarkdown ??
-    applyReplacementsSafely(currentMarkdown, [
-      {
-        originalText: suggestion.original_text,
-        suggestedText: suggestion.suggested_text,
-      },
-    ]);
 
   const updated = await updateDocumentContent(supabase, {
     userId: input.userId,

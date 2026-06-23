@@ -461,8 +461,13 @@ export function EditorWorkspace({
       setVersionNumber(data.data.versionNumber);
       setSaveState("saved");
       setActiveSuggestionId(null);
-      await loadSuggestions();
-      router.refresh();
+      setSuggestions((current) =>
+        current.map((suggestion) =>
+          suggestion.id === id
+            ? { ...suggestion, status: "applied" }
+            : suggestion,
+        ),
+      );
       appToast.success("Suggestion applied. A version snapshot was created first.");
     } catch {
       appToast.error("Could not apply suggestion. Please try again.");
@@ -534,7 +539,14 @@ export function EditorWorkspace({
         return;
       }
 
-      await loadSuggestions();
+      setActiveSuggestionId((current) => (current === id ? null : current));
+      setSuggestions((current) =>
+        current.map((suggestion) =>
+          suggestion.id === id
+            ? { ...suggestion, status: "ignored" }
+            : suggestion,
+        ),
+      );
       appToast.info("Suggestion ignored.");
     } catch {
       appToast.error("Could not ignore suggestion. Please try again.");
