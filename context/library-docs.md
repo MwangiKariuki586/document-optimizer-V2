@@ -439,6 +439,8 @@ Use DeepSeek for:
 - Use `DEEPSEEK_API_KEY` only on the server
 - Use JSON output and keep the system prompt explicit about valid JSON
 - Disable thinking for default document transformations
+- Retry one transient DeepSeek network, rate-limit, or 5xx failure after a short delay
+- Use Gemini only as a fallback when the default unpinned DeepSeek path remains transiently unavailable
 - Record provider and model in `ai_requests`
 - Log provider, persistence, and total durations for performance diagnosis
 - Record usage where available
@@ -619,8 +621,12 @@ POST /api/documents/[id]/ai
   → create ai_requests row with status=running
   → call runAIAction() provider abstraction
   → update ai_requests completed/failed
-  → record ai_action usage on success
+  → persist generated suggestions and usage
+  → return completed normalized result plus persisted suggestions
 ```
+
+AI execution remains request-bound for the current MVP. Do not add an AI worker
+or polling route without an explicit architecture and scope decision.
 
 Task 19 preview/apply flow:
 
@@ -745,7 +751,8 @@ type AIActionResult = {
 ### Rules
 
 - Route handlers call the AI router, not providers
-- Route handlers should call `runDocumentAIAction()` for document-scoped execution; it owns `ai_requests` persistence and usage recording.
+- Route handlers call `runDocumentAIAction()` for document-scoped execution; it owns provider execution, `ai_requests` completion/failure persistence, suggestion insertion, and usage recording.
+- The completed response includes persisted suggestions for the request so the editor does not refetch the full document suggestion list.
 - The AI router defaults to DeepSeek for MVP execution.
 - Providers return normalized results
 - AI actions must support preview-first workflows for full-document results

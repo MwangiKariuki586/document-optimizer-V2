@@ -51,13 +51,8 @@ type RunAIActionResponse = {
     id: string;
     status: "completed";
     result: AIActionResult;
+    suggestions: DocumentSuggestion[];
   };
-};
-
-type SuggestionsResponse = {
-  success: boolean;
-  error?: string;
-  data?: DocumentSuggestion[];
 };
 
 type CreateSuggestionSelectionResponse = {
@@ -136,7 +131,6 @@ export function EditorWorkspace({
   const [suggestions, setSuggestions] = useState<EditorSuggestion[]>(() =>
     mapDocumentSuggestionsToEditorSuggestions(initialSuggestions),
   );
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [applyingSuggestionId, setApplyingSuggestionId] = useState<string | null>(
     null,
   );
@@ -243,29 +237,6 @@ export function EditorWorkspace({
     editor.commands.setActiveSuggestionHighlight(activeSuggestionId);
   }, [activeSuggestionId, editor]);
 
-  const loadSuggestions = useCallback(async (): Promise<EditorSuggestion[]> => {
-    setIsLoadingSuggestions(true);
-
-    try {
-      const response = await fetch(`/api/documents/${document.id}/suggestions`);
-      const data: SuggestionsResponse = await response.json();
-
-      if (!response.ok || !data.success || !data.data) {
-        appToast.error(data.error ?? "Could not load suggestions.");
-        return [];
-      }
-
-      const mappedSuggestions = mapDocumentSuggestionsToEditorSuggestions(data.data);
-      setSuggestions(mappedSuggestions);
-      return mappedSuggestions;
-    } catch {
-      appToast.error("Could not load suggestions. Please try again.");
-      return [];
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  }, [document.id]);
-
   const handleTitleChange = (value: string) => {
     setTitle(value);
     setSaveState((current) => (current === "saving" ? current : "dirty"));
@@ -370,8 +341,25 @@ export function EditorWorkspace({
       throw new Error(data.error ?? "Could not run AI action.");
     }
 
-    const nextSuggestions = await loadSuggestions();
-    const nextPendingSuggestions = nextSuggestions.filter(
+    const newSuggestions = mapDocumentSuggestionsToEditorSuggestions(
+      data.data.suggestions,
+    );
+    setSuggestions((current) => {
+      const existingIds = new Set(current.map((suggestion) => suggestion.id));
+      const merged = [
+        ...current,
+        ...newSuggestions.filter(
+          (suggestion) => !existingIds.has(suggestion.id),
+        ),
+      ];
+
+      return merged.map((suggestion, index) => ({
+        ...suggestion,
+        index: index + 1,
+      }));
+    });
+
+    const nextPendingSuggestions = newSuggestions.filter(
       (suggestion) => suggestion.status === "pending",
     );
 
@@ -688,7 +676,6 @@ export function EditorWorkspace({
                 onIgnoreSuggestion={handleIgnoreSuggestion}
                 pendingCount={pendingSuggestionCount}
                 appliedCount={appliedSuggestionCount}
-                isLoading={isLoadingSuggestions}
                 applyingSuggestionId={applyingSuggestionId}
                 ignoringSuggestionId={ignoringSuggestionId}
                 isReviewingAll={isReviewingAll}

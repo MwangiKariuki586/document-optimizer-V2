@@ -51,7 +51,6 @@ type EditorSuggestionsPanelProps = {
   pendingCount: number;
   appliedCount: number;
   onIgnoreSuggestion: (id: string) => void;
-  isLoading?: boolean;
   applyingSuggestionId?: string | null;
   ignoringSuggestionId?: string | null;
   isReviewingAll?: boolean;
@@ -101,7 +100,6 @@ export function EditorSuggestionsPanel({
   pendingCount,
   appliedCount,
   onIgnoreSuggestion,
-  isLoading = false,
   applyingSuggestionId = null,
   ignoringSuggestionId = null,
   isReviewingAll = false,
@@ -172,13 +170,7 @@ export function EditorSuggestionsPanel({
           </div>
 
           <div className="flex flex-col gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1">
-            {isLoading ? (
-              <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-border bg-surface-secondary p-5 text-center">
-                <p className="text-xs text-text-secondary">
-                  Loading suggestions…
-                </p>
-              </div>
-            ) : hasSuggestions ? (
+            {hasSuggestions ? (
               suggestions.map((suggestion) => {
                 const isReviewed = suggestion.status !== "pending";
                 const isApplyingThis = applyingSuggestionId === suggestion.id;

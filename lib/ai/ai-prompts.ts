@@ -25,9 +25,9 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   optimize:
     "Return mode \"preview\" with revisedMarkdown and 3-6 targeted suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   improve_clarity:
-    "Return mode \"suggestions\" with 3-6 clarity suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 clarity suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   fix_grammar:
-    "Return mode \"suggestions\" with 3-6 grammar suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 grammar suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   rewrite:
     "Return mode \"preview\" with revisedMarkdown and 3-6 wording suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   summarize:
@@ -35,11 +35,11 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   translate:
     "Return mode \"preview\" with revisedMarkdown as the translated document. Do not include suggestions unless there are source text issues that block a clean translation.",
   tone_analyze:
-    "Return mode \"suggestions\" with 3-6 tone suggestions and analysis notes. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 tone suggestions and analysis notes, and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   seo_analyze:
-    "Return mode \"suggestions\" with 3-6 SEO suggestions and analysis notes. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 SEO suggestions and analysis notes, and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   simplify_language:
-    "Return mode \"suggestions\" with 3-6 simplification suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 simplification suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
 };
 
 const LANGUAGE_LABELS: Record<AIActionInput["options"]["language"], string> = {

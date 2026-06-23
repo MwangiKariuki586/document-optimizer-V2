@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Added inline upload processing fast path
-**Next:** User browser retry of small DOCX/TXT/Markdown/PDF upload without the ingestion worker running
+**Last completed:** Removed the out-of-scope AI worker and restored direct optimized AI actions
+**Next:** Browser-time the direct AI request and completed suggestion render
 
 ---
 
@@ -103,6 +103,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: `/documents` is now the Documents Library — a primary navigation page for managing all uploaded, pasted, and created documents with pagination, filtering, sorting, tabs, and row actions (rename/archive/delete). Supersedes the earlier decision to keep `/documents` as a redirect to `/dashboard`.
 - Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
 - Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
+- Decision: AI actions remain request-bound for the current MVP. The authenticated route runs the provider, persists the request result and suggestions, and returns them together; a separate AI worker and polling route are out of scope. DeepSeek retries one transient failure and may fall back to Gemini only for the default unpinned path.
 
 ---
 
@@ -117,6 +118,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-23
+Feature: Remove Out-of-Scope AI Worker
+Status: Completed
+Files changed: app/api/documents/[id]/ai/route.ts, components/editor/EditorWorkspace.tsx, lib/ai/ai.service.ts, lib/suggestions/suggestions.service.ts, lib/supabase/types.ts, package.json, Supabase rollback migration, context files; removed AI status route, AI worker, and AI worker Dockerfile
+What was completed: Restored direct request-bound AI execution for the current MVP. The completed response now includes the suggestions persisted for that request, so the editor retains the useful no-refetch optimization without a queue, polling loop, separate process, or deployment unit. Removed the ai_actions queue, worker-only database columns/functions, worker environment variables, and worker documentation.
+Verification: Supabase rollback migration applied; the ai_actions queue, worker RPCs, queue_message_id, and attempt_count are absent; the ai_requests status constraint is restored to pending/running/completed/failed; security advisors returned no findings. TypeScript passed; all 95 tests passed; lint passed with one pre-existing unused-component warning in AccountUsageWorkspace; production build passed and no AI status polling route was registered; git diff check passed.
+Follow-up: Run one authenticated AI action and compare the direct request duration with the prior provider and persistence timings.
+```
+
+```txt
+Date: 2026-06-23
+Feature: Non-Blocking Queued AI Actions
+Status: Reverted on 2026-06-23 because a separate AI worker is out of scope for the current MVP
+Files changed: app/api/documents/[id]/ai/route.ts, app/api/documents/[id]/ai/[requestId]/route.ts, components/ai/AIActionsPanel.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, lib/ai/ai.service.ts, lib/ai/ai-router.ts, lib/ai/ai-prompts.ts, lib/ai/providers/deepseek.provider.ts, lib/ai/providers/deepseek.provider.test.ts, lib/suggestions/suggestions.service.ts, lib/supabase/types.ts, worker/ai-action.worker.ts, Dockerfile.ai-worker, package.json, Supabase AI queue migrations, context files
+What was completed: Changed POST /api/documents/[id]/ai from a provider-blocking request into a durable HTTP 202 enqueue operation. Added a service-role-only pgmq ai_actions queue, a dedicated Node worker, an authenticated request-status endpoint, editor polling, direct merging of persisted request suggestions, and removal of the dead suggestions-loading state. Suggestion-only prompts now explicitly avoid full revised document output. DeepSeek retries one transient network/429/5xx failure and the default unpinned route falls back to Gemini when configured.
+Verification: Supabase migrations applied and security advisors returned no findings; AI worker empty-queue smoke passed; a temporary queued Fix Grammar request completed through the real worker and DeepSeek in 4.916 seconds total with 2.820 seconds provider time, persisted one suggestion plus provider/model/token usage, and was cleaned up. TypeScript passed; all 95 tests passed; lint passed with one pre-existing unused-component warning in AccountUsageWorkspace; production build passed and registered the request-status route; git diff check passed.
+Follow-up: Superseded by the direct request-bound MVP flow above.
+```
 
 ```txt
 Date: 2026-06-23

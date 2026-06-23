@@ -270,16 +270,22 @@ Ownership is verified
         ↓
 AI request record is created
         ↓
-AI router selects provider
+DeepSeek retries one transient failure and may fall back to Gemini
         ↓
 Provider returns normalized result
         ↓
-Result is saved for preview
+Result and generated suggestions are saved
         ↓
 Usage is recorded
         ↓
-Preview is shown to user
+Result and persisted suggestions are returned to the editor
 ```
+
+`POST /api/documents/[id]/ai` performs authentication, validation, ownership
+checks, provider execution, persistence, and usage recording in one request.
+The completed response includes the suggestions persisted for that AI request,
+so the editor avoids a second full suggestions request. A separate AI worker is
+out of scope for the current MVP.
 
 ### Applying AI Result
 
@@ -544,6 +550,10 @@ disabled for latency-oriented document transforms. The provider abstraction stay
 in place so Gemini and OpenAI can be explicitly selected later without changing
 route handlers, services, or components. AI service logs separate provider,
 persistence, and total duration so latency regressions can be attributed.
+DeepSeek retries one transient network, rate-limit, or 5xx failure after a short
+delay. If the default unpinned DeepSeek path remains transiently unavailable and
+Gemini is configured, the router uses the low-latency Gemini path as a fallback.
+Explicit provider/model requests do not switch providers.
 
 `lib/ai/providers/deepseek.provider.ts` is the default provider implementation.
 `lib/ai/providers/gemini.provider.ts` remains available for explicit Gemini

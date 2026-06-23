@@ -104,7 +104,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       documentId: id,
       requestId: result.id,
       mode: result.result.mode,
-      suggestionCount: result.result.output.suggestions.length,
+      suggestionCount: result.suggestions.length,
       hasRevisedMarkdown: Boolean(result.result.output.revisedMarkdown),
     });
 
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         id: result.id,
         status: result.status,
         result: result.result,
+        suggestions: result.suggestions,
       },
     });
     response.headers.set(

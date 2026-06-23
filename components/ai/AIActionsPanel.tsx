@@ -470,7 +470,7 @@ export function AIActionsPanel({
           <LoadingButton
             className="h-9 w-full text-xs font-semibold"
             isLoading={isProcessing}
-            loadingText="Running AI action…"
+            loadingText="AI is working…"
             disabled={isDisabled && !isProcessing}
             onClick={handleRunAction}
           >

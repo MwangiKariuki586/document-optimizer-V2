@@ -29,5 +29,26 @@ export async function runAIAction(input: unknown): Promise<AIActionResult> {
 
   const provider = selectAIProvider(parsed.data);
 
-  return provider.run(parsed.data);
+  try {
+    return await provider.run(parsed.data);
+  } catch (error) {
+    const canFallbackToGemini =
+      !parsed.data.provider &&
+      !parsed.data.model &&
+      provider.name === "deepseek" &&
+      error instanceof Error &&
+      error.message === "DeepSeek transient request failed" &&
+      Boolean(process.env.GEMINI_API_KEY);
+
+    if (!canFallbackToGemini) {
+      throw error;
+    }
+
+    console.warn("[ai/router] DeepSeek unavailable; using Gemini fallback");
+    return geminiProvider.run({
+      ...parsed.data,
+      provider: "gemini",
+      model: undefined,
+    });
+  }
 }

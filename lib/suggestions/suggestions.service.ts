@@ -286,7 +286,7 @@ export async function saveSuggestionsFromAIResult(
     originalMarkdown: string;
     output: AIActionOutput;
   },
-): Promise<number> {
+): Promise<DocumentSuggestion[]> {
   const suggestions = input.output.suggestions ?? [];
   const rows: TablesInsert<"suggestions">[] = [];
 
@@ -354,23 +354,32 @@ export async function saveSuggestionsFromAIResult(
       action: input.action,
     });
 
-    return 0;
+    return [];
   }
 
-  const { error } = await supabase.from("suggestions").insert(rows);
+  const { data, error } = await supabase
+    .from("suggestions")
+    .insert(rows)
+    .select(
+      "id,document_id,ai_request_id,type,original_text,suggested_text,explanation,status,created_at,updated_at",
+    );
 
   if (error) {
     console.error("[suggestions/save-from-ai]", error.message);
     throw new Error("Failed to save AI suggestions");
   }
 
+  const saved = (data ?? [])
+    .map(mapSuggestionRow)
+    .filter((row): row is DocumentSuggestion => row !== null);
+
   console.log("[suggestions/save-from-ai] inserted", {
     documentId: input.documentId,
     aiRequestId: input.aiRequestId,
-    count: rows.length,
+    count: saved.length,
   });
 
-  return rows.length;
+  return saved;
 }
 
 export async function listDocumentSuggestions(

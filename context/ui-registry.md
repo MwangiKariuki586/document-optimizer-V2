@@ -1116,6 +1116,7 @@ Right-rail AI Suggestions panel: panel header with total and pending counts, fil
 - Export is not rendered in this rail; export belongs to the later preview/export flow.
 - The review footer is shown when there are pending or applied suggestions. Review Applied is disabled until at least one suggestion is applied; Review All is disabled when no pending suggestions remain.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
+- The panel no longer owns a separate loading-suggestions branch. Initial suggestions come from the server page, and completed AI responses merge their persisted suggestion rows directly into editor state.
 
 ### EditorStatusBar
 
@@ -1177,7 +1178,8 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 
 - `"use client"`. Exports `AIActionSettings`, `AIActionStatus`.
 - Props: optional `onBack` (return to suggestions when suggestions exist), optional `onClose` (collapse right rail when suggestions exist), `onRunAction` (provided by `EditorWorkspace`).
-- `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`; the panel shows returned summary/id on success.
+- `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`. The panel stays in its compact processing state until the direct request returns a completed or failed result.
+- Completed responses include only the suggestions persisted for that AI request. `EditorWorkspace` de-duplicates and merges them locally, avoiding a follow-up full suggestions request.
 - Action settings are collapsed by default behind a settings disclosure with a one-line summary. Expanding exposes tone, audience, language, and preserve-structure controls; select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
 

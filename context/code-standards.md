@@ -445,6 +445,8 @@ Rules:
 - AI providers must return normalized results
 - Gemini and OpenAI are optional provider paths and must not block the default DeepSeek workflow.
 - AI requests must be stored in `ai_requests`
+- AI provider execution remains in the authenticated document AI request for the current MVP; do not add a separate AI worker without an explicit scope change
+- Completed AI responses should return newly persisted suggestions so the editor does not issue a redundant full suggestions fetch
 - Token usage and estimated cost should be recorded where available
 - AI failures must be saved as safe error messages
 - AI full-document results must be preview-first

@@ -9,6 +9,7 @@ import {
 
 export const DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash";
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+const DEEPSEEK_RETRY_DELAY_MS = 400;
 
 type DeepSeekUsage = {
   prompt_tokens?: number;
@@ -56,29 +57,74 @@ async function parseDeepSeekError(response: Response): Promise<string> {
   }
 }
 
+function isTransientStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+async function waitForRetry(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, DEEPSEEK_RETRY_DELAY_MS));
+}
+
+async function requestDeepSeek(
+  input: AIActionInput,
+  model: string,
+): Promise<Response> {
+  const apiKey = getDeepSeekApiKey();
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: AI_SYSTEM_PROMPT },
+            { role: "user", content: buildAIUserPrompt(input) },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.3,
+          thinking: { type: "disabled" },
+          stream: false,
+        }),
+      });
+
+      if (response.ok || !isTransientStatus(response.status) || attempt === 1) {
+        return response;
+      }
+
+      console.warn("[ai/deepseek] transient response; retrying", {
+        status: response.status,
+        attempt: attempt + 1,
+      });
+    } catch (error) {
+      if (attempt === 1) {
+        console.error("[ai/deepseek] network failure", {
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
+        throw new AIProviderError("DeepSeek transient request failed");
+      }
+
+      console.warn("[ai/deepseek] network failure; retrying", {
+        attempt: attempt + 1,
+      });
+    }
+
+    await waitForRetry();
+  }
+
+  throw new AIProviderError("DeepSeek transient request failed");
+}
+
 export const deepSeekProvider: AIProvider = {
   name: "deepseek",
   defaultModel: DEFAULT_DEEPSEEK_MODEL,
   async run(input: AIActionInput): Promise<AIActionResult> {
     const model = getDeepSeekModel(input.model);
-    const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getDeepSeekApiKey()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: AI_SYSTEM_PROMPT },
-          { role: "user", content: buildAIUserPrompt(input) },
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-        thinking: { type: "disabled" },
-        stream: false,
-      }),
-    });
+    const response = await requestDeepSeek(input, model);
 
     if (!response.ok) {
       const message = await parseDeepSeekError(response);
@@ -86,7 +132,11 @@ export const deepSeekProvider: AIProvider = {
         status: response.status,
         message,
       });
-      throw new AIProviderError("DeepSeek request failed");
+      throw new AIProviderError(
+        isTransientStatus(response.status)
+          ? "DeepSeek transient request failed"
+          : "DeepSeek request failed",
+      );
     }
 
     const completion = (await response.json()) as DeepSeekChatCompletion;
@@ -101,7 +151,7 @@ export const deepSeekProvider: AIProvider = {
     }
 
     if (finishReason === "insufficient_system_resource") {
-      throw new AIProviderError("DeepSeek is temporarily unavailable");
+      throw new AIProviderError("DeepSeek transient request failed");
     }
 
     return normalizeProviderResponse({

@@ -15,6 +15,7 @@ import { countWords, plainTextToEditorJson } from "@/lib/documents/text-to-edito
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
 import { saveSuggestionsFromAIResult } from "@/lib/suggestions/suggestions.service";
+import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
 import { snapshotDocumentVersion } from "@/lib/versions/versions.service";
 
 type RunDocumentAIActionInput = {
@@ -32,12 +33,9 @@ export type RunDocumentAIActionResult =
       status: "completed";
       id: string;
       result: AIActionResult;
+      suggestions: DocumentSuggestion[];
     }
-  | {
-      status: "failed";
-      id: string;
-      error: string;
-    };
+  | { status: "failed"; id: string; error: string };
 
 export type ApplyAIRequestResult = {
   documentId: string;
@@ -221,7 +219,7 @@ export async function runDocumentAIAction(
 
     const persistenceStartedAt = performance.now();
     await markAIRequestCompleted(supabase, input.userId, requestId, result);
-    const savedSuggestionCount = await saveSuggestionsFromAIResult(supabase, {
+    const savedSuggestions = await saveSuggestionsFromAIResult(supabase, {
       userId: input.userId,
       documentId: input.documentId,
       aiRequestId: requestId,
@@ -232,7 +230,7 @@ export async function runDocumentAIAction(
     console.log("[ai/run-document-action] suggestions saved", {
       documentId: input.documentId,
       requestId,
-      savedSuggestionCount,
+      savedSuggestionCount: savedSuggestions.length,
     });
 
     await recordUsageEvent(supabase, {
@@ -261,7 +259,12 @@ export async function runDocumentAIAction(
       totalDurationMs: Math.round(performance.now() - actionStartedAt),
     });
 
-    return { status: "completed", id: requestId, result };
+    return {
+      status: "completed",
+      id: requestId,
+      result,
+      suggestions: savedSuggestions,
+    };
   } catch (error) {
     console.error("[ai/run-document-action]", error);
     const safeError = "Could not run AI action. Please try again.";
