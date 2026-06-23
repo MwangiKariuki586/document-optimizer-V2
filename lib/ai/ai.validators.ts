@@ -19,7 +19,7 @@ export const aiActionSchema = z.enum([
   "simplify_language",
 ]);
 
-export const aiProviderSchema = z.enum(["openai", "gemini"]);
+export const aiProviderSchema = z.enum(["openai", "gemini", "deepseek"]);
 
 export const aiRequestRouteParamsSchema = documentIdParamSchema.extend({
   requestId: z.string().uuid("Invalid AI request id."),

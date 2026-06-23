@@ -11,7 +11,7 @@
 | Backend Access     | Supabase JS Client                | Database and storage access                                 |
 | Backend Management | Supabase MCP                      | Schema inspection, migrations, RLS, and verification        |
 | Storage            | Supabase Storage or Cloudflare R2 | Private original files and exports                          |
-| AI Providers       | Gemini primary + OpenAI future    | MVP document analysis, rewriting, suggestions, and optimization |
+| AI Providers       | DeepSeek primary + Gemini/OpenAI optional | MVP document analysis, rewriting, suggestions, and optimization |
 | AI Layer           | Provider abstraction              | Normalized AI calls across providers                        |
 | Editor             | TipTap                            | Rich document editing                                       |
 | Validation         | Zod                               | Request and form validation                                 |
@@ -155,6 +155,7 @@
 │   │   ├── ai.validators.ts
 │   │   ├── ai-cost.ts
 │   │   └── providers/
+│   │       ├── deepseek.provider.ts
 │   │       ├── gemini.provider.ts
 │   │       └── openai.provider.ts         → Optional future provider placeholder
 │   ├── suggestions/
@@ -223,8 +224,10 @@ Current uploads use a durable asynchronous ingestion pipeline:
 Browser validates metadata and computes SHA-256
   -> init API creates an idempotent processing document/ingestion
   -> browser uploads directly to private Storage with signed resumable TUS
-  -> completion API verifies the object and enqueues pgmq work
-  -> Node worker validates signature/complexity and parses the file
+  -> completion API verifies the object
+  -> small TXT/Markdown/DOCX/PDF files attempt inline validation/parsing/finalization
+  -> larger, slower, unsupported-for-inline, or timed-out work falls back to pgmq
+  -> Node worker validates signature/complexity and parses queued files
   -> transactional finalization checks per-user checksum duplicates
   -> user chooses Open Existing or Continue as New when required
   -> document, initial version, usage, and ingestion finalize atomically
@@ -233,7 +236,12 @@ Browser validates metadata and computes SHA-256
 `document_ingestions` is the durable state machine. Browser checksums are
 preflight hints; only worker-computed SHA-256 is authoritative. Queue messages
 contain ingestion IDs only and are accessible exclusively to the service-role
-worker. The older synchronous flow below is retained only as rollback context.
+worker. The current MVP also has an inline fast path for portfolio-scale usage:
+eligible files up to 5 MB with type TXT, Markdown, DOCX, or PDF are downloaded from
+private Storage, checksum-verified, parsed, and finalized inside the upload
+completion request with a 4 second processing budget. Permanent safety failures
+fail immediately; non-permanent inline failures fall back to the queue. The
+older synchronous flow below is retained only as rollback context.
 
 ```txt
 User uploads file
@@ -386,7 +394,7 @@ Versioning model: versions are created (1) automatically at document creation (`
 | status         | text        | pending / running / completed / failed               |
 | input_summary  | text        | Summary of AI input                                  |
 | output         | jsonb       | Normalized AI output                                 |
-| provider       | text        | openai / gemini                                      |
+| provider       | text        | deepseek / gemini / openai                           |
 | model          | text        | Model used                                           |
 | input_tokens   | integer     | Input token count                                    |
 | output_tokens  | integer     | Output token count                                   |
@@ -526,19 +534,21 @@ All AI calls must go through the AI router.
 AI provider strategy:
 
 ```txt
-Primary MVP provider: Gemini
-Optional future provider: OpenAI
+Primary MVP provider: DeepSeek
+Optional providers: Gemini and OpenAI
 ```
 
-The default interactive document model is `gemini-2.5-flash-lite` with
-thinking disabled and a provider-side JSON response schema. This keeps preview
-actions latency-oriented while preserving reliable normalization and the
-provider abstraction. A transient capacity failure or malformed response on the
-default path may fall back once to stable `gemini-3.1-flash-lite`; explicitly
-requested models remain pinned and do not fall back. AI service logs separate provider,
+The default interactive document model is `deepseek-v4-flash` through DeepSeek's
+OpenAI-compatible Chat Completions API with JSON output enabled and thinking
+disabled for latency-oriented document transforms. The provider abstraction stays
+in place so Gemini and OpenAI can be explicitly selected later without changing
+route handlers, services, or components. AI service logs separate provider,
 persistence, and total duration so latency regressions can be attributed.
 
-The provider abstraction stays in place so OpenAI can be re-enabled later without changing route handlers, services, or components. `lib/ai/providers/gemini.provider.ts` is the first real provider implementation for MVP. `lib/ai/providers/openai.provider.ts`, if present, is deferred/future-only and must not block MVP completion.
+`lib/ai/providers/deepseek.provider.ts` is the default provider implementation.
+`lib/ai/providers/gemini.provider.ts` remains available for explicit Gemini
+testing. `lib/ai/providers/openai.provider.ts`, if present, is deferred/future-only
+and must not block MVP completion.
 
 ```typescript
 // lib/ai/ai-router.ts

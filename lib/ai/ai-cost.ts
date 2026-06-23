@@ -11,6 +11,8 @@ const MODEL_COSTS: Record<string, ModelCost> = {
   "gemini-2.0-flash": { inputPerMillion: 0.1, outputPerMillion: 0.4 },
   "gemini-2.5-flash": { inputPerMillion: 0.3, outputPerMillion: 2.5 },
   "gemini-2.5-flash-lite": { inputPerMillion: 0.1, outputPerMillion: 0.4 },
+  "deepseek-v4-flash": { inputPerMillion: 0.14, outputPerMillion: 0.28 },
+  "deepseek-v4-pro": { inputPerMillion: 0.435, outputPerMillion: 0.87 },
 };
 
 export function estimateAICost(input: {

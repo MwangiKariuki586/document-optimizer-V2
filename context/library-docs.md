@@ -323,7 +323,13 @@ Original document uploads now use a signed direct TUS flow. The server calls
 `createSignedUploadUrl` for the owner-scoped Storage key; the browser sends 6 MB
 chunks to the direct Storage hostname at `/storage/v1/upload/resumable/sign`
 with the returned token in `x-signature`.
-Next.js receives metadata and completion requests only, never file bytes.
+Next.js receives metadata and completion requests only, never browser-uploaded
+file bytes. After upload completion, the server verifies the private Storage
+object. Eligible TXT, Markdown, DOCX, and PDF files up to 5 MB then use an inline
+fast path: the server downloads the private object, recomputes SHA-256,
+validates file safety, parses, and finalizes the document in the completion
+request with a 4 second processing budget. If the fast path is ineligible or
+times out, the ingestion is queued for the Node worker.
 
 The ingestion worker uses `pgmq.read` with a visibility timeout, downloads the
 private original with the service role, recomputes SHA-256, and invokes the
@@ -370,16 +376,87 @@ return data.signedUrl;
 
 ---
 
+## DeepSeek
+
+DeepSeek is the primary MVP AI provider.
+
+All DeepSeek calls must go through the AI provider abstraction.
+
+### Environment
+
+```txt
+DEEPSEEK_API_KEY=required for MVP AI actions
+```
+
+### Provider Pattern
+
+```typescript
+// lib/ai/providers/deepseek.provider.ts
+
+const response = await fetch("https://api.deepseek.com/chat/completions", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: input.model ?? "deepseek-v4-flash",
+    messages: [
+      { role: "system", content: AI_SYSTEM_PROMPT },
+      { role: "user", content: buildAIUserPrompt(input) },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+    thinking: { type: "disabled" },
+    stream: false,
+  }),
+});
+```
+
+### Usage
+
+Use DeepSeek for:
+
+- document optimization
+- clarity improvement
+- grammar fixes
+- rewriting
+- summarization
+- translation
+- tone analysis
+- SEO analysis
+- simplifying language
+- suggestion generation
+
+### Rules
+
+- Never call DeepSeek directly from route handlers
+- Never call DeepSeek directly from components
+- Always use `lib/ai/ai-router.ts`
+- DeepSeek results must normalize into the shared `AIActionResult` shape
+- Provider-specific errors must be converted into safe app errors
+- Use `deepseek-v4-flash` for the default low-latency document path
+- Use `DEEPSEEK_API_KEY` only on the server
+- Use JSON output and keep the system prompt explicit about valid JSON
+- Disable thinking for default document transformations
+- Record provider and model in `ai_requests`
+- Log provider, persistence, and total durations for performance diagnosis
+- Record usage where available
+- Always return preview-first results
+- Never automatically overwrite document content
+
+---
+
 ## Gemini
 
-Gemini is the primary MVP AI provider.
+Gemini is an optional AI provider path retained behind the provider abstraction.
 
 All Gemini calls must go through the AI provider abstraction.
 
 ### Environment
 
 ```txt
-GEMINI_API_KEY=required for MVP AI actions
+GEMINI_API_KEY=optional Gemini provider
 ```
 
 ### Provider Pattern
@@ -422,7 +499,7 @@ export async function runGeminiAction(
 
 ### Usage
 
-Use Gemini for:
+Gemini may be explicitly selected for:
 
 - document optimization
 - clarity improvement
@@ -442,7 +519,7 @@ Use Gemini for:
 - Always use `lib/ai/ai-router.ts`
 - Gemini results must normalize into the shared `AIActionResult` shape
 - Provider-specific errors must be converted into safe app errors
-- Use `gemini-2.5-flash-lite` for the default low-latency document path
+- Use `gemini-2.5-flash-lite` for the explicit Gemini low-latency document path
 - Disable Gemini 2.5 thinking for deterministic document transformations
 - Constrain responses with the shared AI output JSON schema before normalization
 - Retry transient default-model capacity failures once on the stable
@@ -496,7 +573,7 @@ export const openAIProvider: AIProvider = {
 
 ## AI Router
 
-The AI router decides which provider handles an AI action. For the MVP it defaults to Gemini unless another enabled provider is explicitly configured later.
+The AI router decides which provider handles an AI action. For the MVP it defaults to DeepSeek unless another enabled provider is explicitly requested.
 
 ### Pattern
 
@@ -528,7 +605,7 @@ lib/ai/ai-prompts.ts      → shared system/user prompt construction
 lib/ai/ai-normalize.ts    → provider JSON parsing and result normalization
 lib/ai/ai-cost.ts         → estimated token cost helper
 lib/ai/ai-router.ts       → provider selection and runAIAction entry point
-lib/ai/providers/*        → Gemini adapter and optional/future OpenAI placeholder
+lib/ai/providers/*        → DeepSeek adapter, Gemini adapter, and optional/future OpenAI placeholder
 ```
 
 Task 18 route flow:
@@ -656,7 +733,7 @@ type AIActionResult = {
     warnings: string[];
   };
   summary: string;
-  provider: "openai" | "gemini";
+  provider: "deepseek" | "gemini" | "openai";
   model: string;
   inputTokens?: number;
   outputTokens?: number;
@@ -669,7 +746,7 @@ type AIActionResult = {
 
 - Route handlers call the AI router, not providers
 - Route handlers should call `runDocumentAIAction()` for document-scoped execution; it owns `ai_requests` persistence and usage recording.
-- The AI router defaults to Gemini for MVP execution.
+- The AI router defaults to DeepSeek for MVP execution.
 - Providers return normalized results
 - AI actions must support preview-first workflows for full-document results
 - Structure-preserving behavior is the default

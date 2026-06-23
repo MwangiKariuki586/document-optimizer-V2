@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Direct upload initialization is required.",
+          error: "Legacy multipart uploads are disabled. Use the direct Storage upload flow.",
           initializeAt: "/api/uploads/init",
         },
         { status: 410 },

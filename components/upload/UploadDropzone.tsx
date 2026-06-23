@@ -21,6 +21,11 @@ import type {
 import { appToast } from "@/lib/feedback/toast";
 
 type ApiResponse<T> = { success: boolean; data?: T; error?: string };
+type CompleteUploadResult = {
+  ingestionId: string;
+  status: string;
+  mode?: "inline" | "queued";
+};
 type DuplicatePrompt = {
   ingestionId: string;
   documentId: string | null;
@@ -152,9 +157,13 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
     await uploadWithTus(file, target, setProgress, (upload) => { activeUpload.current = upload; });
     setPhase("queuing");
     const response = await fetch(`/api/uploads/${documentId}/complete`, { method: "POST" });
-    const result = (await response.json()) as ApiResponse<unknown>;
+    const result = (await response.json()) as ApiResponse<CompleteUploadResult>;
     if (!response.ok || !result.success) throw new Error(result.error ?? "Could not queue document processing.");
-    appToast.success("Upload complete. Processing started.");
+    appToast.success(
+      result.data?.status === "completed"
+        ? "Upload complete. Document ready."
+        : "Upload complete. Processing started.",
+    );
     await monitorDocument(documentId);
   }, [monitorDocument]);
 

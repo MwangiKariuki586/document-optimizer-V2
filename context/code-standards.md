@@ -438,12 +438,12 @@ Normalized Result
 
 Rules:
 
-- Gemini is the default MVP AI provider.
+- DeepSeek is the default MVP AI provider.
 - All AI calls must stay behind `lib/ai/ai-router.ts`.
-- Route handlers must not call OpenAI or Gemini directly
+- Route handlers must not call DeepSeek, Gemini, or OpenAI directly
 - Components must not call AI providers directly
 - AI providers must return normalized results
-- OpenAI is optional/future-only for MVP and must not block AI workflow completion.
+- Gemini and OpenAI are optional provider paths and must not block the default DeepSeek workflow.
 - AI requests must be stored in `ai_requests`
 - Token usage and estimated cost should be recorded where available
 - AI failures must be saved as safe error messages
@@ -591,7 +591,8 @@ Never hardcode keys, URLs, or secrets.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | Supabase browser client         |
 | `SUPABASE_SERVICE_ROLE_KEY`         | Server-only Supabase access     |
 | `SUPABASE_SECRET_KEY`               | Server-only Supabase fallback secret |
-| `GEMINI_API_KEY`                    | Required MVP Gemini provider    |
+| `DEEPSEEK_API_KEY`                  | Required MVP DeepSeek provider  |
+| `GEMINI_API_KEY`                    | Optional Gemini provider        |
 | `OPENAI_API_KEY`                    | Optional/future OpenAI provider |
 | `VERCEL_URL`                        | Vercel deployment URL fallback for server-side app origin detection |
 | `NEXT_PUBLIC_APP_URL`               | Local/manual app URL fallback for redirects and links |

@@ -16,8 +16,12 @@ const baseInput: AIActionInput = {
 
 const originalOpenAIKey = process.env.OPENAI_API_KEY;
 const originalGeminiKey = process.env.GEMINI_API_KEY;
+const originalDeepSeekKey = process.env.DEEPSEEK_API_KEY;
 
-function restoreEnvVar(key: "OPENAI_API_KEY" | "GEMINI_API_KEY", value?: string) {
+function restoreEnvVar(
+  key: "OPENAI_API_KEY" | "GEMINI_API_KEY" | "DEEPSEEK_API_KEY",
+  value?: string,
+) {
   if (value === undefined) {
     delete process.env[key];
     return;
@@ -29,15 +33,23 @@ function restoreEnvVar(key: "OPENAI_API_KEY" | "GEMINI_API_KEY", value?: string)
 beforeEach(() => {
   delete process.env.OPENAI_API_KEY;
   delete process.env.GEMINI_API_KEY;
+  delete process.env.DEEPSEEK_API_KEY;
 });
 
 afterEach(() => {
   restoreEnvVar("OPENAI_API_KEY", originalOpenAIKey);
   restoreEnvVar("GEMINI_API_KEY", originalGeminiKey);
+  restoreEnvVar("DEEPSEEK_API_KEY", originalDeepSeekKey);
 });
 
 describe("selectAIProvider", () => {
   it("uses the explicitly requested provider", () => {
+    const provider = selectAIProvider({ ...baseInput, provider: "deepseek" });
+
+    expect(provider.name).toBe("deepseek");
+  });
+
+  it("keeps Gemini available when explicitly requested", () => {
     const provider = selectAIProvider({ ...baseInput, provider: "gemini" });
 
     expect(provider.name).toBe("gemini");
@@ -49,19 +61,20 @@ describe("selectAIProvider", () => {
     expect(provider.name).toBe("openai");
   });
 
-  it("prefers Gemini even when both provider keys are configured", () => {
+  it("prefers DeepSeek even when other provider keys are configured", () => {
     process.env.OPENAI_API_KEY = "test-openai-key";
     process.env.GEMINI_API_KEY = "test-gemini-key";
+    process.env.DEEPSEEK_API_KEY = "test-deepseek-key";
 
     const provider = selectAIProvider(baseInput);
 
-    expect(provider.name).toBe("gemini");
+    expect(provider.name).toBe("deepseek");
   });
 
-  it("defaults to Gemini when no provider is explicitly requested", () => {
+  it("defaults to DeepSeek when no provider is explicitly requested", () => {
     const provider = selectAIProvider(baseInput);
 
-    expect(provider.name).toBe("gemini");
+    expect(provider.name).toBe("deepseek");
   });
 });
 
@@ -72,9 +85,9 @@ describe("runAIAction", () => {
     );
   });
 
-  it("fails clearly when the default Gemini provider is not configured", async () => {
+  it("fails clearly when the default DeepSeek provider is not configured", async () => {
     await expect(runAIAction(baseInput)).rejects.toThrow(
-      "Gemini is not configured",
+      "DeepSeek is not configured",
     );
   });
 

@@ -44,4 +44,15 @@ describe("estimateAICost", () => {
 
     expect(cost).toBeUndefined();
   });
+
+  it("estimates DeepSeek V4 Flash cost", () => {
+    const cost = estimateAICost({
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      inputTokens: 1_000_000,
+      outputTokens: 500_000,
+    });
+
+    expect(cost).toBe(0.28);
+  });
 });

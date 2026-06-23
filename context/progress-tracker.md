@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Fixed login redirect origin handling for Vercel preview deployments
-**Next:** User browser review of suggestion Apply/Ignore and AI action latency
+**Last completed:** Added inline upload processing fast path
+**Next:** User browser retry of small DOCX/TXT/Markdown/PDF upload without the ingestion worker running
 
 ---
 
@@ -92,7 +92,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Homepage is signed-out-only when Clerk keys are configured: signed-in requests to `/` redirect to `/dashboard`; signed-in CTAs go to `/dashboard`, signed-out CTAs go to `/login`, and without Clerk keys CTAs fall back to `/login`.
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
 - Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
-- Decision: Gemini is the primary MVP AI provider because the Gemini API test works and the project is avoiding separate OpenAI API billing for MVP. OpenAI remains optional/future through the provider abstraction.
+- Decision: DeepSeek is the primary MVP AI provider after the user acquired DeepSeek API access. Gemini remains available through the provider abstraction for explicit testing, and OpenAI remains optional/future.
 - Decision: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated document change. Future AI action and suggestion review flows must route to this page before document mutation; final `Apply to Document` belongs only on the preview page.
 - Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
 - Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
@@ -102,6 +102,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
 - Decision: `/documents` is now the Documents Library — a primary navigation page for managing all uploaded, pasted, and created documents with pagination, filtering, sorting, tabs, and row actions (rename/archive/delete). Supersedes the earlier decision to keep `/documents` as a redirect to `/dashboard`.
 - Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
+- Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
 
 ---
 
@@ -116,6 +117,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-23
+Feature: Inline Upload Processing Fast Path
+Status: Completed
+Files changed: lib/ingestion/ingestion.service.ts, components/upload/UploadDropzone.tsx, context/architecture.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Made the ingestion worker optional for normal portfolio-scale uploads by adding an inline completion path for TXT, Markdown, DOCX, and PDF files up to 5 MB. The completion API now verifies the private Storage object, downloads it server-side, recomputes checksum, validates file safety, parses, and finalizes the document with inline metrics. Permanent validation failures fail immediately; timeout or non-permanent inline failures fall back to the existing pgmq worker queue. Upload toasts now distinguish immediately ready documents from queued processing.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/ingestion lib/parsing passed; npm.cmd test passed with 94 tests; npm.cmd run lint passed with one pre-existing unrelated warning in components/usage/AccountUsageWorkspace.tsx; git diff --check passed; npm.cmd run build passed.
+Follow-up: Browser-test a small DOCX/TXT/Markdown/PDF upload while the worker is not running and confirm the route reaches the editor within the target window. Larger/slow files still use the queue fallback.
+```
+
+```txt
+Date: 2026-06-23
+Feature: Allow DeepSeek AI Provider in Supabase
+Status: Completed
+Files changed: Supabase migration 20260623135430_allow_deepseek_ai_provider, context/progress-tracker.md
+What was completed: Replaced the `ai_requests_provider_check` and `usage_ledger_provider_check` constraints so provider values may be `openai`, `gemini`, or `deepseek`. This lets successful DeepSeek AI action responses persist to `ai_requests` and usage tracking.
+Verification: Supabase migration applied successfully; constraint definitions now include `deepseek`; rollback smoke insert accepted `provider = deepseek`; security advisors returned no lints; performance advisors only returned pre-existing unused-index info notices; standalone DeepSeek provider smoke test returned `provider=deepseek`, `model=deepseek-v4-flash`, `mode=suggestions`.
+Follow-up: Retry one AI action from the authenticated editor and confirm the request returns 200 and opens the preview/suggestions flow.
+```
+
+```txt
+Date: 2026-06-23
+Feature: DeepSeek Default AI Provider
+Status: Completed
+Files changed: lib/ai/ai-router.ts, lib/ai/ai.validators.ts, lib/ai/ai-cost.ts, lib/ai/providers/deepseek.provider.ts, lib/ai/providers/deepseek.provider.test.ts, lib/ai/ai-router.test.ts, lib/ai/ai-cost.test.ts, .env.example, context/architecture.md, context/build-plan.md, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Added a first-class DeepSeek provider using the official OpenAI-compatible Chat Completions endpoint, set `deepseek-v4-flash` as the default model with JSON output and thinking disabled, changed the AI router default provider to DeepSeek, kept Gemini and OpenAI behind explicit provider selection, added DeepSeek cost estimation, and documented `DEEPSEEK_API_KEY` as the required MVP AI key.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/ai passed; npm.cmd test passed with 94 tests; npm.cmd run lint passed with one pre-existing unrelated warning in components/usage/AccountUsageWorkspace.tsx; git diff --check passed; npm.cmd run build passed.
+Follow-up: Add `DEEPSEEK_API_KEY` to `.env.local` and run one authenticated Optimize action to confirm the returned provider/model and latency in the browser network response.
+```
 
 ```txt
 Date: 2026-06-23

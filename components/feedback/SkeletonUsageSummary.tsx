@@ -11,9 +11,9 @@ export function SkeletonUsageSummary() {
         </div>
 
         <div className="relative mx-auto mt-3 flex size-[116px] shrink-0 items-center justify-center">
-          <div className="relative flex size-[84px] flex-col items-center justify-center rounded-full border border-border-light bg-surface">
-            <div className="h-8 w-16 rounded bg-surface-tertiary animate-pulse" />
-            <div className="mt-2 h-3 w-20 rounded bg-surface-tertiary animate-pulse" />
+          <div className="relative flex size-[84px] flex-col items-center justify-center rounded-full border border-8 border-border-light bg-surface">
+            <div className="h-8 w-8 rounded bg-surface-tertiary animate-pulse" />
+            <div className="mt-2 h-3 w-10 rounded bg-surface-tertiary animate-pulse" />
           </div>
         </div>
 

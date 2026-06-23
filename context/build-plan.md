@@ -397,9 +397,9 @@ Create the AI service layer.
 **Logic:**
 
 - Create AI router
-- Create Gemini provider first as the primary MVP implementation
-- Keep OpenAI provider deferred as an optional future provider
-- Route AI actions through Gemini by default
+- Create DeepSeek provider as the primary MVP implementation
+- Keep Gemini and OpenAI behind the provider abstraction as optional paths
+- Route AI actions through DeepSeek by default
 - Normalize AI responses
 - Validate AI action input with Zod
 - Track provider, model, token usage, and estimated cost

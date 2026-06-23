@@ -1,13 +1,25 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+import { setTimeout as sleep } from "node:timers/promises";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   deriveTitleFromFileName,
   sanitizeStorageFileName,
   validateUpload,
 } from "@/lib/documents/upload.validators";
-import { removeOriginalFile } from "@/lib/storage/storage.service";
-import type { Tables, TablesInsert } from "@/lib/supabase/types";
+import {
+  downloadOriginalFile,
+  removeOriginalFile,
+} from "@/lib/storage/storage.service";
+import { parseFile, type ParsedFileType } from "@/lib/parsing/parse-file";
+import {
+  detectMimeType,
+  PermanentIngestionError,
+  validateDocxArchive,
+  validateParsedDocument,
+} from "@/lib/ingestion/file-safety";
+import type { Json, Tables, TablesInsert } from "@/lib/supabase/types";
 import type {
   ExistingDocumentSummary,
   IngestionState,
@@ -23,6 +35,14 @@ const ACTIVE_STATUSES = [
   "duplicate_pending",
 ] as const;
 const MAX_ACTIVE_INGESTIONS = 3;
+const INLINE_PROCESSING_MAX_BYTES = 5 * 1024 * 1024;
+const INLINE_PROCESSING_TIMEOUT_MS = 4_000;
+const INLINE_PROCESSING_TYPES = new Set<ParsedFileType>([
+  "txt",
+  "markdown",
+  "docx",
+  "pdf",
+]);
 
 type IngestionRow = Tables<"document_ingestions">;
 
@@ -74,6 +94,128 @@ async function signedUploadTarget(storageKey: string): Promise<SignedUploadTarge
     token: data.token,
     storageUrl: directStorageUrl(),
   };
+}
+
+function isInlineProcessingEligible(ingestion: IngestionRow): boolean {
+  return (
+    ingestion.file_size <= INLINE_PROCESSING_MAX_BYTES &&
+    INLINE_PROCESSING_TYPES.has(ingestion.file_type as ParsedFileType)
+  );
+}
+
+async function markIngestionFailed(
+  ingestion: IngestionRow,
+  error: PermanentIngestionError,
+) {
+  const supabase = createSupabaseServerClient();
+  await supabase
+    .from("document_ingestions")
+    .update({
+      attempt_count: ingestion.attempt_count + 1,
+      queue_message_id: null,
+      status: "failed",
+      stage: "failed",
+      error_code: error.code,
+      error_message: error.message,
+      heartbeat_at: new Date().toISOString(),
+    })
+    .eq("id", ingestion.id);
+  if (ingestion.document_id) {
+    await supabase
+      .from("documents")
+      .update({ status: "failed" })
+      .eq("id", ingestion.document_id)
+      .eq("user_id", ingestion.user_id);
+  }
+}
+
+async function processUploadInline(ingestion: IngestionRow) {
+  if (!ingestion.storage_key || !ingestion.document_id) {
+    throw new PermanentIngestionError("missing_upload", "Uploaded file is missing.");
+  }
+
+  const supabase = createSupabaseServerClient();
+  const started = Date.now();
+
+  await supabase
+    .from("document_ingestions")
+    .update({
+      status: "processing",
+      stage: "downloading",
+      processing_started_at: new Date().toISOString(),
+      heartbeat_at: new Date().toISOString(),
+    })
+    .eq("id", ingestion.id);
+
+  const data = await downloadOriginalFile(supabase, ingestion.storage_key);
+  if (data.byteLength !== ingestion.file_size) {
+    throw new PermanentIngestionError(
+      "size_mismatch",
+      "Uploaded file size does not match the request.",
+    );
+  }
+  const checksum = createHash("sha256").update(data).digest("hex");
+  if (checksum !== ingestion.client_checksum) {
+    await supabase
+      .from("document_ingestions")
+      .update({ verified_checksum: checksum })
+      .eq("id", ingestion.id);
+    throw new PermanentIngestionError(
+      "checksum_mismatch",
+      "Uploaded file checksum does not match the selected file.",
+    );
+  }
+
+  const fileType = ingestion.file_type as ParsedFileType;
+  const detectedMime = detectMimeType(fileType, data);
+  if (fileType === "docx") {
+    await validateDocxArchive(data);
+  }
+
+  await supabase
+    .from("document_ingestions")
+    .update({ stage: "parsing", heartbeat_at: new Date().toISOString() })
+    .eq("id", ingestion.id);
+
+  const parsed = await Promise.race([
+    parseFile(fileType, data),
+    sleep(INLINE_PROCESSING_TIMEOUT_MS).then(() => {
+      throw new Error("Inline document processing timed out.");
+    }),
+  ]);
+  validateParsedDocument(parsed);
+
+  const metrics = {
+    processingMs: Date.now() - started,
+    fileSize: data.byteLength,
+    extractedCharacters: parsed.extractedText.length,
+    editorNodes:
+      ((parsed.editorJson as { content?: unknown[] } | null)?.content?.length ??
+        0),
+    mode: "inline",
+  } as Json;
+  const { data: result, error: finalizeError } = await supabase.rpc(
+    "finalize_document_ingestion",
+    {
+      p_ingestion_id: ingestion.id,
+      p_verified_checksum: checksum,
+      p_detected_mime_type: detectedMime,
+      p_extracted_text: parsed.extractedText,
+      p_current_markdown: parsed.currentMarkdown ?? "",
+      p_editor_json: (parsed.editorJson ?? {}) as Json,
+      p_formatting_metadata: (parsed.formattingMetadata ?? {}) as Json,
+      p_fidelity_status: parsed.fidelityStatus,
+      p_word_count: parsed.wordCount,
+      p_metrics: metrics,
+    },
+  );
+  if (finalizeError) {
+    throw new Error(finalizeError.message);
+  }
+
+  return result?.[0]?.result_status === "duplicate_pending"
+    ? "duplicate_pending"
+    : "completed";
 }
 
 async function resultForExistingIngestion(
@@ -261,16 +403,46 @@ export async function completeDocumentUpload(userId: string, documentId: string)
     throw new Error("Uploaded file could not be verified.");
   }
 
+  await supabase
+    .from("document_ingestions")
+    .update({ upload_completed_at: new Date().toISOString() })
+    .eq("id", ingestion.id);
+
+  if (isInlineProcessingEligible(ingestion)) {
+    try {
+      const inlineStatus = await processUploadInline(ingestion);
+      return { ingestionId: ingestion.id, status: inlineStatus, mode: "inline" };
+    } catch (inlineError) {
+      if (inlineError instanceof PermanentIngestionError) {
+        await markIngestionFailed(ingestion, inlineError);
+        return { ingestionId: ingestion.id, status: "failed", mode: "inline" };
+      }
+
+      console.warn("[ingestion/inline-fallback]", {
+        ingestionId: ingestion.id,
+        error:
+          inlineError instanceof Error
+            ? inlineError.message
+            : "Inline processing failed.",
+      });
+      await supabase
+        .from("document_ingestions")
+        .update({
+          status: "awaiting_upload",
+          stage: "awaiting_upload",
+          processing_started_at: null,
+          heartbeat_at: null,
+        })
+        .eq("id", ingestion.id);
+    }
+  }
+
   const { data: messageId, error: queueError } = await supabase.rpc(
     "enqueue_document_ingestion",
     { p_ingestion_id: ingestion.id, p_delay_seconds: 0 },
   );
   if (queueError) throw new Error("Failed to queue document processing");
-  await supabase
-    .from("document_ingestions")
-    .update({ upload_completed_at: new Date().toISOString() })
-    .eq("id", ingestion.id);
-  return { ingestionId: ingestion.id, status: "queued", messageId };
+  return { ingestionId: ingestion.id, status: "queued", messageId, mode: "queued" };
 }
 
 export async function getDocumentIngestion(
