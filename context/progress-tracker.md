@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Removed the out-of-scope AI worker and restored direct optimized AI actions
-**Next:** Browser-time the direct AI request and completed suggestion render
+**Last completed:** Added staged AI action progress messages
+**Next:** Browser-time the staged messages during a fresh AI action
 
 ---
 
@@ -93,10 +93,16 @@ Update this file after every completed feature. Any AI agent reading this should
 - Clerk auth wiring uses the installed `@clerk/nextjs` v7 pattern with `Show` for auth-aware UI and `proxy.ts` for protected route enforcement.
 - Input validation standard (2026-06-14): server-side Zod is the source of truth; user free-text fields use a Unicode-aware clean-character allowlist with trim + min/max; shared field schemas live in `lib/<domain>/*.validators.ts` and are reused on the client for inline feedback only. SQL injection is prevented by the parameterized Supabase JS client (no raw SQL concatenation); allowlists are defense-in-depth. Documented in `context/code-standards.md` → "Input Validation and Sanitization".
 - Decision: DeepSeek is the primary MVP AI provider after the user acquired DeepSeek API access. Gemini remains available through the provider abstraction for explicit testing, and OpenAI remains optional/future.
-- Decision: `/documents/[id]/preview` is the required approval checkpoint for every AI-generated document change. Future AI action and suggestion review flows must route to this page before document mutation; final `Apply to Document` belongs only on the preview page.
+- Decision: `/documents/[id]/preview` remains the approval checkpoint for full
+  AI action output. Individual suggestion Apply and explicit Apply All are
+  allowed in the editor after ownership checks, replacement safety validation,
+  and a pre-change version snapshot.
 - Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
 - Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
-- Decision: Single suggestion cards use direct Apply in the editor for faster review. The editor rail does not support manual suggestion selection. Review Applied Suggestions opens `/documents/[id]/preview?applied=1` as a read-only before/current comparison, and Review All routes pending suggestions through `/documents/[id]/preview` using a server-backed selection.
+- Decision: Single suggestion cards and Apply All use direct, version-safe
+  editor mutations. The rail does not support manual selection. Review Applied
+  Suggestions opens `/documents/[id]/preview?applied=1` as a read-only
+  before/current comparison.
 - Decision: Browser-based visual and interaction testing is delegated to the user by default. Agents should run code-level verification and list the route/flow that needs user browser review unless the user explicitly asks the agent to perform browser testing.
 - Decision: The MVP is free and should not expose pricing, subscription, invoice, renewal, upgrade, or paid-plan account UI. Usage surfaces remain for operational activity tracking.
 - Decision: Authenticated app navigation is sidebar-first. The top authenticated navbar has been removed, every protected app page inherits a collapsed-by-default `AppSidebar`, and document workspaces should not render a second persistent navigation rail.
@@ -118,6 +124,62 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-24
+Feature: Staged AI Action Progress Copy
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the single AI working label with timed progress messages for document preparation, content processing, suggestion checking, and result finalization. Timers are cleared on completion, failure, retry, action changes, and component unmount.
+Verification: All 97 tests passed; TypeScript passed; lint passed with one
+pre-existing unrelated AccountUsageWorkspace warning; production build passed.
+Follow-up: Run an AI action in the editor and confirm the button copy advances naturally without layout shift.
+```
+
+```txt
+Date: 2026-06-23
+Feature: AI Action History and Adaptive Suggestions Rail
+Status: Completed
+Files changed: app/(app)/documents/[id]/page.tsx, app/api/documents/[id]/suggestions/apply-all/route.ts, components/ai/AIActionsPanel.tsx, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, lib/ai/ai.service.ts, lib/ai/ai.types.ts, lib/suggestions/suggestions.mapper.ts, context files
+What was completed: Added a persistent Actions/Suggestions switch, server-loaded AI action history, latest-run focus after an action completes, run summaries, run grouping, adaptive non-empty status/type filters, and direct Apply All. Apply All reuses the owned safe batch service, validates every pending replacement, creates one recoverable version snapshot, and updates the editor locally.
+Verification: TypeScript passed; focused AI/suggestion tests passed; lint passed with one pre-existing unrelated AccountUsageWorkspace warning.
+Follow-up: Browser-review /documents/[id] with multiple AI runs, mixed suggestion states, an action that produces no suggestions, and Apply All.
+```
+
+```txt
+Date: 2026-06-23
+Feature: Selected-Run Apply All and Review Transition
+Status: Completed
+Files changed: app/api/documents/[id]/suggestions/apply-all/route.ts, components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, lib/suggestions/suggestions.service.ts, context files
+What was completed: Scoped Apply All to pending suggestions from the selected AI action so older stale action history is not included. Apply All stays in the editor; after the batch succeeds, the footer action changes to Review Applied Suggestions, which is the only step that navigates to the comparison page.
+Verification: TypeScript passed; focused suggestion tests passed; lint passed
+with one pre-existing unrelated AccountUsageWorkspace warning; production build
+passed and registered the scoped apply-all route.
+Follow-up: Browser-test the latest AI action shown in the screenshot, confirm its five pending suggestions apply without navigation, then click Review.
+```
+
+```txt
+Date: 2026-06-24
+Feature: Compact Suggestion Rail Metadata and Filters
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the visible latest-action dropdown, repeated AI summary card, and visible All/Pending filters. The selected AI action now uses one compact row with the action title and timestamp. Only useful suggestion-type chips remain; clicking the active chip clears that filter.
+Verification: TypeScript passed; lint passed with one pre-existing unrelated
+AccountUsageWorkspace warning; production build passed.
+Follow-up: Browser-review the right rail at the same viewport shown in the supplied screenshot.
+```
+
+```txt
+Date: 2026-06-24
+Feature: Safe AI Suggestion Anchor Persistence
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestion-replace.ts, lib/suggestions/suggestion-replace.test.ts, lib/suggestions/suggestions.service.ts, context files; existing invalid pending suggestion rows reconciled in Supabase
+What was completed: Strengthened the AI prompt to require verbatim source anchors. Added whitespace-aware source resolution that maps harmless formatting differences back to the exact unique markdown slice. Suggestions that remain missing or ambiguous are rejected before persistence, so they cannot render as actionable cards or block Apply All. Retired five existing invalid pending rows.
+Verification: Supabase query confirmed zero invalid pending suggestions remain.
+All 97 tests passed; TypeScript passed; lint passed with one pre-existing
+unrelated AccountUsageWorkspace warning; production build passed.
+Follow-up: Run a fresh Improve Clarity or Optimize action and apply each returned suggestion plus Apply All.
+```
 
 ```txt
 Date: 2026-06-23

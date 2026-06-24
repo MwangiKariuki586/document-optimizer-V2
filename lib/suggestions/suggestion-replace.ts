@@ -40,6 +40,82 @@ export function getReplacementSafety(
   return "safe";
 }
 
+function isWhitespace(value: string): boolean {
+  return /\s/u.test(value);
+}
+
+function normalizeWhitespaceWithOffsets(value: string) {
+  let normalized = "";
+  const starts: number[] = [];
+  const ends: number[] = [];
+  let index = 0;
+
+  while (index < value.length) {
+    if (isWhitespace(value[index])) {
+      const start = index;
+
+      while (index < value.length && isWhitespace(value[index])) {
+        index += 1;
+      }
+
+      normalized += " ";
+      starts.push(start);
+      ends.push(index);
+      continue;
+    }
+
+    normalized += value[index];
+    starts.push(index);
+    index += 1;
+    ends.push(index);
+  }
+
+  return { normalized, starts, ends };
+}
+
+export function resolveSuggestionOriginalText(
+  markdown: string,
+  originalText: string,
+): string | null {
+  if (getReplacementSafety(markdown, originalText) === "safe") {
+    return originalText;
+  }
+
+  const normalizedNeedle = originalText.trim().replace(/\s+/gu, " ");
+
+  if (!normalizedNeedle) {
+    return null;
+  }
+
+  const normalizedMarkdown = normalizeWhitespaceWithOffsets(markdown);
+  const firstMatch = normalizedMarkdown.normalized.indexOf(normalizedNeedle);
+
+  if (firstMatch === -1) {
+    return null;
+  }
+
+  if (
+    normalizedMarkdown.normalized.indexOf(
+      normalizedNeedle,
+      firstMatch + normalizedNeedle.length,
+    ) !== -1
+  ) {
+    return null;
+  }
+
+  const start = normalizedMarkdown.starts[firstMatch];
+  const end =
+    normalizedMarkdown.ends[firstMatch + normalizedNeedle.length - 1];
+
+  if (start === undefined || end === undefined) {
+    return null;
+  }
+
+  const resolved = markdown.slice(start, end);
+
+  return getReplacementSafety(markdown, resolved) === "safe" ? resolved : null;
+}
+
 export function replaceOnce(
   markdown: string,
   originalText: string,

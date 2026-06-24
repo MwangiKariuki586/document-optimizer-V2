@@ -8,6 +8,7 @@ import {
 import {
   applyReplacementsSafely,
   getReplacementSafety,
+  resolveSuggestionOriginalText,
   SuggestionReplacementError,
 } from "@/lib/suggestions/suggestion-replace";
 import { suggestionTypeSchema } from "@/lib/suggestions/suggestions.validators";
@@ -289,6 +290,7 @@ export async function saveSuggestionsFromAIResult(
 ): Promise<DocumentSuggestion[]> {
   const suggestions = input.output.suggestions ?? [];
   const rows: TablesInsert<"suggestions">[] = [];
+  let rejectedSuggestionCount = 0;
 
   console.log("[suggestions/save-from-ai] input", {
     documentId: input.documentId,
@@ -306,12 +308,22 @@ export async function saveSuggestionsFromAIResult(
       continue;
     }
 
+    const originalText = resolveSuggestionOriginalText(
+      input.originalMarkdown,
+      suggestion.originalText,
+    );
+
+    if (!originalText) {
+      rejectedSuggestionCount += 1;
+      continue;
+    }
+
     rows.push({
       user_id: input.userId,
       document_id: input.documentId,
       ai_request_id: input.aiRequestId,
       type,
-      original_text: suggestion.originalText,
+      original_text: originalText,
       suggested_text: suggestion.suggestedText,
       explanation: suggestion.explanation,
       status: "pending",
@@ -352,6 +364,7 @@ export async function saveSuggestionsFromAIResult(
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
+      rejectedSuggestionCount,
     });
 
     return [];
@@ -377,6 +390,7 @@ export async function saveSuggestionsFromAIResult(
     documentId: input.documentId,
     aiRequestId: input.aiRequestId,
     count: saved.length,
+    rejectedSuggestionCount,
   });
 
   return saved;
@@ -856,13 +870,20 @@ export async function applyPendingSuggestions(
   input: {
     userId: string;
     documentId: string;
+    suggestionIds?: string[];
   },
 ): Promise<ApplyAllSuggestionsResult | null> {
-  const suggestions = await listDocumentSuggestions(
-    supabase,
-    input.userId,
-    input.documentId,
-  );
+  const suggestions = input.suggestionIds
+    ? await getOwnedPendingSuggestionsByIds(supabase, {
+        userId: input.userId,
+        documentId: input.documentId,
+        suggestionIds: input.suggestionIds,
+      })
+    : await listDocumentSuggestions(
+        supabase,
+        input.userId,
+        input.documentId,
+      );
 
   if (!suggestions) {
     return null;
@@ -940,7 +961,11 @@ export async function applyPendingSuggestions(
     })
     .eq("document_id", input.documentId)
     .eq("user_id", input.userId)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .in(
+      "id",
+      pending.map((suggestion) => suggestion.id),
+    );
 
   if (error) {
     console.error("[suggestions/apply-all/status]", error.message);

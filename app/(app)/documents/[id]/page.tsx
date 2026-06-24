@@ -6,6 +6,7 @@ import { listDocumentSuggestions } from "@/lib/suggestions/suggestions.service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { getDocumentIngestion } from "@/lib/ingestion/ingestion.service";
+import { listDocumentAIActionRuns } from "@/lib/ai/ai.service";
 
 type DocumentEditorPageProps = {
   params: Promise<{ id: string }>;
@@ -36,13 +37,16 @@ export default async function DocumentEditorPage({
   }
 
   const supabase = createSupabaseServerClient();
-  const initialSuggestions =
-    (await listDocumentSuggestions(supabase, userId, id)) ?? [];
+  const [initialSuggestions, initialAIActionRuns] = await Promise.all([
+    listDocumentSuggestions(supabase, userId, id),
+    listDocumentAIActionRuns(supabase, userId, id),
+  ]);
 
   return (
     <EditorWorkspace
       document={document}
-      initialSuggestions={initialSuggestions}
+      initialSuggestions={initialSuggestions ?? []}
+      initialAIActionRuns={initialAIActionRuns}
     />
   );
 }

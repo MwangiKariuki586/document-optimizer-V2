@@ -49,6 +49,16 @@ export type AIRequestPreview = {
   completedAt: string | null;
 };
 
+export type AIActionRun = {
+  id: string;
+  action: AIActionKey;
+  status: string;
+  summary: string | null;
+  suggestionCount: number;
+  createdAt: string;
+  completedAt: string | null;
+};
+
 export type AIProvider = {
   name: AIProviderName;
   defaultModel: string;

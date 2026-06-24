@@ -19,6 +19,8 @@ export function mapDocumentSuggestionToEditorSuggestion(
   return {
     id: suggestion.id,
     index,
+    aiRequestId: suggestion.aiRequestId,
+    createdAt: suggestion.createdAt,
     type: TYPE_LABELS[suggestion.type],
     originalText: suggestion.originalText,
     suggestedText: suggestion.suggestedText,

@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  ArrowLeft,
   ChevronDown,
   CheckCircle2,
   FileText,
@@ -37,7 +36,8 @@ type AIActionDefinition = {
 };
 
 type AIActionsPanelProps = {
-  onBack?: () => void;
+  onShowSuggestions: () => void;
+  suggestionCount: number;
   onClose?: () => void;
   onRunAction: (input: {
     action: AIActionKey;
@@ -135,8 +135,16 @@ const AI_ACTIONS: AIActionDefinition[] = [
 const selectClass =
   "h-8 w-full cursor-pointer appearance-none rounded-md border border-border bg-surface py-1 pl-2.5 pr-8 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-accent";
 
+const AI_PROGRESS_STAGES = [
+  { delay: 0, message: "Preparing your document..." },
+  { delay: 1200, message: "Working through the content..." },
+  { delay: 4500, message: "Checking generated suggestions..." },
+  { delay: 7500, message: "Finalizing your result..." },
+] as const;
+
 export function AIActionsPanel({
-  onBack,
+  onShowSuggestions,
+  suggestionCount,
   onClose,
   onRunAction,
 }: AIActionsPanelProps) {
@@ -149,6 +157,10 @@ export function AIActionsPanel({
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [status, setStatus] = useState<AIActionStatus>("idle");
+  const [progressMessage, setProgressMessage] = useState<string>(
+    AI_PROGRESS_STAGES[0].message,
+  );
+  const progressTimers = useRef<number[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [readyResult, setReadyResult] = useState<{
     id: string;
@@ -167,6 +179,26 @@ export function AIActionsPanel({
     "English"
   } · ${settings.preserveStructure ? "Preserve structure" : "Flexible structure"}`;
 
+  const clearProgressTimers = () => {
+    progressTimers.current.forEach((timer) => window.clearTimeout(timer));
+    progressTimers.current = [];
+  };
+
+  const startProgressMessages = () => {
+    clearProgressTimers();
+    setProgressMessage(AI_PROGRESS_STAGES[0].message);
+    progressTimers.current = AI_PROGRESS_STAGES.slice(1).map((stage) =>
+      window.setTimeout(() => setProgressMessage(stage.message), stage.delay),
+    );
+  };
+
+  useEffect(
+    () => () => {
+      progressTimers.current.forEach((timer) => window.clearTimeout(timer));
+    },
+    [],
+  );
+
   const handleRunAction = async () => {
     if (isProcessing) {
       return;
@@ -175,6 +207,7 @@ export function AIActionsPanel({
     setStatus("processing");
     setErrorMessage(null);
     setReadyResult(null);
+    startProgressMessages();
 
     try {
       const result = await onRunAction({
@@ -190,10 +223,13 @@ export function AIActionsPanel({
           ? error.message
           : "We could not complete this AI action right now. Try again.",
       );
+    } finally {
+      clearProgressTimers();
     }
   };
 
   const handleRetry = () => {
+    clearProgressTimers();
     setStatus("idle");
     setErrorMessage(null);
     setReadyResult(null);
@@ -205,6 +241,7 @@ export function AIActionsPanel({
     }
 
     setSelectedAction(key);
+    clearProgressTimers();
     setStatus("idle");
     setErrorMessage(null);
     setReadyResult(null);
@@ -215,17 +252,6 @@ export function AIActionsPanel({
       <section className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
         <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border-light px-3 py-2.5">
           <div className="flex min-w-0 items-center gap-2">
-            {onBack ? (
-              <button
-                type="button"
-                onClick={onBack}
-                disabled={isProcessing}
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-60"
-                title="Back to suggestions"
-              >
-                <ArrowLeft className="size-4" />
-              </button>
-            ) : null}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 shrink-0 text-ai" />
@@ -250,6 +276,23 @@ export function AIActionsPanel({
             </button>
           ) : null}
         </header>
+
+        <div className="grid shrink-0 grid-cols-2 gap-1 border-b border-border-light p-2">
+          <button
+            type="button"
+            className="rounded-md bg-accent-light px-2.5 py-1.5 text-xs font-semibold text-accent"
+          >
+            AI Actions
+          </button>
+          <button
+            type="button"
+            onClick={onShowSuggestions}
+            disabled={isProcessing}
+            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Suggestions {suggestionCount > 0 ? `(${suggestionCount})` : ""}
+          </button>
+        </div>
 
         {status === "error" && errorMessage ? (
           <div className="shrink-0 border-b border-border-light p-3">
@@ -470,7 +513,7 @@ export function AIActionsPanel({
           <LoadingButton
             className="h-9 w-full text-xs font-semibold"
             isLoading={isProcessing}
-            loadingText="AI is working…"
+            loadingText={progressMessage}
             disabled={isDisabled && !isProcessing}
             onClick={handleRunAction}
           >

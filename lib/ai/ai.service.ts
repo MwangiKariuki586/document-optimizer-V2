@@ -6,6 +6,7 @@ import type {
   AIActionInput,
   AIActionKey,
   AIActionOptions,
+  AIActionRun,
   AIRequestPreview,
   AIActionResult,
   AIProviderName,
@@ -66,6 +67,38 @@ function parseStoredAIOutput(output: unknown): AIActionOutput | null {
   }
 
   return parsed.data;
+}
+
+export async function listDocumentAIActionRuns(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  documentId: string,
+): Promise<AIActionRun[]> {
+  const { data, error } = await supabase
+    .from("ai_requests")
+    .select("id,action,status,output,created_at,completed_at")
+    .eq("document_id", documentId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[ai/request/list]", error.message);
+    throw new Error("Failed to load AI action history");
+  }
+
+  return (data ?? []).map((row) => {
+    const output = parseStoredAIOutput(row.output);
+
+    return {
+      id: row.id,
+      action: toAIActionKey(row.action),
+      status: row.status,
+      summary: output?.summary ?? null,
+      suggestionCount: output?.suggestions.length ?? 0,
+      createdAt: row.created_at,
+      completedAt: row.completed_at,
+    };
+  });
 }
 
 async function getOwnedDocument(

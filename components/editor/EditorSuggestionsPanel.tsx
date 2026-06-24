@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import {
   CheckCircle2,
+  ChevronDown,
   FileText,
   MoreVertical,
   Sparkles,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { LoadingButton } from "@/components/feedback/LoadingButton";
+import type { AIActionRun } from "@/lib/ai/ai.types";
 
 export type SuggestionType =
   | "Clarity"
@@ -23,6 +25,8 @@ export type SuggestionStatus = "pending" | "applied" | "ignored";
 export type EditorSuggestion = {
   id: string;
   index: number;
+  aiRequestId: string | null;
+  createdAt: string;
   type: SuggestionType;
   originalText: string;
   suggestedText: string;
@@ -38,14 +42,21 @@ export type SuggestionFilter = {
 
 type EditorSuggestionsPanelProps = {
   open: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   onReopen: () => void;
   onOpenAIActions: () => void;
   suggestions: EditorSuggestion[];
-  filters: SuggestionFilter[];
-  activeFilter: string;
-  onFilterChange: (key: string) => void;
-  onReviewAllSuggestions: () => void;
+  allSuggestions: EditorSuggestion[];
+  actionRuns: AIActionRun[];
+  activeRunId: string;
+  onRunChange: (runId: string) => void;
+  statusFilters: SuggestionFilter[];
+  activeStatusFilter: string;
+  onStatusFilterChange: (key: string) => void;
+  typeFilters: SuggestionFilter[];
+  activeTypeFilter: string;
+  onTypeFilterChange: (key: string) => void;
+  onApplyAllSuggestions: () => void;
   onReviewAppliedSuggestions: () => void;
   onApplySuggestion: (id: string) => void;
   pendingCount: number;
@@ -85,16 +96,44 @@ const cardStateClasses: Record<SuggestionStatus, string> = {
   ignored: "border-border bg-surface-secondary",
 };
 
+const actionLabels: Record<AIActionRun["action"], string> = {
+  optimize: "Optimize",
+  improve_clarity: "Improve Clarity",
+  fix_grammar: "Fix Grammar",
+  rewrite: "Rewrite",
+  summarize: "Summarize",
+  translate: "Translate",
+  tone_analyze: "Tone Analyze",
+  seo_analyze: "SEO Analyze",
+  simplify_language: "Simplify Language",
+};
+
+function formatRunTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 export function EditorSuggestionsPanel({
   open,
   onClose,
   onReopen,
   onOpenAIActions,
   suggestions,
-  filters,
-  activeFilter,
-  onFilterChange,
-  onReviewAllSuggestions,
+  allSuggestions,
+  actionRuns,
+  activeRunId,
+  onRunChange,
+  statusFilters,
+  activeStatusFilter,
+  onStatusFilterChange,
+  typeFilters,
+  activeTypeFilter,
+  onTypeFilterChange,
+  onApplyAllSuggestions,
   onReviewAppliedSuggestions,
   onApplySuggestion,
   pendingCount,
@@ -108,8 +147,11 @@ export function EditorSuggestionsPanel({
   onFocusSuggestion,
 }: EditorSuggestionsPanelProps) {
   const hasSuggestions = suggestions.length > 0;
-  const canReviewAll = pendingCount > 0;
+  const canApplyAll = pendingCount > 0;
   const canReviewApplied = appliedCount > 0;
+  const runMap = new Map(actionRuns.map((run) => [run.id, run]));
+  const selectedRun =
+    activeRunId === "all" ? null : runMap.get(activeRunId) ?? null;
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
@@ -138,40 +180,128 @@ export function EditorSuggestionsPanel({
                 {pendingCount} pending
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex size-7 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary"
-              title="Close suggestions"
-            >
-              <X className="size-4" />
-            </button>
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex size-7 items-center justify-center rounded-md text-text-muted transition hover:bg-surface-secondary hover:text-text-primary"
+                title="Close suggestions"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
           </header>
 
-          <div className="flex shrink-0 flex-wrap gap-1.5 border-b border-border-light px-3 py-2">
-            {filters.map((filter) => {
-              const isActive = filter.key === activeFilter;
+          <div className="grid shrink-0 grid-cols-2 gap-1 border-b border-border-light p-2">
+            <button
+              type="button"
+              onClick={onOpenAIActions}
+              className="rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary"
+            >
+              AI Actions
+            </button>
+            <button
+              type="button"
+              className="rounded-md bg-accent-light px-2.5 py-1.5 text-xs font-semibold text-accent"
+            >
+              Suggestions ({allSuggestions.length})
+            </button>
+          </div>
 
-              return (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={() => onFilterChange(filter.key)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    isActive
-                      ? "bg-accent-light text-accent"
-                      : "text-text-secondary hover:bg-surface-secondary"
-                  }`}
+          <div className="shrink-0 space-y-2 border-b border-border-light px-3 py-2.5">
+            <label className="hidden">
+              <span className="text-[11px] font-medium text-text-muted">
+                AI action
+              </span>
+              <span className="relative">
+                <select
+                  value={activeRunId}
+                  onChange={(event) => onRunChange(event.target.value)}
+                  className="h-8 w-full cursor-pointer appearance-none rounded-md border border-border bg-surface py-1 pl-2.5 pr-8 text-xs font-medium text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent"
                 >
-                  {filter.label} {filter.count}
-                </button>
-              );
-            })}
+                  <option value="all">All AI actions</option>
+                  {actionRuns.map((run, index) => (
+                    <option key={run.id} value={run.id}>
+                      {index === 0 ? "Latest: " : ""}
+                      {actionLabels[run.action]} · {formatRunTime(run.createdAt)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-muted" />
+              </span>
+            </label>
+
+            {selectedRun ? (
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-ai-dark">
+                    {actionLabels[selectedRun.action]}
+                  </span>
+                  <time
+                    dateTime={selectedRun.createdAt}
+                    className="text-[11px] text-text-muted"
+                  >
+                    {formatRunTime(selectedRun.createdAt)}
+                  </time>
+                </div>
+                {selectedRun.summary ? (
+                  <p className="hidden">
+                    {selectedRun.summary}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="hidden">
+              {statusFilters.map((filter) => {
+                const isActive = filter.key === activeStatusFilter;
+
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => onStatusFilterChange(filter.key)}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                      isActive
+                        ? "bg-accent-light text-accent"
+                        : "text-text-secondary hover:bg-surface-secondary"
+                    }`}
+                  >
+                    {filter.label} {filter.count}
+                  </button>
+                );
+              })}
+            </div>
+
+            {typeFilters.length > 1 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {typeFilters.map((filter) => {
+                  const isActive = filter.key === activeTypeFilter;
+
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      onClick={() =>
+                        onTypeFilterChange(isActive ? "all" : filter.key)
+                      }
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
+                        isActive
+                          ? "bg-ai-muted text-ai-dark"
+                          : "text-text-secondary hover:bg-surface-secondary"
+                      }`}
+                    >
+                      {filter.label} {filter.count}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1">
             {hasSuggestions ? (
-              suggestions.map((suggestion) => {
+              suggestions.map((suggestion, suggestionIndex) => {
                 const isReviewed = suggestion.status !== "pending";
                 const isApplyingThis = applyingSuggestionId === suggestion.id;
                 const isIgnoringThis = ignoringSuggestionId === suggestion.id;
@@ -181,10 +311,27 @@ export function EditorSuggestionsPanel({
                   isReviewingSelected ||
                   isApplyingThis ||
                   isIgnoringThis;
+                const run = suggestion.aiRequestId
+                  ? runMap.get(suggestion.aiRequestId)
+                  : null;
+                const previousSuggestion = suggestions[suggestionIndex - 1];
+                const showRunHeading =
+                  activeRunId === "all" &&
+                  suggestion.aiRequestId !== previousSuggestion?.aiRequestId;
 
                 return (
+                  <Fragment key={suggestion.id}>
+                  {showRunHeading ? (
+                    <div className="flex items-center justify-between gap-2 px-1 pt-1">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+                        {run ? actionLabels[run.action] : "Other suggestions"}
+                      </span>
+                      <span className="text-[11px] text-text-muted">
+                        {run ? formatRunTime(run.createdAt) : ""}
+                      </span>
+                    </div>
+                  ) : null}
                   <article
-                    key={suggestion.id}
                     ref={(element) => {
                       cardRefs.current[suggestion.id] = element;
                     }}
@@ -272,6 +419,7 @@ export function EditorSuggestionsPanel({
                       </LoadingButton>
                     </div>
                   </article>
+                  </Fragment>
                 );
               })
             ) : (
@@ -281,19 +429,25 @@ export function EditorSuggestionsPanel({
                     <FileText className="size-4" />
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-text-primary">
-                    No suggestions yet
+                    {allSuggestions.length > 0
+                      ? "No matching suggestions"
+                      : "No suggestions yet"}
                   </h3>
                   <p className="mx-auto mt-1.5 max-w-[190px] text-xs leading-5 text-text-secondary">
-                    Run an AI action to generate reviewable suggestions.
+                    {allSuggestions.length > 0
+                      ? "Choose another AI action or adjust the active filters."
+                      : "Run an AI action to generate reviewable suggestions."}
                   </p>
-                  <button
-                    type="button"
-                    onClick={onOpenAIActions}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
-                  >
-                    <Sparkles className="size-3.5" />
-                    Choose AI Action
-                  </button>
+                  {allSuggestions.length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={onOpenAIActions}
+                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
+                    >
+                      <Sparkles className="size-3.5" />
+                      Choose AI Action
+                    </button>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -301,45 +455,48 @@ export function EditorSuggestionsPanel({
 
           {pendingCount > 0 || appliedCount > 0 ? (
             <div className="shrink-0 border-t border-border-light p-3">
-              <LoadingButton
-                onClick={onReviewAppliedSuggestions}
-                disabled={
-                  !canReviewApplied ||
-                  isReviewingSelected ||
-                  isReviewingAll ||
-                  Boolean(applyingSuggestionId) ||
-                  Boolean(ignoringSuggestionId)
-                }
-                isLoading={isReviewingSelected}
-                loadingText="Opening review..."
-                className="mb-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
-              >
-                <Sparkles className="size-4" />
-                {canReviewApplied
-                  ? `Review Applied Suggestions`
-                  : "No Applied Suggestions"}
-              </LoadingButton>
-              <LoadingButton
-                onClick={onReviewAllSuggestions}
-                disabled={
-                  !canReviewAll ||
-                  isReviewingAll ||
-                  isReviewingSelected ||
-                  Boolean(applyingSuggestionId) ||
-                  Boolean(ignoringSuggestionId)
-                }
-                isLoading={isReviewingAll}
-                loadingText="Opening review…"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent! bg-surface! px-4 py-2 text-sm font-semibold text-accent! hover:bg-accent-light! disabled:border-border! disabled:bg-surface! disabled:text-text-muted!"
-              >
-                <Sparkles className="size-4" />
-                {canReviewAll
-                  ? `Review All Suggestions`
-                  : "All Suggestions Reviewed"}
-              </LoadingButton>
+              {!canApplyAll ? (
+                <LoadingButton
+                  onClick={onReviewAppliedSuggestions}
+                  disabled={
+                    !canReviewApplied ||
+                    isReviewingSelected ||
+                    isReviewingAll ||
+                    Boolean(applyingSuggestionId) ||
+                    Boolean(ignoringSuggestionId)
+                  }
+                  isLoading={isReviewingSelected}
+                  loadingText="Opening review..."
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground hover:bg-accent-dark"
+                >
+                  <Sparkles className="size-4" />
+                  {canReviewApplied
+                    ? `Review Applied Suggestions`
+                    : "No Applied Suggestions"}
+                </LoadingButton>
+              ) : null}
+              {canApplyAll ? (
+                <LoadingButton
+                  onClick={onApplyAllSuggestions}
+                  disabled={
+                    !canApplyAll ||
+                    isReviewingAll ||
+                    isReviewingSelected ||
+                    Boolean(applyingSuggestionId) ||
+                    Boolean(ignoringSuggestionId)
+                  }
+                  isLoading={isReviewingAll}
+                  loadingText="Applying all..."
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-accent! bg-surface! px-4 py-2 text-sm font-semibold text-accent! hover:bg-accent-light! disabled:border-border! disabled:bg-surface! disabled:text-text-muted!"
+                >
+                  <Sparkles className="size-4" />
+                  {`Apply All ${pendingCount} Pending`}
+                </LoadingButton>
+              ) : null}
               <p className="mt-2 text-center text-[11px] leading-4 text-text-muted">
-                Single Apply updates the editor immediately. Review opens the
-                results preview comparison.
+                {canApplyAll
+                  ? "Applies this AI action's pending suggestions without leaving the editor."
+                  : "Review the applied changes in the comparison workspace."}
               </p>
             </div>
           ) : null}

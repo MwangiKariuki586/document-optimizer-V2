@@ -89,6 +89,7 @@ Audience: ${input.options.audience}
 Language: ${language}
 Structure: ${preserveStructure}
 Output guidance: ${ACTION_OUTPUT_GUIDANCE[input.action]}
+Suggestion anchoring rule: copy every suggestion.originalText verbatim from Document Markdown, including punctuation, capitalization, and spacing. Never paraphrase originalText. If a passage cannot be copied exactly and uniquely, omit that suggestion.
 
 Document Markdown:
 ${input.contentMarkdown}`;

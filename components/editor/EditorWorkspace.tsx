@@ -23,6 +23,7 @@ import { appToast } from "@/lib/feedback/toast";
 import { countWords } from "@/lib/documents/text-to-editor";
 import type { EditorDocument } from "@/lib/documents/document.types";
 import type {
+  AIActionRun,
   AIActionKey,
   AIActionOptions,
   AIActionResult,
@@ -38,6 +39,7 @@ import {
 type EditorWorkspaceProps = {
   document: EditorDocument;
   initialSuggestions: DocumentSuggestion[];
+  initialAIActionRuns: AIActionRun[];
 };
 
 export type SaveState = "saved" | "dirty" | "saving";
@@ -55,15 +57,6 @@ type RunAIActionResponse = {
   };
 };
 
-type CreateSuggestionSelectionResponse = {
-  success: boolean;
-  error?: string;
-  data?: {
-    selectionId: string;
-    expiresAt: string;
-  };
-};
-
 type IgnoreSuggestionResponse = {
   success: boolean;
   error?: string;
@@ -78,6 +71,19 @@ type ApplySuggestionResponse = {
   data?: {
     documentId: string;
     suggestionId: string;
+    versionNumber: number;
+    currentMarkdown: string;
+    editorJson: JSONContent;
+    wordCount: number;
+  };
+};
+
+type ApplyAllSuggestionsResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    documentId: string;
+    appliedCount: number;
     versionNumber: number;
     currentMarkdown: string;
     editorJson: JSONContent;
@@ -108,6 +114,7 @@ const FORMATTING_WARNING: Record<string, string> = {
 export function EditorWorkspace({
   document,
   initialSuggestions,
+  initialAIActionRuns,
 }: EditorWorkspaceProps) {
   const router = useRouter();
   const initialContent = useMemo<JSONContent>(
@@ -127,7 +134,13 @@ export function EditorWorkspace({
     initialSuggestions.length > 0 ? "suggestions" : "ai-actions",
   );
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [activeTypeFilter, setActiveTypeFilter] = useState("all");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeRunId, setActiveRunId] = useState(
+    initialAIActionRuns[0]?.id ?? "all",
+  );
+  const [aiActionRuns, setAIActionRuns] =
+    useState<AIActionRun[]>(initialAIActionRuns);
   const [suggestions, setSuggestions] = useState<EditorSuggestion[]>(() =>
     mapDocumentSuggestionsToEditorSuggestions(initialSuggestions),
   );
@@ -363,6 +376,22 @@ export function EditorWorkspace({
       (suggestion) => suggestion.status === "pending",
     );
 
+    const completedAt = new Date().toISOString();
+    setAIActionRuns((current) => [
+      {
+        id: data.data!.id,
+        action: data.data!.result.action,
+        status: "completed",
+        summary: data.data!.result.summary,
+        suggestionCount: newSuggestions.length,
+        createdAt: completedAt,
+        completedAt,
+      },
+      ...current.filter((run) => run.id !== data.data!.id),
+    ]);
+    setActiveRunId(data.data.id);
+    setActiveTypeFilter("all");
+
     if (nextPendingSuggestions.length > 0) {
       setRightPanel("suggestions");
       setSuggestionsOpen(true);
@@ -379,8 +408,51 @@ export function EditorWorkspace({
     };
   };
 
-  const filters = useMemo<SuggestionFilter[]>(() => {
-    const typeCounts = suggestions.reduce<Record<string, number>>(
+  const runScopedSuggestions = useMemo(
+    () =>
+      activeRunId === "all"
+        ? suggestions
+        : suggestions.filter(
+            (suggestion) => suggestion.aiRequestId === activeRunId,
+          ),
+    [activeRunId, suggestions],
+  );
+
+  const statusFilters = useMemo<SuggestionFilter[]>(() => {
+    const counts = runScopedSuggestions.reduce<Record<string, number>>(
+      (result, suggestion) => {
+        result[suggestion.status] = (result[suggestion.status] ?? 0) + 1;
+        return result;
+      },
+      {},
+    );
+
+    return [
+      { key: "all", label: "All", count: runScopedSuggestions.length },
+      { key: "pending", label: "Pending", count: counts.pending ?? 0 },
+      { key: "applied", label: "Applied", count: counts.applied ?? 0 },
+      { key: "ignored", label: "Ignored", count: counts.ignored ?? 0 },
+    ].filter((filter) => filter.key === "all" || filter.count > 0);
+  }, [runScopedSuggestions]);
+
+  const effectiveStatusFilter = statusFilters.some(
+    (filter) => filter.key === activeStatusFilter,
+  )
+    ? activeStatusFilter
+    : "all";
+
+  const statusScopedSuggestions = useMemo(
+    () =>
+      effectiveStatusFilter === "all"
+        ? runScopedSuggestions
+        : runScopedSuggestions.filter(
+            (suggestion) => suggestion.status === effectiveStatusFilter,
+          ),
+    [effectiveStatusFilter, runScopedSuggestions],
+  );
+
+  const typeFilters = useMemo<SuggestionFilter[]>(() => {
+    const typeCounts = statusScopedSuggestions.reduce<Record<string, number>>(
       (countsByType, suggestion) => {
         const key = suggestion.type.toLowerCase();
         countsByType[key] = (countsByType[key] ?? 0) + 1;
@@ -390,33 +462,48 @@ export function EditorWorkspace({
     );
 
     return [
-      { key: "all", label: "All", count: suggestions.length },
       { key: "clarity", label: "Clarity", count: typeCounts.clarity ?? 0 },
       { key: "grammar", label: "Grammar", count: typeCounts.grammar ?? 0 },
       { key: "tone", label: "Tone", count: typeCounts.tone ?? 0 },
       { key: "structure", label: "Structure", count: typeCounts.structure ?? 0 },
       { key: "seo", label: "SEO", count: typeCounts.seo ?? 0 },
-    ];
-  }, [suggestions]);
+    ].filter((filter) => filter.key === "all" || filter.count > 0);
+  }, [statusScopedSuggestions]);
+
+  const effectiveTypeFilter = typeFilters.some(
+    (filter) => filter.key === activeTypeFilter,
+  )
+    ? activeTypeFilter
+    : "all";
 
   const filteredSuggestions = useMemo(
-    () =>
-      activeFilter === "all"
-        ? suggestions
-        : suggestions.filter(
-            (suggestion) => suggestion.type.toLowerCase() === activeFilter,
-          ),
-    [activeFilter, suggestions],
+    () => {
+      const matches =
+        effectiveTypeFilter === "all"
+        ? statusScopedSuggestions
+        : statusScopedSuggestions.filter(
+            (suggestion) =>
+              suggestion.type.toLowerCase() === effectiveTypeFilter,
+          );
+
+      return [...matches].sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime(),
+      );
+    },
+    [effectiveTypeFilter, statusScopedSuggestions],
   );
 
-  const pendingSuggestionCount = suggestions.filter(
-    (suggestion) => suggestion.status === "pending",
-  ).length;
   const appliedSuggestionCount = suggestions.filter(
     (suggestion) => suggestion.status === "applied",
   ).length;
-  const hasSuggestions = suggestions.length > 0;
-
+  const scopedPendingSuggestions = runScopedSuggestions.filter(
+    (suggestion) => suggestion.status === "pending",
+  );
+  const scopedAppliedSuggestionCount = runScopedSuggestions.filter(
+    (suggestion) => suggestion.status === "applied",
+  ).length;
   const handleApplySuggestion = async (id: string) => {
     if (!editor) {
       appToast.error("The editor is still loading. Please try again.");
@@ -543,26 +630,6 @@ export function EditorWorkspace({
     }
   };
 
-  const openSelectionPreview = async (suggestionIds: string[]) => {
-    const response = await fetch(
-      `/api/documents/${document.id}/suggestions/selections`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ suggestionIds }),
-      },
-    );
-    const data: CreateSuggestionSelectionResponse = await response.json();
-
-    if (!response.ok || !data.success || !data.data) {
-      throw new Error(data.error ?? "Could not open suggestion review.");
-    }
-
-    router.push(
-      `/documents/${document.id}/preview?selectionId=${data.data.selectionId}`,
-    );
-  };
-
   const handleReviewAppliedSuggestions = () => {
     if (appliedSuggestionCount === 0) {
       return;
@@ -572,21 +639,52 @@ export function EditorWorkspace({
     router.push(`/documents/${document.id}/preview?applied=1`);
   };
 
-  const handleReviewAllSuggestions = async () => {
-    const pendingIds = suggestions
-      .filter((suggestion) => suggestion.status === "pending")
-      .map((suggestion) => suggestion.id);
-
-    if (pendingIds.length === 0) {
+  const handleApplyAllSuggestions = async () => {
+    if (!editor || scopedPendingSuggestions.length === 0) {
       return;
     }
 
+    const pendingIds = scopedPendingSuggestions.map(
+      (suggestion) => suggestion.id,
+    );
     setIsReviewingAll(true);
 
     try {
-      await openSelectionPreview(pendingIds);
+      const response = await fetch(
+        `/api/documents/${document.id}/suggestions/apply-all`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ suggestionIds: pendingIds }),
+        },
+      );
+      const data: ApplyAllSuggestionsResponse = await response.json();
+
+      if (!response.ok || !data.success || !data.data) {
+        appToast.error(data.error ?? "Could not apply all suggestions.");
+        return;
+      }
+
+      editor.commands.setContent(data.data.editorJson);
+      setCounts({
+        words: data.data.wordCount,
+        characters: data.data.currentMarkdown.length,
+      });
+      setVersionNumber(data.data.versionNumber);
+      setSaveState("saved");
+      setActiveSuggestionId(null);
+      setSuggestions((current) =>
+        current.map((suggestion) =>
+          pendingIds.includes(suggestion.id)
+            ? { ...suggestion, status: "applied" }
+            : suggestion,
+        ),
+      );
+      appToast.success(
+        `${data.data.appliedCount} suggestions applied. A version snapshot was created first.`,
+      );
     } catch {
-      appToast.error("Could not open suggestions for review.");
+      appToast.error("Could not apply all suggestions. Please try again.");
     } finally {
       setIsReviewingAll(false);
     }
@@ -649,33 +747,36 @@ export function EditorWorkspace({
           <div className="order-2 min-h-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
             {rightPanel === "ai-actions" ? (
               <AIActionsPanel
-                onBack={hasSuggestions ? () => setRightPanel("suggestions") : undefined}
-                onClose={
-                  hasSuggestions
-                    ? () => {
-                        setRightPanel("suggestions");
-                        setSuggestionsOpen(false);
-                      }
-                    : undefined
-                }
+                onShowSuggestions={() => setRightPanel("suggestions")}
+                suggestionCount={suggestions.length}
                 onRunAction={handleRunAIAction}
               />
             ) : (
               <EditorSuggestionsPanel
                 open={suggestionsOpen}
-                onClose={() => setSuggestionsOpen(false)}
                 onReopen={() => setSuggestionsOpen(true)}
                 onOpenAIActions={() => setRightPanel("ai-actions")}
                 suggestions={filteredSuggestions}
-                filters={filters}
-                activeFilter={activeFilter}
-                onFilterChange={setActiveFilter}
+                allSuggestions={suggestions}
+                actionRuns={aiActionRuns}
+                activeRunId={activeRunId}
+                onRunChange={(runId) => {
+                  setActiveRunId(runId);
+                  setActiveStatusFilter("all");
+                  setActiveTypeFilter("all");
+                }}
+                statusFilters={statusFilters}
+                activeStatusFilter={effectiveStatusFilter}
+                onStatusFilterChange={setActiveStatusFilter}
+                typeFilters={typeFilters}
+                activeTypeFilter={effectiveTypeFilter}
+                onTypeFilterChange={setActiveTypeFilter}
                 onApplySuggestion={handleApplySuggestion}
                 onReviewAppliedSuggestions={handleReviewAppliedSuggestions}
-                onReviewAllSuggestions={handleReviewAllSuggestions}
+                onApplyAllSuggestions={handleApplyAllSuggestions}
                 onIgnoreSuggestion={handleIgnoreSuggestion}
-                pendingCount={pendingSuggestionCount}
-                appliedCount={appliedSuggestionCount}
+                pendingCount={scopedPendingSuggestions.length}
+                appliedCount={scopedAppliedSuggestionCount}
                 applyingSuggestionId={applyingSuggestionId}
                 ignoringSuggestionId={ignoringSuggestionId}
                 isReviewingAll={isReviewingAll}

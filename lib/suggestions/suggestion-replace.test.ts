@@ -5,6 +5,7 @@ import {
   countOccurrences,
   getReplacementSafety,
   replaceOnce,
+  resolveSuggestionOriginalText,
   SuggestionReplacementError,
 } from "@/lib/suggestions/suggestion-replace";
 
@@ -18,6 +19,25 @@ describe("suggestion-replace", () => {
     expect(getReplacementSafety("hello world", "hello")).toBe("safe");
     expect(getReplacementSafety("hello world", "missing")).toBe("missing");
     expect(getReplacementSafety("hello hello", "hello")).toBe("ambiguous");
+  });
+
+  it("resolves harmless whitespace differences to the exact document slice", () => {
+    expect(
+      resolveSuggestionOriginalText(
+        "First line\n\nSecond line",
+        "First line Second line",
+      ),
+    ).toBe("First line\n\nSecond line");
+  });
+
+  it("does not resolve missing or ambiguous normalized text", () => {
+    expect(resolveSuggestionOriginalText("hello world", "missing")).toBeNull();
+    expect(
+      resolveSuggestionOriginalText(
+        "hello\nworld hello world",
+        "hello  world",
+      ),
+    ).toBeNull();
   });
 
   it("replaces a unique match once", () => {

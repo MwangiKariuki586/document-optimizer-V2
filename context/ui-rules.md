@@ -330,7 +330,10 @@ Rules:
 - AI output must appear as preview or suggestions before applying
 - AI suggestions should visually connect to document text where practical
 - Suggestion cards and highlighted document text should focus each other
-- The editor may apply one concrete suggestion after an explicit Apply click, server ownership checks, safe replacement validation, and a version snapshot. Do not show suggestion checkboxes or manual selection mode. Review Applied Suggestions and Review All route to the preview workspace.
+- The editor may apply one concrete suggestion or all pending suggestions after
+  an explicit Apply click, server ownership checks, safe replacement validation,
+  and a version snapshot. Do not show suggestion checkboxes or manual selection
+  mode. Review Applied Suggestions routes to the preview workspace.
 
 Editor canvas:
 
@@ -359,7 +362,11 @@ Rules:
 - The proposed result should be editable before applying
 - Synchronous scrolling should be available in side-by-side comparison view
 - Apply to Document must use the edited proposed result
-- Suggestions should be individually applyable/ignorable, with optional batch review
+- Suggestions should be individually applyable/ignorable, with a direct
+  version-safe Apply All action
+- Apply All is scoped to the selected AI action. After it succeeds, the same
+  footer position becomes Review Applied Suggestions; only Review navigates to
+  the preview workspace.
 - Applying AI output must feel intentional
 - Use AI tokens for AI-specific elements
 - Do not hide structure preservation settings when relevant

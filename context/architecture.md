@@ -287,6 +287,11 @@ The completed response includes the suggestions persisted for that AI request,
 so the editor avoids a second full suggestions request. A separate AI worker is
 out of scope for the current MVP.
 
+Before suggestion persistence, each AI `originalText` is resolved against the
+exact document markdown. Harmless whitespace-only differences may be mapped
+back to the unique exact document slice. Missing or ambiguous anchors are
+discarded and never exposed as actionable pending suggestions.
+
 ### Applying AI Result
 
 ```txt
@@ -303,13 +308,16 @@ Document current_markdown, editor_json, and word_count are updated
 Usage/activity is recorded
 ```
 
-Full AI action results and explicit batch suggestion reviews are finally applied
-from `/documents/[id]/preview`. Single suggestion Apply is an explicit editor
-action: it loads the owned pending suggestion and current document in parallel,
+Full AI action results are finally applied from `/documents/[id]/preview`.
+Suggestion Apply and Apply All are explicit editor actions. Single Apply loads
+the owned pending suggestion and current document in parallel,
 validates replacement safety, snapshots the pre-change state, updates document
 content, marks the suggestion applied, and records usage. The returned
 editor/version state updates the client locally without a second suggestions
-fetch or full route refresh. Single suggestion Ignore only marks the pending
+fetch or full route refresh. Apply All receives the selected AI action's owned
+pending suggestion ids, validates every replacement, creates one pre-change
+snapshot, applies the safe batch, and returns the updated editor/version state.
+Single suggestion Ignore only marks the pending
 suggestion ignored and updates the client suggestion state locally without
 refetching the full suggestions list. The preview
 workspace compares current vs proposed content, supports editable proposed
@@ -632,8 +640,10 @@ Rules the AI agent must never violate:
 - Raw uploaded files are stored in private storage, not Postgres.
 - AI providers are only called through the AI router.
 - AI output never overwrites document content automatically.
-- Full AI action output and explicit batch suggestion reviews can only be finally applied from AI Result Preview.
+- Full AI action output can only be finally applied from AI Result Preview.
 - Single suggestion Apply is allowed from the editor after explicit user action and must snapshot first.
+- Apply All Suggestions is allowed from the editor after explicit user action,
+  safe replacement validation, and one pre-change version snapshot.
 - AI Result Preview must support current vs proposed comparison before apply.
 - The proposed AI result must be editable before applying.
 - The edited proposed result is what gets applied.
