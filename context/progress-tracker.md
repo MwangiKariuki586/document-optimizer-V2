@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Added staged AI action progress messages
-**Next:** Browser-time the staged messages during a fresh AI action
+**Last completed:** Implemented rich DOCX editor fidelity for new uploads
+**Next:** Browser-verify a fresh DOCX upload against the original Word layout
 
 ---
 
@@ -84,6 +84,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 32 Asynchronous Document Ingestion and Duplicate Protection
 - [x] 33 Low-Latency AI Actions and Capacity Fallback
 - [x] 34 Low-Latency Direct Suggestion Apply
+- [x] 35 Rich DOCX Editor Fidelity
 
 ---
 
@@ -110,6 +111,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
 - Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
 - Decision: AI actions remain request-bound for the current MVP. The authenticated route runs the provider, persists the request result and suggestions, and returns them together; a separate AI worker and polling route are out of scope. DeepSeek retries one transient failure and may fall back to Gemini only for the default unpinned path.
+- Decision: Rich uploaded content now treats `editor_json` as the canonical editable document model. DOCX ingestion converts mammoth HTML into TipTap JSON for new uploads, Markdown ingestion parses Markdown into structured JSON, and `current_markdown` remains the derived portable/AI fallback representation.
 
 ---
 

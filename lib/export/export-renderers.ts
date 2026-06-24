@@ -2,10 +2,19 @@ import type {
   CreateExportOptions,
   ExportFormat,
 } from "@/lib/export/export.validators";
+import {
+  Window,
+  type Element as HappyElement,
+  type HTMLElement as HappyHTMLElement,
+  type Node as HappyNode,
+} from "happy-dom";
+import { editorJsonToHtml } from "@/lib/documents/html-to-editor";
+import type { Json } from "@/lib/supabase/types";
 
 type ExportRenderInput = {
   title: string;
   markdown: string;
+  editorJson?: Json | null;
   format: ExportFormat;
   options: CreateExportOptions;
   fidelityStatus: string;
@@ -57,6 +66,10 @@ function escapePdfText(value: string): string {
     .replaceAll("\n", " ");
 }
 
+function escapeXmlAttribute(value: string): string {
+  return escapeXml(value);
+}
+
 function stripMarkdown(markdown: string): string {
   return markdown
     .replace(/^#{1,6}\s+/gm, "")
@@ -65,6 +78,37 @@ function stripMarkdown(markdown: string): string {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .trim();
+}
+
+function getEditorHtml(input: ExportRenderInput): string {
+  return input.editorJson ? editorJsonToHtml(input.editorJson) : "";
+}
+
+function parseHtml(html: string): { window: Window; root: HappyHTMLElement } {
+  const window = new Window({
+    settings: {
+      disableJavaScriptEvaluation: true,
+      disableJavaScriptFileLoading: true,
+      disableCSSFileLoading: true,
+      disableIframePageLoading: true,
+      disableComputedStyleRendering: true,
+    },
+  });
+  const root = window.document.createElement("main");
+  root.innerHTML = html;
+
+  return { window, root };
+}
+
+function htmlToPlainText(html: string): string {
+  const { window, root } = parseHtml(html);
+
+  try {
+    return root.textContent?.trim() ?? "";
+  } finally {
+    window.happyDOM.abort();
+    window.happyDOM.close();
+  }
 }
 
 function buildDocumentBody(input: ExportRenderInput): string {
@@ -98,19 +142,67 @@ function buildDocumentBody(input: ExportRenderInput): string {
   return sections.join("\n\n");
 }
 
+function buildSupplementHtml(input: ExportRenderInput): string {
+  const sections: string[] = [];
+
+  if (input.options.addSummary) {
+    sections.push(
+      [
+        "<section>",
+        "<h2>Export Summary</h2>",
+        `<p>Title: ${escapeHtml(input.title)}</p>`,
+        `<p>Words: ${input.wordCount}</p>`,
+        `<p>Fidelity: ${escapeHtml(input.fidelityStatus)}</p>`,
+        "</section>",
+      ].join(""),
+    );
+  }
+
+  if (input.options.addMetadata) {
+    sections.push(
+      [
+        "<section>",
+        "<h2>Export Metadata</h2>",
+        `<p>Generated: ${escapeHtml(new Date().toISOString())}</p>`,
+        `<p>Format: ${input.format.toUpperCase()}</p>`,
+        `<p>Page size: ${escapeHtml(input.options.pageSize)}</p>`,
+        `<p>Margins: ${escapeHtml(input.options.margins)}</p>`,
+        `<p>Image quality: ${escapeHtml(input.options.imageQuality)}</p>`,
+        `<p>Watermark: ${escapeHtml(input.options.watermark)}</p>`,
+        "</section>",
+      ].join(""),
+    );
+  }
+
+  return sections.join("");
+}
+
 function renderMarkdown(input: ExportRenderInput): Buffer {
   return Buffer.from(buildDocumentBody(input), "utf8");
 }
 
 function renderText(input: ExportRenderInput): Buffer {
-  return Buffer.from(stripMarkdown(buildDocumentBody(input)), "utf8");
+  const html = getEditorHtml(input);
+  const body = html
+    ? [htmlToPlainText(html), stripMarkdown(buildDocumentBody({ ...input, markdown: "" }))]
+        .filter(Boolean)
+        .join("\n\n")
+    : stripMarkdown(buildDocumentBody(input));
+
+  return Buffer.from(body, "utf8");
 }
 
 function renderHtml(input: ExportRenderInput): Buffer {
-  const body = buildDocumentBody(input)
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`)
-    .join("\n");
+  const editorHtml = getEditorHtml(input);
+  const body = editorHtml
+    ? `${editorHtml}${buildSupplementHtml(input)}`
+    : buildDocumentBody(input)
+        .split(/\n{2,}/)
+        .map(
+          (paragraph) =>
+            `<p>${escapeHtml(paragraph).replaceAll("\n", "<br>")}</p>`,
+        )
+        .join("\n");
 
   return Buffer.from(
     [
@@ -201,14 +293,198 @@ function createZip(files: Array<{ path: string; data: Buffer }>): Buffer {
   return Buffer.concat([localData, centralDirectory, end]);
 }
 
-function renderDocx(input: ExportRenderInput): Buffer {
-  const paragraphs = buildDocumentBody(input)
-    .split(/\n{2,}/)
-    .map(
-      (paragraph) =>
-        `<w:p><w:r><w:t xml:space="preserve">${escapeXml(paragraph)}</w:t></w:r></w:p>`,
-    )
+function getElementColor(element: HappyElement): string | null {
+  const style = element.getAttribute("style") ?? "";
+  const match = /color:\s*#?([0-9a-f]{6})/iu.exec(style);
+
+  return match?.[1]?.toUpperCase() ?? null;
+}
+
+function renderRunProperties(input: {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string | null;
+  size?: number;
+}): string {
+  const properties = [
+    input.bold ? "<w:b/>" : "",
+    input.italic ? "<w:i/>" : "",
+    input.underline ? '<w:u w:val="single"/>' : "",
+    input.color ? `<w:color w:val="${escapeXmlAttribute(input.color)}"/>` : "",
+    input.size ? `<w:sz w:val="${input.size}"/>` : "",
+  ].join("");
+
+  return properties ? `<w:rPr>${properties}</w:rPr>` : "";
+}
+
+function renderTextRun(
+  value: string,
+  properties: Parameters<typeof renderRunProperties>[0],
+): string {
+  if (!value) {
+    return "";
+  }
+
+  return `<w:r>${renderRunProperties(properties)}<w:t xml:space="preserve">${escapeXml(value)}</w:t></w:r>`;
+}
+
+function renderInlineRuns(
+  node: HappyNode,
+  properties: Parameters<typeof renderRunProperties>[0] = {},
+): string {
+  if (node.nodeType === 3) {
+    return renderTextRun(node.textContent ?? "", properties);
+  }
+
+  if (node.nodeType !== 1) {
+    return "";
+  }
+
+  const element = node as HappyElement;
+  const tagName = element.tagName.toLowerCase();
+  const nextProperties = {
+    ...properties,
+    bold: properties.bold || tagName === "strong" || tagName === "b",
+    italic: properties.italic || tagName === "em" || tagName === "i",
+    underline: properties.underline || tagName === "u" || tagName === "a",
+    color: getElementColor(element) ?? properties.color,
+  };
+
+  if (tagName === "br") {
+    return "<w:r><w:br/></w:r>";
+  }
+
+  if (tagName === "img") {
+    const alt = element.getAttribute("alt") ?? "Image";
+
+    return renderTextRun(`[${alt}]`, nextProperties);
+  }
+
+  return Array.from(element.childNodes)
+    .map((child) => renderInlineRuns(child, nextProperties))
     .join("");
+}
+
+function renderParagraphFromElement(
+  element: HappyElement,
+  properties: Parameters<typeof renderRunProperties>[0] = {},
+  prefix = "",
+): string {
+  const runs = [
+    prefix ? renderTextRun(prefix, properties) : "",
+    ...Array.from(element.childNodes).map((child) =>
+      renderInlineRuns(child, properties),
+    ),
+  ].join("");
+
+  return `<w:p>${runs || renderTextRun(" ", properties)}</w:p>`;
+}
+
+function renderTable(element: HappyElement): string {
+  const rows = Array.from(element.querySelectorAll("tr"))
+    .map((row) => {
+      const cells = Array.from(row.children)
+        .map((cell) => {
+          const content =
+            Array.from(cell.childNodes)
+              .map((child) => {
+                if (child.nodeType === 1) {
+                  return renderDocxBlock(child as HappyElement);
+                }
+
+                return renderParagraphFromElement(cell, {
+                  bold: cell.tagName.toLowerCase() === "th",
+                });
+              })
+              .join("") || "<w:p/>";
+
+          return `<w:tc><w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr>${content}</w:tc>`;
+        })
+        .join("");
+
+      return `<w:tr>${cells}</w:tr>`;
+    })
+    .join("");
+
+  return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="4" w:color="E8E3F7"/><w:left w:val="single" w:sz="4" w:color="E8E3F7"/><w:bottom w:val="single" w:sz="4" w:color="E8E3F7"/><w:right w:val="single" w:sz="4" w:color="E8E3F7"/><w:insideH w:val="single" w:sz="4" w:color="E8E3F7"/><w:insideV w:val="single" w:sz="4" w:color="E8E3F7"/></w:tblBorders></w:tblPr>${rows}</w:tbl>`;
+}
+
+function renderDocxBlock(element: HappyElement): string {
+  const tagName = element.tagName.toLowerCase();
+
+  if (tagName === "table") {
+    return renderTable(element);
+  }
+
+  if (tagName === "ul" || tagName === "ol") {
+    return Array.from(element.children)
+      .filter((child) => child.tagName.toLowerCase() === "li")
+      .map((child, index) =>
+        renderParagraphFromElement(
+          child,
+          {},
+          tagName === "ol" ? `${index + 1}. ` : "- ",
+        ),
+      )
+      .join("");
+  }
+
+  if (tagName === "h1") {
+    return renderParagraphFromElement(element, {
+      bold: true,
+      color: "1E40AF",
+      size: 36,
+    });
+  }
+
+  if (tagName === "h2") {
+    return renderParagraphFromElement(element, {
+      bold: true,
+      color: "1E40AF",
+      size: 28,
+    });
+  }
+
+  if (tagName === "h3") {
+    return renderParagraphFromElement(element, {
+      bold: true,
+      color: "1E40AF",
+      size: 24,
+    });
+  }
+
+  if (tagName === "blockquote") {
+    return renderParagraphFromElement(element, { italic: true }, "> ");
+  }
+
+  return renderParagraphFromElement(element);
+}
+
+function renderHtmlToDocxBody(html: string): string {
+  const { window, root } = parseHtml(html);
+
+  try {
+    return Array.from(root.children)
+      .map((child) => renderDocxBlock(child))
+      .join("");
+  } finally {
+    window.happyDOM.abort();
+    window.happyDOM.close();
+  }
+}
+
+function renderDocx(input: ExportRenderInput): Buffer {
+  const editorHtml = getEditorHtml(input);
+  const paragraphs = editorHtml
+    ? renderHtmlToDocxBody(`${editorHtml}${buildSupplementHtml(input)}`)
+    : buildDocumentBody(input)
+        .split(/\n{2,}/)
+        .map(
+          (paragraph) =>
+            `<w:p><w:r><w:t xml:space="preserve">${escapeXml(paragraph)}</w:t></w:r></w:p>`,
+        )
+        .join("");
 
   return createZip([
     {
@@ -236,7 +512,13 @@ function renderDocx(input: ExportRenderInput): Buffer {
 }
 
 function renderPdf(input: ExportRenderInput): Buffer {
-  const lines = stripMarkdown(buildDocumentBody(input))
+  const editorHtml = getEditorHtml(input);
+  const sourceText = editorHtml
+    ? [htmlToPlainText(editorHtml), stripMarkdown(buildDocumentBody({ ...input, markdown: "" }))]
+        .filter(Boolean)
+        .join("\n\n")
+    : stripMarkdown(buildDocumentBody(input));
+  const lines = sourceText
     .split("\n")
     .flatMap((line) => {
       const chunks = line.match(/.{1,88}/g);

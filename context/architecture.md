@@ -625,6 +625,12 @@ PDF       → preserve original file, editable formatting may be limited
 
 If formatting is limited, the UI must show a clear warning.
 
+`editor_json` is the canonical rich editable document model. `current_markdown`
+is a derived portable representation used for AI prompts, previews, and fallback
+export paths. DOCX uploads should convert mammoth HTML into TipTap JSON for new
+documents; successful rich conversion uses `Structure Preserved`, while degraded
+fallback conversion uses `Limited Formatting`.
+
 ---
 
 ## Invariants

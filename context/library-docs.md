@@ -776,7 +776,9 @@ Use TipTap for:
 - paragraphs
 - lists
 - bold/italic formatting
-- links where supported
+- links
+- images
+- tables
 - editor JSON storage
 - editor-to-markdown conversion where supported
 
@@ -806,7 +808,11 @@ export function DocumentEditor({ initialContent }: Props) {
 
 ### Extensions and Markdown
 
-The editor extension set is centralized in `lib/editor/editor-extensions.ts` (shared by the editor and the headless tests): `StarterKit`, `TextStyleKit`, `Highlight`, `TextAlign`, and `Markdown` (`@tiptap/markdown`).
+The editor extension set is centralized in `lib/editor/editor-extensions.ts`
+(shared by the editor, server conversion helpers, and headless tests):
+`StarterKit`, `TextStyleKit`, `Highlight`, `TextAlign`, `Link`, `Image`,
+`Table`, `TableRow`, `TableHeader`, `TableCell`, and `Markdown`
+(`@tiptap/markdown`).
 
 `@tiptap/markdown` adds bidirectional Markdown. Use `editor.getMarkdown()` to serialize the document to real Markdown when persisting `current_markdown` (not `editor.getText()`, which is plain text). Example save payload:
 
@@ -817,6 +823,14 @@ body: JSON.stringify({
   currentMarkdown: editor.getMarkdown(),
 });
 ```
+
+Server-side conversion uses:
+
+- `@tiptap/html/server` + `happy-dom` in `lib/documents/html-to-editor.ts`
+  to convert mammoth HTML into TipTap JSON and to render TipTap JSON to HTML.
+- `MarkdownManager` from `@tiptap/markdown` in
+  `lib/documents/markdown-to-editor.ts` to parse Markdown uploads and serialize
+  editor JSON back to Markdown.
 
 ### Storage
 

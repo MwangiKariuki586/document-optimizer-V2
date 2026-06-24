@@ -98,7 +98,7 @@ export async function generateDocumentExport(
   const { data: document, error: documentError } = await supabase
     .from("documents")
     .select(
-      "id,title,current_markdown,extracted_text,fidelity_status,word_count",
+      "id,title,current_markdown,editor_json,extracted_text,fidelity_status,word_count",
     )
     .eq("id", input.documentId)
     .eq("user_id", input.userId)
@@ -117,6 +117,7 @@ export async function generateDocumentExport(
   const rendered = renderExport({
     title: document.title,
     markdown,
+    editorJson: document.editor_json,
     format: input.format,
     options: input.options,
     fidelityStatus: document.fidelity_status,

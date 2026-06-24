@@ -9,11 +9,15 @@ import {
   ChevronDown,
   Code2,
   Highlighter,
+  Image as ImageIcon,
   IndentDecrease,
   IndentIncrease,
+  Link as LinkIcon,
+  Link2Off,
   Italic,
   List,
   ListOrdered,
+  Table2,
   Underline,
 } from "lucide-react";
 
@@ -109,6 +113,45 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     }
 
     editor.chain().focus().setFontSize(value).run();
+  };
+
+  const handleSetLink = () => {
+    if (!editor) {
+      return;
+    }
+
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("Enter link URL", previousUrl ?? "https://");
+
+    if (url === null) {
+      return;
+    }
+
+    if (url.trim() === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: url.trim() })
+      .run();
+  };
+
+  const handleInsertImage = () => {
+    if (!editor) {
+      return;
+    }
+
+    const url = window.prompt("Enter image URL or data URI");
+
+    if (!url?.trim()) {
+      return;
+    }
+
+    editor.chain().focus().setImage({ src: url.trim() }).run();
   };
 
   return (
@@ -217,6 +260,24 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       >
         <Highlighter className="size-4" />
       </button>
+      <button
+        type="button"
+        className={buttonClass(Boolean(editor?.isActive("link")))}
+        title="Add or edit link"
+        onClick={handleSetLink}
+      >
+        <LinkIcon className="size-4" />
+      </button>
+      <button
+        type="button"
+        className={toolButtonClass}
+        title="Remove link"
+        onClick={() =>
+          editor?.chain().focus().extendMarkRange("link").unsetLink().run()
+        }
+      >
+        <Link2Off className="size-4" />
+      </button>
 
       <Divider />
 
@@ -303,6 +364,31 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => editor?.chain().focus().toggleCode().run()}
       >
         <Code2 className="size-4" />
+      </button>
+
+      <Divider />
+
+      <button
+        type="button"
+        className={toolButtonClass}
+        title="Insert table"
+        onClick={() =>
+          editor
+            ?.chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+            .run()
+        }
+      >
+        <Table2 className="size-4" />
+      </button>
+      <button
+        type="button"
+        className={toolButtonClass}
+        title="Insert image"
+        onClick={handleInsertImage}
+      >
+        <ImageIcon className="size-4" />
       </button>
     </div>
   );

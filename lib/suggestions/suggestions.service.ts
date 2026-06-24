@@ -2,8 +2,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { AIActionKey, AIActionOutput } from "@/lib/ai/ai.types";
 import {
+  applyTextReplacementsToEditorJson,
+  toJson,
+  type TextReplacement,
+} from "@/lib/documents/editor-json";
+import {
+  editorJsonToMarkdown,
+  markdownToEditorJson,
+  markdownToPlainText,
+} from "@/lib/documents/markdown-to-editor";
+import {
   countWords,
-  plainTextToEditorJson,
 } from "@/lib/documents/text-to-editor";
 import {
   applyReplacementsSafely,
@@ -42,6 +51,11 @@ type DocumentPreviewRow = {
   id: string;
   title: string;
   current_markdown: string | null;
+};
+
+type DocumentContentRow = {
+  current_markdown: string | null;
+  editor_json: Json | null;
 };
 
 type SelectionRow = {
@@ -137,24 +151,24 @@ function getSafetyWarnings(items: SuggestionPreviewItem[]): string[] {
   return warnings;
 }
 
-async function getOwnedDocumentMarkdown(
+async function getOwnedDocumentContent(
   supabase: SupabaseClient<Database>,
   userId: string,
   documentId: string,
-): Promise<string | null> {
+): Promise<DocumentContentRow | null> {
   const { data, error } = await supabase
     .from("documents")
-    .select("current_markdown")
+    .select("current_markdown,editor_json")
     .eq("id", documentId)
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
-    console.error("[suggestions/document]", error.message);
+    console.error("[suggestions/document-content]", error.message);
     throw new Error("Failed to load document for suggestion apply");
   }
 
-  return data?.current_markdown ?? null;
+  return data as DocumentContentRow | null;
 }
 
 async function getOwnedDocumentPreview(
@@ -219,9 +233,10 @@ async function updateDocumentContent(
     userId: string;
     documentId: string;
     currentMarkdown: string;
+    editorJson?: Json;
   },
 ): Promise<{ editorJson: Json; wordCount: number } | null> {
-  const editorJson = plainTextToEditorJson(input.currentMarkdown);
+  const editorJson = input.editorJson ?? markdownToEditorJson(input.currentMarkdown);
   const wordCount = countWords(input.currentMarkdown);
 
   const { data, error } = await supabase
@@ -247,6 +262,43 @@ async function updateDocumentContent(
   }
 
   return { editorJson, wordCount };
+}
+
+function markdownReplacementToPlainText(value: string): string {
+  return markdownToPlainText(value).trim() || value;
+}
+
+function toPlainTextReplacements(
+  replacements: TextReplacement[],
+): TextReplacement[] {
+  return replacements.map((replacement) => ({
+    originalText: markdownReplacementToPlainText(replacement.originalText),
+    suggestedText: markdownReplacementToPlainText(replacement.suggestedText),
+  }));
+}
+
+function buildReplacementEditorJson(input: {
+  currentEditorJson: Json | null;
+  fallbackMarkdown: string;
+  replacements: TextReplacement[];
+}): Json {
+  const richEditorJson = applyTextReplacementsToEditorJson(
+    input.currentEditorJson,
+    toPlainTextReplacements(input.replacements),
+  );
+
+  if (!richEditorJson) {
+    return markdownToEditorJson(input.fallbackMarkdown);
+  }
+
+  return toJson(richEditorJson);
+}
+
+function serializeEditorJsonOrFallback(
+  editorJson: Json,
+  fallbackMarkdown: string,
+): string {
+  return editorJsonToMarkdown(editorJson).trim() || fallbackMarkdown;
 }
 
 async function markSuggestionStatus(
@@ -747,15 +799,16 @@ export async function applySuggestion(
     editedMarkdown?: string;
   },
 ): Promise<ApplySuggestionResult | null> {
-  const [suggestion, currentMarkdown] = await Promise.all([
+  const [suggestion, document] = await Promise.all([
     getOwnedPendingSuggestion(supabase, input),
-    getOwnedDocumentMarkdown(supabase, input.userId, input.documentId),
+    getOwnedDocumentContent(supabase, input.userId, input.documentId),
   ]);
 
-  if (!suggestion || currentMarkdown === null) {
+  if (!suggestion || !document) {
     return null;
   }
 
+  const currentMarkdown = document.current_markdown ?? "";
   const editedMarkdown = input.editedMarkdown?.trim();
   const editedBeforeApply = Boolean(editedMarkdown);
 
@@ -774,7 +827,7 @@ export async function applySuggestion(
     }
   }
 
-  const nextMarkdown =
+  const fallbackMarkdown =
     editedMarkdown ??
     applyReplacementsSafely(currentMarkdown, [
       {
@@ -782,6 +835,22 @@ export async function applySuggestion(
         suggestedText: suggestion.suggested_text,
       },
     ]);
+  const nextEditorJson = editedMarkdown
+    ? markdownToEditorJson(fallbackMarkdown)
+    : buildReplacementEditorJson({
+        currentEditorJson: document.editor_json,
+        fallbackMarkdown,
+        replacements: [
+          {
+            originalText: suggestion.original_text,
+            suggestedText: suggestion.suggested_text,
+          },
+        ],
+      });
+  const nextMarkdown = serializeEditorJsonOrFallback(
+    nextEditorJson,
+    fallbackMarkdown,
+  );
 
   const snapshot = await snapshotDocumentVersion(supabase, {
     userId: input.userId,
@@ -800,6 +869,7 @@ export async function applySuggestion(
     userId: input.userId,
     documentId: input.documentId,
     currentMarkdown: nextMarkdown,
+    editorJson: nextEditorJson,
   });
 
   if (!updated) {
@@ -899,15 +969,17 @@ export async function applyPendingSuggestions(
     );
   }
 
-  const currentMarkdown = await getOwnedDocumentMarkdown(
+  const document = await getOwnedDocumentContent(
     supabase,
     input.userId,
     input.documentId,
   );
 
-  if (currentMarkdown === null) {
+  if (!document) {
     return null;
   }
+
+  const currentMarkdown = document.current_markdown ?? "";
 
   for (const suggestion of pending) {
     const safety = getReplacementSafety(
@@ -935,18 +1007,29 @@ export async function applyPendingSuggestions(
     return null;
   }
 
-  const nextMarkdown = applyReplacementsSafely(
+  const replacements = pending.map((suggestion) => ({
+    originalText: suggestion.originalText,
+    suggestedText: suggestion.suggestedText,
+  }));
+  const fallbackMarkdown = applyReplacementsSafely(
     currentMarkdown,
-    pending.map((suggestion) => ({
-      originalText: suggestion.originalText,
-      suggestedText: suggestion.suggestedText,
-    })),
+    replacements,
+  );
+  const nextEditorJson = buildReplacementEditorJson({
+    currentEditorJson: document.editor_json,
+    fallbackMarkdown,
+    replacements,
+  });
+  const nextMarkdown = serializeEditorJsonOrFallback(
+    nextEditorJson,
+    fallbackMarkdown,
   );
 
   const updated = await updateDocumentContent(supabase, {
     userId: input.userId,
     documentId: input.documentId,
     currentMarkdown: nextMarkdown,
+    editorJson: nextEditorJson,
   });
 
   if (!updated) {
@@ -1024,16 +1107,17 @@ export async function applySelectedSuggestions(
     );
   }
 
-  const currentMarkdown = await getOwnedDocumentMarkdown(
+  const document = await getOwnedDocumentContent(
     supabase,
     input.userId,
     input.documentId,
   );
 
-  if (currentMarkdown === null) {
+  if (!document) {
     return null;
   }
 
+  const currentMarkdown = document.current_markdown ?? "";
   const editedMarkdown = input.editedMarkdown?.trim();
   const editedBeforeApply = Boolean(editedMarkdown);
 
@@ -1067,14 +1151,27 @@ export async function applySelectedSuggestions(
     return null;
   }
 
-  const nextMarkdown =
+  const replacements = toReplacementPairs(suggestions);
+  const fallbackMarkdown =
     editedMarkdown ??
-    applyReplacementsSafely(currentMarkdown, toReplacementPairs(suggestions));
+    applyReplacementsSafely(currentMarkdown, replacements);
+  const nextEditorJson = editedMarkdown
+    ? markdownToEditorJson(fallbackMarkdown)
+    : buildReplacementEditorJson({
+        currentEditorJson: document.editor_json,
+        fallbackMarkdown,
+        replacements,
+      });
+  const nextMarkdown = serializeEditorJsonOrFallback(
+    nextEditorJson,
+    fallbackMarkdown,
+  );
 
   const updated = await updateDocumentContent(supabase, {
     userId: input.userId,
     documentId: input.documentId,
     currentMarkdown: nextMarkdown,
+    editorJson: nextEditorJson,
   });
 
   if (!updated) {

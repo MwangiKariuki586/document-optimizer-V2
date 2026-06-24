@@ -1,8 +1,8 @@
 import {
   countWords,
   normalizeText,
-  plainTextToEditorJson,
 } from "@/lib/documents/text-to-editor";
+import { markdownToEditorJson } from "@/lib/documents/markdown-to-editor";
 import type { ParsedDocument } from "@/lib/parsing/parse-file";
 
 export function parseMarkdown(data: Buffer): ParsedDocument {
@@ -10,7 +10,7 @@ export function parseMarkdown(data: Buffer): ParsedDocument {
 
   return {
     extractedText: markdown,
-    editorJson: plainTextToEditorJson(markdown),
+    editorJson: markdownToEditorJson(markdown),
     currentMarkdown: markdown,
     formattingMetadata: { format: "markdown" },
     wordCount: countWords(markdown),

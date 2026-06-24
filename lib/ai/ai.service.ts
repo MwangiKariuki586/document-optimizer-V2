@@ -12,7 +12,8 @@ import type {
   AIProviderName,
 } from "@/lib/ai/ai.types";
 import { aiActionSchema, parseAIActionOutput } from "@/lib/ai/ai.validators";
-import { countWords, plainTextToEditorJson } from "@/lib/documents/text-to-editor";
+import { markdownToEditorJson } from "@/lib/documents/markdown-to-editor";
+import { countWords } from "@/lib/documents/text-to-editor";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
 import { saveSuggestionsFromAIResult } from "@/lib/suggestions/suggestions.service";
@@ -408,7 +409,7 @@ export async function applyAIRequestResult(
     .from("documents")
     .update({
       current_markdown: revisedMarkdown,
-      editor_json: plainTextToEditorJson(revisedMarkdown),
+      editor_json: markdownToEditorJson(revisedMarkdown),
       word_count: countWords(revisedMarkdown),
       updated_at: new Date().toISOString(),
     })

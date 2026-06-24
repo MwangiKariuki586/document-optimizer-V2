@@ -106,6 +106,41 @@ describe("editor blocks and alignment", () => {
   });
 });
 
+describe("editor rich document nodes", () => {
+  it("sets and unsets links", () => {
+    editor.chain().focus().setLink({ href: "https://example.com" }).run();
+    expect(editor.isActive("link")).toBe(true);
+    expect(editor.getHTML()).toContain("https://example.com");
+
+    editor.chain().focus().unsetLink().run();
+    expect(editor.isActive("link")).toBe(false);
+  });
+
+  it("inserts an image", () => {
+    const imageEditor = makeEditor("<p></p>");
+    imageEditor
+      .chain()
+      .focus()
+      .setImage({ src: "data:image/png;base64,abc", alt: "Preview" })
+      .run();
+
+    expect(imageEditor.getHTML()).toContain("<img");
+    imageEditor.destroy();
+  });
+
+  it("inserts a table", () => {
+    const tableEditor = makeEditor("<p></p>");
+    tableEditor
+      .chain()
+      .focus()
+      .insertTable({ rows: 2, cols: 2, withHeaderRow: true })
+      .run();
+
+    expect(tableEditor.getHTML()).toContain("<table");
+    tableEditor.destroy();
+  });
+});
+
 describe("editor markdown serialization", () => {
   it("serializes headings and bold to real markdown", () => {
     const md = makeEditor(

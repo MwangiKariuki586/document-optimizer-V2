@@ -660,11 +660,16 @@ Approved dependencies:
 - `zod` — validation
 - `@tiptap/react` — editor
 - `@tiptap/starter-kit` — editor toolkit
+- `@tiptap/extension-link` — editor links and DOCX hyperlink preservation
+- `@tiptap/extension-image` — editor image nodes and DOCX image preservation
+- `@tiptap/extension-table` — editor table nodes and DOCX table preservation
 - `@tiptap/extension-highlight` — editor highlight control
 - `@tiptap/extension-text-align` — editor text alignment
 - `@tiptap/extension-text-style` — editor text style controls
+- `@tiptap/html` — server-side HTML/JSON conversion for rich document ingestion and export
 - `@tiptap/markdown` — editor markdown serialization
 - `@tiptap/pm` — TipTap/ProseMirror peer package
+- `happy-dom` — virtual DOM required by TipTap server-side HTML conversion
 - `mammoth` — DOCX text/structure extraction
 - `unpdf` — PDF text extraction
 - `sonner` — toast notifications

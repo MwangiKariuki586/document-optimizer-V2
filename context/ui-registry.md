@@ -1045,7 +1045,7 @@ Version-history dropdown for the editor top bar. Shows the current version label
 
 **Purpose:**
 
-Fully functional formatting toolbar. Receives the TipTap `editor` and wires block type (`<select>`: Normal/H1–H3), font family + font size (`<select>`s via TextStyleKit), bold, italic, underline, text color (`<input type="color">` → `setColor`), highlight, bullet/ordered lists, list indent (sink/lift list item), text align (left/center/right/justify), and inline code.
+Fully functional formatting toolbar. Receives the TipTap `editor` and wires block type (`<select>`: Normal/H1–H3), font family + font size (`<select>`s via TextStyleKit), bold, italic, underline, text color (`<input type="color">` → `setColor`), highlight, link add/remove, bullet/ordered lists, list indent (sink/lift list item), text align (left/center/right/justify), inline code, basic table insertion, and image insertion.
 
 **Used on:**
 
@@ -1060,7 +1060,7 @@ className="flex items-center gap-1 overflow-x-auto border-t border-border-light 
 **Rules:**
 
 - Active controls use `bg-accent-light text-accent` via `editor.isActive(...)`; select values come from `editor.getAttributes("textStyle")` / heading state.
-- Editor extensions are defined once in `lib/editor/editor-extensions.ts` (StarterKit + TextStyleKit + Highlight + TextAlign) and verified by `lib/editor/editor-extensions.test.ts`.
+- Editor extensions are defined once in `lib/editor/editor-extensions.ts` (StarterKit + TextStyleKit + Highlight + TextAlign + Link + Image + Table + Markdown) and verified by `lib/editor/editor-extensions.test.ts`.
 
 ### EditorCanvas
 
@@ -1085,7 +1085,7 @@ className="document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 
 **Rules:**
 
 - The document area scrolls internally (`overflow-y-auto`). At `xl` the canvas grows to fill the column (`xl:flex-1 xl:min-h-0`) and the document paper drops its fixed minimum height (`xl:min-h-0`) so long content scrolls inside the canvas instead of expanding the page. Below `xl` it keeps `min-h-[320px]` / `md:min-h-[480px]` and grows with content.
-- The `.document-editor` wrapper applies token-based `.ProseMirror` styles defined in `app/globals.css` (headings, lists, code, blockquote, links).
+- The `.document-editor` wrapper applies token-based `.ProseMirror` styles defined in `app/globals.css` (headings, lists, code, blockquote, links, images, and tables).
 - The canvas body intentionally has no outer padding and the document wrapper fills the available width; preserve only a smaller inner text inset to maximize usable editing space.
 - Word/character counts are passed in from the workspace.
 - This is a client component: zoom is functional (50%–200%, step 10, reset) via local state and a `transform: scale()` on the content wrapper.
