@@ -44,7 +44,14 @@ const AI_RESPONSE_JSON_SCHEMA: Record<string, unknown> = {
         properties: {
           type: {
             type: "string",
-            enum: ["clarity", "grammar", "tone", "structure", "seo"],
+            enum: [
+              "grammar",
+              "clarity",
+              "tone",
+              "conciseness",
+              "structure",
+              "formatting",
+            ],
           },
           originalText: { type: "string", minLength: 1 },
           suggestedText: { type: "string", minLength: 1 },

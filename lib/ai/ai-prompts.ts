@@ -23,13 +23,13 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
 
 const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   optimize:
-    "Return mode \"preview\" with revisedMarkdown and 3-6 targeted suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"preview\" with revisedMarkdown and 3-6 targeted suggestions. Use suggestion.type from grammar, clarity, tone, conciseness, structure, or formatting. Each suggestion.originalText must be an exact substring from the original document.",
   improve_clarity:
-    "Return mode \"suggestions\" with 3-6 clarity suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 clarity or conciseness suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   fix_grammar:
     "Return mode \"suggestions\" with 3-6 grammar suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   rewrite:
-    "Return mode \"preview\" with revisedMarkdown and 3-6 wording suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"preview\" with revisedMarkdown and 3-6 wording suggestions. Use clarity, tone, conciseness, structure, or formatting as appropriate. Each suggestion.originalText must be an exact substring from the original document.",
   summarize:
     "Return mode \"preview\" with revisedMarkdown as the summary. Only include suggestions if there are specific source passages worth changing.",
   translate:
@@ -37,7 +37,7 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   tone_analyze:
     "Return mode \"suggestions\" with 3-6 tone suggestions and analysis notes, and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   seo_analyze:
-    "Return mode \"suggestions\" with 3-6 SEO suggestions and analysis notes, and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\" with 3-6 structure, clarity, formatting, or conciseness suggestions for search readability and headings. Set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
   simplify_language:
     "Return mode \"suggestions\" with 3-6 simplification suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
 };
@@ -57,7 +57,7 @@ Return only valid JSON matching this exact shape:
   "revisedMarkdown": "Full revised markdown or null",
   "suggestions": [
     {
-      "type": "clarity" | "grammar" | "tone" | "structure" | "seo",
+      "type": "grammar" | "clarity" | "tone" | "conciseness" | "structure" | "formatting",
       "originalText": "Text being improved",
       "suggestedText": "Suggested replacement",
       "explanation": "Why this helps"

@@ -87,7 +87,14 @@ export const runAIActionRequestSchema = z.object({
 });
 
 export const aiSuggestionOutputSchema = z.object({
-  type: z.enum(["clarity", "grammar", "tone", "structure", "seo"]),
+  type: z.enum([
+    "grammar",
+    "clarity",
+    "tone",
+    "conciseness",
+    "structure",
+    "formatting",
+  ]),
   originalText: z.string().trim().min(1),
   suggestedText: z.string().trim().min(1),
   explanation: z.string().trim().min(1),

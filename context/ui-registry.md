@@ -1128,6 +1128,12 @@ Suggestions, Apply All, and compact empty states.
   active type chip can be clicked again to clear the filter.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
 - The panel no longer owns a separate loading-suggestions branch. Initial suggestions come from the server page, and completed AI responses merge their persisted suggestion rows directly into editor state.
+- Current Optimization Highlights behavior: the visible category set is Grammar,
+  Clarity, Tone, Conciseness, Structure, and Formatting. The legend filters both
+  pending cards and inline highlights. Single-card Apply and Ignore remove the
+  pending card/highlight optimistically and roll back if the owned route fails.
+  Pending cards without a safe inline match show review-needed copy instead of
+  being hidden.
 
 ### EditorStatusBar
 
@@ -1353,7 +1359,7 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 **Purpose:**
 
-TipTap/ProseMirror extension for inline AI suggestion highlights in the editor.
+TipTap/ProseMirror extension for inline AI Optimization Highlights in the editor.
 
 **Used on:**
 
@@ -1361,9 +1367,10 @@ TipTap/ProseMirror extension for inline AI suggestion highlights in the editor.
 
 **Rules:**
 
-- This is an editor utility, not a visual component. Pending suggestions are matched by snippet and rendered as subtle `.suggestion-highlight` decorations.
+- This is an editor utility, not a visual component. Pending suggestions are matched by snippet and rendered as category-specific `.suggestion-highlight-*` decorations.
+- Decoration metadata includes stable suggestion id, optimization category, and issue label. Hover uses the native title tooltip with category and issue label.
 - Clicking a decoration reports the suggestion id to `EditorWorkspace`; active highlights use `.is-active`.
-- Multi-paragraph or missing snippets are skipped gracefully.
+- Missing snippets are skipped gracefully. The side panel keeps unmatched suggestions visible with review-needed copy.
 
 ---
 

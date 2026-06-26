@@ -77,9 +77,29 @@ const SUGGESTION_FRIENDLY_ACTIONS = new Set<AIActionKey>([
 ]);
 
 function toSuggestionType(value: string): SuggestionType | null {
+  if (value === "seo") {
+    return "structure";
+  }
+
+  if (value === "style") {
+    return "tone";
+  }
+
   const parsed = suggestionTypeSchema.safeParse(value);
 
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) {
+    return null;
+  }
+
+  if (parsed.data === "seo") {
+    return "structure";
+  }
+
+  if (parsed.data === "style") {
+    return "tone";
+  }
+
+  return parsed.data;
 }
 
 function toSuggestionStatus(value: string): SuggestionStatus {

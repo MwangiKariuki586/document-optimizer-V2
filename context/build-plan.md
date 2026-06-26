@@ -512,6 +512,8 @@ Build suggestions UI with mock data,referencing context/designs/editor workspace
 - Suggestions list
 - Suggestion card
 - Suggestion type badge
+- Category-based inline optimization highlights in the document editor
+- Highlight legend/filter for Grammar, Clarity, Tone, Conciseness, Structure, and Formatting
 - Original text
 - Suggested text
 - Explanation
@@ -531,9 +533,14 @@ Wire suggestions to real data.
 - Generate suggestions from AI result where applicable
 - Save suggestions to `suggestions`
 - Fetch suggestions for document
+- Render pending suggestions as a temporary TipTap/ProseMirror decoration layer
+  when `original_text` can be matched safely in the current editor document
+- Keep unmatched suggestions visible in the rail with a review-needed note
+- Link highlight clicks to suggestion cards and card clicks to editor ranges
 - Apply single suggestion:
   - verify ownership
   - apply only after an explicit card-level Apply click
+  - optimistically replace the matched editor range locally and roll back if persistence fails
   - fail safely when the source text is missing or ambiguous
   - create version snapshot where needed
   - update document content
@@ -546,6 +553,7 @@ Wire suggestions to real data.
 
 - Ignore suggestion:
   - verify ownership
+  - remove the local highlight/card from the pending working list immediately
   - mark suggestion as ignored
 
 - Show success/error feedback

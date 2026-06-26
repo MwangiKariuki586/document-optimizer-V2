@@ -145,7 +145,16 @@ create table if not exists public.suggestions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint suggestions_type_check check (
-    type in ('clarity', 'grammar', 'tone', 'structure', 'seo', 'style')
+    type in (
+      'grammar',
+      'clarity',
+      'tone',
+      'conciseness',
+      'structure',
+      'formatting',
+      'seo',
+      'style'
+    )
   ),
   constraint suggestions_status_check check (
     status in ('pending', 'applied', 'ignored')

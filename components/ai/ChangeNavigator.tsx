@@ -21,10 +21,11 @@ type ChangeNavigatorProps = {
 
 const typeLabels: Record<ChangeSummaryType, string> = {
   clarity: "Clarity",
+  conciseness: "Conciseness",
+  formatting: "Formatting",
   grammar: "Grammar",
   tone: "Tone",
   structure: "Structure",
-  seo: "SEO",
 };
 
 export function ChangeNavigator({

@@ -2,10 +2,11 @@ import { ShieldCheck } from "lucide-react";
 
 export type ChangeSummaryType =
   | "clarity"
+  | "conciseness"
+  | "formatting"
   | "grammar"
   | "tone"
-  | "structure"
-  | "seo";
+  | "structure";
 
 type ChangeSummaryProps = {
   summary: string;
@@ -15,18 +16,20 @@ type ChangeSummaryProps = {
 
 const labels: Record<ChangeSummaryType, string> = {
   clarity: "Clarity",
+  conciseness: "Conciseness",
+  formatting: "Formatting",
   grammar: "Grammar",
   tone: "Tone",
   structure: "Structure",
-  seo: "SEO",
 };
 
 const metricClasses: Record<ChangeSummaryType, string> = {
   clarity: "bg-ai-light text-ai-dark",
-  grammar: "bg-success-muted text-success-foreground",
+  conciseness: "bg-accent-light text-accent",
+  formatting: "bg-surface-tertiary text-text-secondary",
+  grammar: "bg-error-muted text-error-foreground",
   tone: "bg-warning-muted text-warning-foreground",
   structure: "bg-info-muted text-info-foreground",
-  seo: "bg-accent-light text-accent",
 };
 
 export function ChangeSummary({

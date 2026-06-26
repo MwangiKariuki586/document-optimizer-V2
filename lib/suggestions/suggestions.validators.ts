@@ -7,10 +7,13 @@ import {
 
 export const suggestionTypeSchema = z.enum([
   "clarity",
+  "conciseness",
+  "formatting",
   "grammar",
   "tone",
   "structure",
   "seo",
+  "style",
 ]);
 
 export const suggestionStatusSchema = z.enum([

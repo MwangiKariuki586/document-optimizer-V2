@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Added coordinate-aware PDF layout reconstruction
-**Next:** Browser-verify a fresh PDF upload against its original layout, then re-check DOCX preview comparison remains unchanged
+**Last completed:** Implemented Optimization Highlights in the editor suggestions flow
+**Next:** Browser-verify inline suggestion highlight interactions in `/documents/[id]`, then browser-verify a fresh PDF upload against its original layout and re-check DOCX preview comparison remains unchanged
 
 ---
 
@@ -127,6 +127,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-26
+Feature: Optimization Highlights
+Status: Completed
+Files changed: app/globals.css, components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, components/ai/AIResultPreview.tsx, components/ai/ChangeNavigator.tsx, components/ai/ChangeSummary.tsx, lib/editor/suggestion-highlight.ts, lib/editor/suggestion-highlight.test.ts, lib/ai/ai-prompts.ts, lib/ai/ai.validators.ts, lib/ai/providers/gemini.provider.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.mapper.ts, lib/suggestions/suggestions.types.ts, lib/suggestions/suggestions.validators.ts, supabase/migrations/20260626120000_expand_suggestion_optimization_categories.sql, supabase/schema/phase-1-database-schema.sql, context/architecture.md, context/build-plan.md, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Expanded AI suggestion categories to Grammar, Clarity, Tone, Conciseness, Structure, and Formatting while normalizing legacy SEO/style rows into current categories. Upgraded the TipTap decoration layer to carry suggestion id, category, and issue label metadata; added category-specific editor highlight styling, native hover tooltips, and card/highlight focus syncing. Added an Optimization Highlights legend/filter that filters both pending cards and inline highlights. Single-card Apply now optimistically replaces the highlighted editor range and rolls back on failed persistence; Ignore removes the pending card/highlight optimistically and rolls back on failure. Unmatched pending suggestions remain visible in the rail with review-needed copy.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test passed with 112 tests; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed after the final highlight refactor; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; npm.cmd run build passed; git diff --check passed.
+Follow-up: Apply the Supabase migration before generating new conciseness/formatting suggestions in a remote environment. Browser-review `/documents/[id]` with fresh suggestions to confirm highlight colors, tooltip copy, card focusing, highlight focusing, apply rollback behavior, and ignore behavior.
+```
 
 ```txt
 Date: 2026-06-26

@@ -425,13 +425,19 @@ Versioning model: versions are created (1) automatically at document creation (`
 | document_id    | uuid        | References documents                       |
 | ai_request_id  | uuid        | Optional AI request reference              |
 | user_id        | text        | Clerk user ID                              |
-| type           | text        | clarity / grammar / tone / structure / seo |
+| type           | text        | grammar / clarity / tone / conciseness / structure / formatting |
 | original_text  | text        | Text being improved                        |
 | suggested_text | text        | Suggested replacement                      |
 | explanation    | text        | Reason for suggestion                      |
 | status         | text        | pending / applied / ignored                |
 | created_at     | timestamptz | Created timestamp                          |
 | updated_at     | timestamptz | Updated timestamp                          |
+
+Suggestion metadata is stored separately from document content. Inline editor
+highlights are temporary TipTap/ProseMirror decorations derived from pending
+suggestions and must not be persisted into `editor_json` or exported content.
+Legacy `seo` and `style` suggestion rows are tolerated and normalized into the
+current optimization categories when read.
 
 ### `suggestion_preview_selections`
 

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronDown,
   FileText,
+  Highlighter,
   MoreVertical,
   Sparkles,
   X,
@@ -15,10 +16,11 @@ import type { AIActionRun } from "@/lib/ai/ai.types";
 
 export type SuggestionType =
   | "Clarity"
+  | "Conciseness"
+  | "Formatting"
   | "Grammar"
   | "Tone"
-  | "Structure"
-  | "SEO";
+  | "Structure";
 
 export type SuggestionStatus = "pending" | "applied" | "ignored";
 
@@ -32,6 +34,7 @@ export type EditorSuggestion = {
   suggestedText: string;
   explanation: string;
   status: SuggestionStatus;
+  hasInlineHighlight?: boolean;
 };
 
 export type SuggestionFilter = {
@@ -72,10 +75,20 @@ type EditorSuggestionsPanelProps = {
 
 const typeBadgeClasses: Record<SuggestionType, string> = {
   Clarity: "bg-info-muted text-info-foreground",
-  Grammar: "bg-success-muted text-success-foreground",
-  Tone: "bg-ai-muted text-ai-dark",
-  Structure: "bg-warning-muted text-warning-foreground",
-  SEO: "bg-accent-light text-accent",
+  Conciseness: "bg-accent-light text-accent",
+  Formatting: "bg-surface-tertiary text-text-secondary",
+  Grammar: "bg-error-muted text-error-foreground",
+  Tone: "bg-warning-muted text-warning-foreground",
+  Structure: "bg-ai-muted text-ai-dark",
+};
+
+const typeDotClasses: Record<SuggestionType, string> = {
+  Clarity: "bg-info",
+  Conciseness: "bg-accent",
+  Formatting: "bg-text-muted",
+  Grammar: "bg-error",
+  Tone: "bg-warning",
+  Structure: "bg-ai",
 };
 
 const statusBadgeClasses: Record<SuggestionStatus, string> = {
@@ -273,10 +286,16 @@ export function EditorSuggestionsPanel({
               })}
             </div>
 
-            {typeFilters.length > 1 ? (
-              <div className="flex flex-wrap gap-1.5">
+            {typeFilters.length > 0 ? (
+              <div className="rounded-lg border border-border-light bg-surface-secondary p-2">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-text-muted">
+                  <Highlighter className="size-3.5 text-accent" />
+                  Optimization Highlights
+                </div>
+                <div className="flex flex-wrap gap-1.5">
                 {typeFilters.map((filter) => {
                   const isActive = filter.key === activeTypeFilter;
+                  const typedLabel = filter.label as SuggestionType;
 
                   return (
                     <button
@@ -290,11 +309,18 @@ export function EditorSuggestionsPanel({
                           ? "bg-ai-muted text-ai-dark"
                           : "text-text-secondary hover:bg-surface-secondary"
                       }`}
+                      title={`Show ${filter.label.toLowerCase()} highlights`}
                     >
+                      <span
+                        className={`mr-1.5 inline-block size-1.5 rounded-full ${
+                          typeDotClasses[typedLabel] ?? "bg-text-muted"
+                        }`}
+                      />
                       {filter.label} {filter.count}
                     </button>
                   );
                 })}
+                </div>
               </div>
             ) : null}
           </div>
@@ -395,6 +421,13 @@ export function EditorSuggestionsPanel({
                         <p className="mt-1 text-xs leading-5 text-text-secondary">
                           {suggestion.explanation}
                         </p>
+                        {suggestion.status === "pending" &&
+                        !suggestion.hasInlineHighlight ? (
+                          <p className="mt-2 rounded-md bg-warning-muted px-2 py-1.5 text-[11px] leading-4 text-warning-foreground">
+                            This suggestion no longer matches a unique range in
+                            the editor. Review the text before applying it.
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 

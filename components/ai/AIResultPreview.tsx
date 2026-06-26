@@ -36,10 +36,11 @@ type SuggestionType = ChangeSummaryType;
 
 const suggestionLabels: Record<SuggestionType, string> = {
   clarity: "Clarity",
+  conciseness: "Conciseness",
+  formatting: "Formatting",
   grammar: "Grammar",
   tone: "Tone",
   structure: "Structure",
-  seo: "SEO",
 };
 
 function countSuggestions(suggestions: { type: SuggestionType }[]) {
@@ -48,7 +49,14 @@ function countSuggestions(suggestions: { type: SuggestionType }[]) {
       acc[suggestion.type] += 1;
       return acc;
     },
-    { clarity: 0, grammar: 0, tone: 0, structure: 0, seo: 0 },
+    {
+      clarity: 0,
+      conciseness: 0,
+      formatting: 0,
+      grammar: 0,
+      tone: 0,
+      structure: 0,
+    },
   );
 }
 

@@ -7,12 +7,24 @@ export type SuggestionHighlightRange = {
   id: string;
   from: number;
   to: number;
+  category: SuggestionHighlightCategory;
+  issueLabel: string;
 };
 
 type SuggestionHighlightInput = {
   id: string;
   originalText: string;
+  category: SuggestionHighlightCategory;
+  issueLabel: string;
 };
+
+export type SuggestionHighlightCategory =
+  | "clarity"
+  | "conciseness"
+  | "formatting"
+  | "grammar"
+  | "structure"
+  | "tone";
 
 type SuggestionHighlightState = {
   ranges: SuggestionHighlightRange[];
@@ -59,9 +71,11 @@ function buildDecorations(
       Decoration.inline(range.from, range.to, {
         class:
           range.id === activeId
-            ? "suggestion-highlight is-active"
-            : "suggestion-highlight",
+            ? `suggestion-highlight suggestion-highlight-${range.category} is-active`
+            : `suggestion-highlight suggestion-highlight-${range.category}`,
         "data-suggestion-id": range.id,
+        "data-suggestion-category": range.category,
+        title: `${range.issueLabel} (${range.category})`,
       }),
     ),
   );
@@ -77,6 +91,8 @@ function mapRanges(
       id: range.id,
       from: mapping.map(range.from),
       to: mapping.map(range.to),
+      category: range.category,
+      issueLabel: range.issueLabel,
     }))
     .filter((range) => range.from < range.to && range.to <= doc.content.size);
 }
@@ -91,7 +107,11 @@ export function findSuggestionHighlightRanges(
       .filter((suggestion) => suggestion.originalText.trim().length > 0)
       .map((suggestion) => [
         suggestion.id,
-        suggestion.originalText.replace(/\s+/g, " ").trim(),
+        {
+          snippet: suggestion.originalText.replace(/\s+/g, " ").trim(),
+          category: suggestion.category,
+          issueLabel: suggestion.issueLabel,
+        },
       ]),
   );
 
@@ -102,8 +122,8 @@ export function findSuggestionHighlightRanges(
 
     const normalizedText = node.text.replace(/\s+/g, " ");
 
-    for (const [id, snippet] of pending.entries()) {
-      const snippetIndex = normalizedText.indexOf(snippet);
+    for (const [id, suggestion] of pending.entries()) {
+      const snippetIndex = normalizedText.indexOf(suggestion.snippet);
 
       if (snippetIndex < 0) {
         continue;
@@ -112,7 +132,9 @@ export function findSuggestionHighlightRanges(
       ranges.push({
         id,
         from: position + snippetIndex,
-        to: position + snippetIndex + snippet.length,
+        to: position + snippetIndex + suggestion.snippet.length,
+        category: suggestion.category,
+        issueLabel: suggestion.issueLabel,
       });
       pending.delete(id);
     }

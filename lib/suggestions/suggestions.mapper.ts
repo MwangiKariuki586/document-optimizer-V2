@@ -5,11 +5,12 @@ import type {
 } from "@/components/editor/EditorSuggestionsPanel";
 
 const TYPE_LABELS: Record<DocumentSuggestion["type"], SuggestionType> = {
+  conciseness: "Conciseness",
   clarity: "Clarity",
+  formatting: "Formatting",
   grammar: "Grammar",
   tone: "Tone",
   structure: "Structure",
-  seo: "SEO",
 };
 
 export function mapDocumentSuggestionToEditorSuggestion(

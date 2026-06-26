@@ -832,6 +832,15 @@ Server-side conversion uses:
   `lib/documents/markdown-to-editor.ts` to parse Markdown uploads and serialize
   editor JSON back to Markdown.
 
+### Optimization Highlight Decorations
+
+Inline AI suggestion highlights use the local `SuggestionHighlight` TipTap
+extension in `lib/editor/suggestion-highlight.ts`. It adds ProseMirror
+decorations only; it must not write suggestion metadata into `editor_json` or
+exported content. `EditorWorkspace` computes pending suggestion ranges from the
+current editor document, passes category and issue-label metadata into the
+extension, and keeps card/highlight focus state synchronized.
+
 ### Storage
 
 Persist editor content as:
@@ -850,6 +859,7 @@ formatting_metadata
 - Keep `current_markdown` as portable fallback content; serialize it with `editor.getMarkdown()`
 - Do not treat extracted text as the only source of truth
 - Preserve document structure where technically possible
+- Treat suggestion highlights as a temporary annotation layer, not document marks
 - Debounce saves where appropriate
 - Show save status clearly
 

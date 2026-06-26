@@ -1,11 +1,12 @@
 import type { Json } from "@/lib/supabase/types";
 
 export type SuggestionType =
+  | "conciseness"
   | "clarity"
+  | "formatting"
   | "grammar"
   | "tone"
-  | "structure"
-  | "seo";
+  | "structure";
 
 export type SuggestionStatus = "pending" | "applied" | "ignored";
 

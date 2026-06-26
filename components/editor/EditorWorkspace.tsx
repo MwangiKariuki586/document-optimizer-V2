@@ -33,6 +33,7 @@ import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
 import {
   findSuggestionHighlightRanges,
   SuggestionHighlight,
+  type SuggestionHighlightCategory,
   suggestionHighlightPluginKey,
 } from "@/lib/editor/suggestion-highlight";
 
@@ -111,6 +112,18 @@ const FORMATTING_WARNING: Record<string, string> = {
     "This document may need a formatting review before export. Your original file is preserved.",
 };
 
+const SUGGESTION_CATEGORY_BY_LABEL: Record<
+  EditorSuggestion["type"],
+  SuggestionHighlightCategory
+> = {
+  Clarity: "clarity",
+  Conciseness: "conciseness",
+  Formatting: "formatting",
+  Grammar: "grammar",
+  Tone: "tone",
+  Structure: "structure",
+};
+
 export function EditorWorkspace({
   document,
   initialSuggestions,
@@ -135,7 +148,7 @@ export function EditorWorkspace({
   );
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [activeTypeFilter, setActiveTypeFilter] = useState("all");
-  const [activeStatusFilter, setActiveStatusFilter] = useState("all");
+  const [activeStatusFilter, setActiveStatusFilter] = useState("pending");
   const [activeRunId, setActiveRunId] = useState(
     initialAIActionRuns[0]?.id ?? "all",
   );
@@ -223,24 +236,48 @@ export function EditorWorkspace({
     [editor],
   );
 
+  const editorDoc = editor?.state.doc ?? null;
+  const suggestionHighlightRanges = useMemo(() => {
+    if (!editorDoc) {
+      return [];
+    }
+
+    const pendingSuggestions = suggestions
+      .filter((suggestion) => {
+        if (suggestion.status !== "pending") {
+          return false;
+        }
+
+        if (activeTypeFilter === "all") {
+          return true;
+        }
+
+        return (
+          SUGGESTION_CATEGORY_BY_LABEL[suggestion.type] === activeTypeFilter
+        );
+      })
+      .map((suggestion) => ({
+        id: suggestion.id,
+        originalText: suggestion.originalText,
+        category: SUGGESTION_CATEGORY_BY_LABEL[suggestion.type],
+        issueLabel: suggestion.explanation || suggestion.type,
+      }));
+
+    return findSuggestionHighlightRanges(editorDoc, pendingSuggestions);
+  }, [activeTypeFilter, editorDoc, suggestions]);
+
+  const highlightedSuggestionIds = useMemo(
+    () => new Set(suggestionHighlightRanges.map((range) => range.id)),
+    [suggestionHighlightRanges],
+  );
+
   useEffect(() => {
     if (!editor) {
       return;
     }
 
-    const pendingSuggestions = suggestions
-      .filter((suggestion) => suggestion.status === "pending")
-      .map((suggestion) => ({
-        id: suggestion.id,
-        originalText: suggestion.originalText,
-      }));
-    const ranges = findSuggestionHighlightRanges(
-      editor.state.doc,
-      pendingSuggestions,
-    );
-
-    editor.commands.setSuggestionHighlights(ranges);
-  }, [editor, suggestions]);
+    editor.commands.setSuggestionHighlights(suggestionHighlightRanges);
+  }, [editor, suggestionHighlightRanges]);
 
   useEffect(() => {
     if (!editor) {
@@ -432,7 +469,10 @@ export function EditorWorkspace({
       { key: "pending", label: "Pending", count: counts.pending ?? 0 },
       { key: "applied", label: "Applied", count: counts.applied ?? 0 },
       { key: "ignored", label: "Ignored", count: counts.ignored ?? 0 },
-    ].filter((filter) => filter.key === "all" || filter.count > 0);
+    ].filter(
+      (filter) =>
+        filter.key === "all" || filter.key === "pending" || filter.count > 0,
+    );
   }, [runScopedSuggestions]);
 
   const effectiveStatusFilter = statusFilters.some(
@@ -462,11 +502,24 @@ export function EditorWorkspace({
     );
 
     return [
-      { key: "clarity", label: "Clarity", count: typeCounts.clarity ?? 0 },
       { key: "grammar", label: "Grammar", count: typeCounts.grammar ?? 0 },
-      { key: "tone", label: "Tone", count: typeCounts.tone ?? 0 },
+      { key: "clarity", label: "Clarity", count: typeCounts.clarity ?? 0 },
+      {
+        key: "tone",
+        label: "Tone",
+        count: (typeCounts.tone ?? 0) + (typeCounts.style ?? 0),
+      },
+      {
+        key: "conciseness",
+        label: "Conciseness",
+        count: typeCounts.conciseness ?? 0,
+      },
       { key: "structure", label: "Structure", count: typeCounts.structure ?? 0 },
-      { key: "seo", label: "SEO", count: typeCounts.seo ?? 0 },
+      {
+        key: "formatting",
+        label: "Formatting",
+        count: typeCounts.formatting ?? 0,
+      },
     ].filter((filter) => filter.key === "all" || filter.count > 0);
   }, [statusScopedSuggestions]);
 
@@ -476,7 +529,7 @@ export function EditorWorkspace({
     ? activeTypeFilter
     : "all";
 
-  const filteredSuggestions = useMemo(
+  const visibleSuggestions = useMemo(
     () => {
       const matches =
         effectiveTypeFilter === "all"
@@ -495,6 +548,15 @@ export function EditorWorkspace({
     [effectiveTypeFilter, statusScopedSuggestions],
   );
 
+  const filteredSuggestions = useMemo(
+    () =>
+      visibleSuggestions.map((suggestion) => ({
+        ...suggestion,
+        hasInlineHighlight: highlightedSuggestionIds.has(suggestion.id),
+      })),
+    [highlightedSuggestionIds, visibleSuggestions],
+  );
+
   const appliedSuggestionCount = suggestions.filter(
     (suggestion) => suggestion.status === "applied",
   ).length;
@@ -511,8 +573,43 @@ export function EditorWorkspace({
     }
 
     setApplyingSuggestionId(id);
+    const targetSuggestion = suggestions.find((suggestion) => suggestion.id === id);
+    const beforeApplyContent = editor.getJSON();
+    const beforeApplyCounts = { ...counts };
+    const beforeApplySaveState = saveState;
+    const highlightState = suggestionHighlightPluginKey.getState(editor.state);
+    const range = highlightState?.ranges.find((item) => item.id === id);
+    let appliedOptimistically = false;
 
     try {
+      if (targetSuggestion && range) {
+        const currentText = editor.state.doc.textBetween(range.from, range.to);
+
+        if (currentText === targetSuggestion.originalText) {
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(
+              { from: range.from, to: range.to },
+              targetSuggestion.suggestedText,
+            )
+            .run();
+          appliedOptimistically = true;
+          setCounts({
+            words: countWords(editor.getText()),
+            characters: editor.getText().length,
+          });
+          setActiveSuggestionId(null);
+          setSuggestions((current) =>
+            current.map((suggestion) =>
+              suggestion.id === id
+                ? { ...suggestion, status: "applied" }
+                : suggestion,
+            ),
+          );
+        }
+      }
+
       const response = await fetch(
         `/api/documents/${document.id}/suggestions/${id}/apply`,
         {
@@ -524,6 +621,18 @@ export function EditorWorkspace({
       const data: ApplySuggestionResponse = await response.json();
 
       if (!response.ok || !data.success || !data.data) {
+        if (appliedOptimistically) {
+          editor.commands.setContent(beforeApplyContent);
+          setCounts(beforeApplyCounts);
+          setSaveState(beforeApplySaveState);
+          setSuggestions((current) =>
+            current.map((suggestion) =>
+              suggestion.id === id
+                ? { ...suggestion, status: "pending" }
+                : suggestion,
+            ),
+          );
+        }
         appToast.error(data.error ?? "Could not apply suggestion.");
         return;
       }
@@ -535,16 +644,30 @@ export function EditorWorkspace({
       });
       setVersionNumber(data.data.versionNumber);
       setSaveState("saved");
-      setActiveSuggestionId(null);
-      setSuggestions((current) =>
-        current.map((suggestion) =>
-          suggestion.id === id
-            ? { ...suggestion, status: "applied" }
-            : suggestion,
-        ),
-      );
+      if (!appliedOptimistically) {
+        setActiveSuggestionId(null);
+        setSuggestions((current) =>
+          current.map((suggestion) =>
+            suggestion.id === id
+              ? { ...suggestion, status: "applied" }
+              : suggestion,
+          ),
+        );
+      }
       appToast.success("Suggestion applied. A version snapshot was created first.");
     } catch {
+      if (appliedOptimistically) {
+        editor.commands.setContent(beforeApplyContent);
+        setCounts(beforeApplyCounts);
+        setSaveState(beforeApplySaveState);
+        setSuggestions((current) =>
+          current.map((suggestion) =>
+            suggestion.id === id
+              ? { ...suggestion, status: "pending" }
+              : suggestion,
+          ),
+        );
+      }
       appToast.error("Could not apply suggestion. Please try again.");
     } finally {
       setApplyingSuggestionId(null);
@@ -601,6 +724,12 @@ export function EditorWorkspace({
 
   const handleIgnoreSuggestion = async (id: string) => {
     setIgnoringSuggestionId(id);
+    setActiveSuggestionId((current) => (current === id ? null : current));
+    setSuggestions((current) =>
+      current.map((suggestion) =>
+        suggestion.id === id ? { ...suggestion, status: "ignored" } : suggestion,
+      ),
+    );
 
     try {
       const response = await fetch(
@@ -610,20 +739,24 @@ export function EditorWorkspace({
       const data: IgnoreSuggestionResponse = await response.json();
 
       if (!response.ok || !data.success) {
+        setSuggestions((current) =>
+          current.map((suggestion) =>
+            suggestion.id === id
+              ? { ...suggestion, status: "pending" }
+              : suggestion,
+          ),
+        );
         appToast.error(data.error ?? "Could not ignore suggestion.");
         return;
       }
 
-      setActiveSuggestionId((current) => (current === id ? null : current));
-      setSuggestions((current) =>
-        current.map((suggestion) =>
-          suggestion.id === id
-            ? { ...suggestion, status: "ignored" }
-            : suggestion,
-        ),
-      );
       appToast.info("Suggestion ignored.");
     } catch {
+      setSuggestions((current) =>
+        current.map((suggestion) =>
+          suggestion.id === id ? { ...suggestion, status: "pending" } : suggestion,
+        ),
+      );
       appToast.error("Could not ignore suggestion. Please try again.");
     } finally {
       setIgnoringSuggestionId(null);
