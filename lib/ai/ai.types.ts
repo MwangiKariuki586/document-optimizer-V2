@@ -1,5 +1,7 @@
 import type { z } from "zod";
 
+import type { Json } from "@/lib/supabase/types";
+
 import type {
   aiActionInputSchema,
   aiActionOptionsSchema,
@@ -40,6 +42,7 @@ export type AIRequestPreview = {
   action: AIActionKey;
   status: string;
   originalMarkdown: string;
+  originalEditorJson?: Json | null;
   output: AIActionOutput;
   provider: string | null;
   model: string | null;

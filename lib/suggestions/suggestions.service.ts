@@ -51,6 +51,7 @@ type DocumentPreviewRow = {
   id: string;
   title: string;
   current_markdown: string | null;
+  editor_json: Json | null;
 };
 
 type DocumentContentRow = {
@@ -178,7 +179,7 @@ async function getOwnedDocumentPreview(
 ): Promise<DocumentPreviewRow | null> {
   const { data, error } = await supabase
     .from("documents")
-    .select("id,title,current_markdown")
+    .select("id,title,current_markdown,editor_json")
     .eq("id", documentId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -206,6 +207,13 @@ function buildSuggestionPreview(input: {
   const proposedMarkdown = canApply
     ? applyReplacementsSafely(originalMarkdown, toReplacementPairs(input.suggestions))
     : originalMarkdown;
+  const proposedEditorJson = canApply
+    ? buildReplacementEditorJson({
+        currentEditorJson: input.document.editor_json,
+        fallbackMarkdown: proposedMarkdown,
+        replacements: toReplacementPairs(input.suggestions),
+      })
+    : input.document.editor_json;
   const count = previewItems.length;
 
   return {
@@ -215,6 +223,8 @@ function buildSuggestionPreview(input: {
     documentTitle: input.document.title,
     originalMarkdown,
     proposedMarkdown,
+    originalEditorJson: input.document.editor_json,
+    proposedEditorJson,
     canApply,
     summary:
       count === 1
@@ -780,6 +790,8 @@ export async function getAppliedSuggestionsPreview(
     documentTitle: document.title,
     originalMarkdown,
     proposedMarkdown: currentMarkdown,
+    originalEditorJson: markdownToEditorJson(originalMarkdown),
+    proposedEditorJson: document.editor_json,
     canApply: false,
     summary: `Review ${suggestions.length} applied AI suggestion${
       suggestions.length === 1 ? "" : "s"

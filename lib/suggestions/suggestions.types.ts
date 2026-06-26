@@ -51,6 +51,8 @@ export type SuggestionPreview = {
   documentTitle: string;
   originalMarkdown: string;
   proposedMarkdown: string;
+  originalEditorJson?: Json | null;
+  proposedEditorJson?: Json | null;
   canApply: boolean;
   summary: string;
   warnings: string[];

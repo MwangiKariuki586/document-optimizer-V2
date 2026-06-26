@@ -115,7 +115,9 @@ function normalizePreview(preview: PreviewPayload) {
       description:
         "Compare your current document with the proposed AI revision. Edit the proposed version before applying.",
       originalMarkdown: data.originalMarkdown,
+      originalEditorJson: data.originalEditorJson,
       proposedMarkdown: revisedMarkdown,
+      proposedEditorJson: null,
       emptyProposedText:
         "This AI result is analysis-only. You can still draft a proposed result here before applying.",
       summary: data.output.summary,
@@ -162,6 +164,8 @@ function normalizePreview(preview: PreviewPayload) {
       : "Compare your current document with the proposed AI revision. Edit the proposed version before applying.",
     originalMarkdown: data.originalMarkdown,
     proposedMarkdown: data.proposedMarkdown,
+    originalEditorJson: data.originalEditorJson,
+    proposedEditorJson: data.proposedEditorJson,
     emptyProposedText:
       "This suggestion cannot be applied safely as an automatic replacement. Edit the proposed result to apply a reviewed full-document result.",
     summary: data.summary,
@@ -233,7 +237,9 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
       const response = await fetch(display.applyUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ editedMarkdown: proposedMarkdown }),
+        body: JSON.stringify(
+          proposedEdited ? { editedMarkdown: proposedMarkdown } : {},
+        ),
       });
       const data: {
         success: boolean;
@@ -282,7 +288,9 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                 mode={previewMode}
                 syncScroll={syncScroll}
                 currentMarkdown={display.originalMarkdown}
+                currentEditorJson={display.originalEditorJson}
                 initialProposedMarkdown={display.proposedMarkdown}
+                initialProposedEditorJson={display.proposedEditorJson}
                 currentProposedMarkdown={proposedMarkdown}
                 emptyProposedText={display.emptyProposedText}
                 edited={proposedEdited}

@@ -6,12 +6,15 @@ import { EditableProposedResult } from "@/components/ai/EditableProposedResult";
 import type { PreviewChangeAnchor } from "@/components/ai/ChangeNavigator";
 import { ReadOnlyCurrentDocument } from "@/components/ai/ReadOnlyCurrentDocument";
 import type { PreviewMode } from "@/components/ai/PreviewModeToggle";
+import type { Json } from "@/lib/supabase/types";
 
 type PreviewComparisonProps = {
   mode: PreviewMode;
   syncScroll: boolean;
   currentMarkdown: string;
+  currentEditorJson?: Json | null;
   initialProposedMarkdown: string;
+  initialProposedEditorJson?: Json | null;
   currentProposedMarkdown: string;
   emptyProposedText: string;
   edited: boolean;
@@ -58,7 +61,9 @@ export function PreviewComparison({
   mode,
   syncScroll,
   currentMarkdown,
+  currentEditorJson,
   initialProposedMarkdown,
+  initialProposedEditorJson,
   currentProposedMarkdown,
   emptyProposedText,
   edited,
@@ -138,6 +143,7 @@ export function PreviewComparison({
         <ReadOnlyCurrentDocument
           ref={currentPaneRef}
           markdown={currentMarkdown}
+          editorJson={currentEditorJson}
           wordCount={currentMetrics.wordCount}
           characterCount={currentMetrics.characterCount}
           hidden={mode === "proposed-only"}
@@ -146,6 +152,7 @@ export function PreviewComparison({
         <EditableProposedResult
           ref={proposedPaneRef}
           initialMarkdown={initialProposedMarkdown}
+          initialEditorJson={initialProposedEditorJson}
           emptyText={emptyProposedText}
           edited={edited}
           wordCount={proposedMetrics.wordCount}

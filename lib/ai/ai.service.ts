@@ -319,7 +319,7 @@ export async function getAIRequestPreview(
   const { data, error } = await supabase
     .from("ai_requests")
     .select(
-      "id,document_id,action,status,output,provider,model,input_tokens,output_tokens,estimated_cost,completed_at,documents!inner(id,title,current_markdown,user_id)",
+      "id,document_id,action,status,output,provider,model,input_tokens,output_tokens,estimated_cost,completed_at,documents!inner(id,title,current_markdown,editor_json,user_id)",
     )
     .eq("id", input.requestId)
     .eq("document_id", input.documentId)
@@ -357,6 +357,7 @@ export async function getAIRequestPreview(
     action: toAIActionKey(data.action),
     status: data.status,
     originalMarkdown: document.current_markdown ?? "",
+    originalEditorJson: document.editor_json,
     output,
     provider: data.provider,
     model: data.model,

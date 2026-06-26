@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Implemented rich DOCX editor fidelity for new uploads
-**Next:** Browser-verify a fresh DOCX upload against the original Word layout
+**Last completed:** Preserved rich editor formatting in AI result preview panes
+**Next:** Browser-verify a fresh DOCX upload and `/documents/[id]/preview` comparison against the original Word layout
 
 ---
 
@@ -112,6 +112,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
 - Decision: AI actions remain request-bound for the current MVP. The authenticated route runs the provider, persists the request result and suggestions, and returns them together; a separate AI worker and polling route are out of scope. DeepSeek retries one transient failure and may fall back to Gemini only for the default unpinned path.
 - Decision: Rich uploaded content now treats `editor_json` as the canonical editable document model. DOCX ingestion converts mammoth HTML into TipTap JSON for new uploads, Markdown ingestion parses Markdown into structured JSON, and `current_markdown` remains the derived portable/AI fallback representation.
+- Decision: AI result preview panes render TipTap content instead of literal markdown. Preview services pass current/proposed `editor_json` when available, and preview components fall back to markdown parsing only when rich JSON is unavailable.
 
 ---
 

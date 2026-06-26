@@ -12,10 +12,13 @@ import {
   Undo2,
 } from "lucide-react";
 
+import { isEditorJson } from "@/lib/documents/editor-json";
 import { editorExtensions } from "@/lib/editor/editor-extensions";
+import type { Json } from "@/lib/supabase/types";
 
 type EditableProposedResultProps = {
   initialMarkdown: string;
+  initialEditorJson?: Json | null;
   emptyText: string;
   edited: boolean;
   wordCount: number;
@@ -35,6 +38,7 @@ export const EditableProposedResult = forwardRef<
 >(function EditableProposedResult(
   {
     initialMarkdown,
+    initialEditorJson,
     emptyText,
     edited,
     wordCount,
@@ -49,11 +53,14 @@ export const EditableProposedResult = forwardRef<
     () => normalizeMarkdown(initialMarkdown),
     [initialMarkdown],
   );
+  const richInitialContent = isEditorJson(initialEditorJson)
+    ? initialEditorJson
+    : null;
 
   const editor = useEditor({
     extensions: editorExtensions,
-    content: initialMarkdown,
-    contentType: "markdown",
+    content: richInitialContent ?? initialMarkdown,
+    contentType: richInitialContent ? undefined : "markdown",
     immediatelyRender: false,
     editorProps: {
       attributes: {

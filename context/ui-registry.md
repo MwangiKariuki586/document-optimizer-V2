@@ -742,7 +742,7 @@ className="text-lg font-semibold leading-7 text-text-primary"
 className="h-10 appearance-none rounded-xl border border-border bg-surface py-2 pl-4 pr-10 text-sm font-medium text-text-secondary"
 className="relative mx-auto mt-2 flex size-[92px] items-center justify-center"
 className="mb-1 flex items-center justify-between gap-4 text-sm leading-5"
-className="h-full w-[var(--bar-width)] rounded-full bg-accent transition-[width]"
+className="h-full w-(--bar-width) rounded-full bg-accent transition-[width]"
 className="mt-auto flex w-full shrink-0 items-center justify-center rounded-md bg-accent-lighter px-4 py-2 text-sm font-medium text-accent"
 className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft"
 className="mx-auto flex size-24 items-center justify-center rounded-full p-3"
@@ -1237,6 +1237,7 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 **Rules:**
 
 - `"use client"`. Receives a discriminated preview payload from the server page.
+- Current and proposed panes receive rich `editor_json` when available so uploaded DOCX structure, links, images, tables, and marks render in preview instead of literal Markdown. Markdown remains the fallback for AI-only revised results.
 - Apply sends `{ editedMarkdown }` to the relevant apply endpoint so the edited proposed result is what gets persisted.
 - AI request apply calls `POST /api/documents/[id]/ai/[requestId]/apply`.
 - Single suggestion apply calls `POST /api/documents/[id]/suggestions/[suggestionId]/apply`.
@@ -1271,6 +1272,7 @@ Comparison workspace body for AI Result Preview. Hosts the read-only current pan
 - Side-by-side is the default desktop review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
 - Change navigator anchors use approximate scroll ratios when exact section mapping is unavailable.
 - Current and proposed pane bodies avoid outer padding so document content gets maximum horizontal space; keep a smaller readable inset inside the document surface itself.
+- Passes `currentEditorJson` and `initialProposedEditorJson` through to TipTap panes when preview services provide structured content.
 
 ### ReadOnlyCurrentDocument
 
@@ -1287,6 +1289,7 @@ Read-only current document pane for preview comparison.
 **Rules:**
 
 - Uses the existing `.document-editor` surface pattern for document-like reading.
+- Renders a non-editable TipTap instance. Prefer `editorJson` for rich document fidelity; fall back to Markdown parsing only when structured JSON is unavailable.
 - Never mutates document content.
 
 ### EditableProposedResult
@@ -1304,6 +1307,7 @@ Editable TipTap proposed result pane. Seeds content from Markdown, serializes ed
 **Rules:**
 
 - `"use client"`. Uses shared `editorExtensions` with `contentType: "markdown"`.
+- Accepts `initialEditorJson` for rich proposed previews and falls back to Markdown content for AI-only revised results.
 - Shows `Edited preview` when the proposed result differs from the initial AI output.
 - Header includes functional undo/redo controls wired to the TipTap editor history; controls are disabled when no undo/redo step is available.
 - Apply must use this edited markdown.

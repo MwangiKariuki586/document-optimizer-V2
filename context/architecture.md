@@ -630,6 +630,8 @@ is a derived portable representation used for AI prompts, previews, and fallback
 export paths. DOCX uploads should convert mammoth HTML into TipTap JSON for new
 documents; successful rich conversion uses `Structure Preserved`, while degraded
 fallback conversion uses `Limited Formatting`.
+Preview comparisons should pass and render `editor_json` for both current and
+proposed panes whenever available, using Markdown only as a fallback.
 
 ---
 
