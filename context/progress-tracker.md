@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Preserved rich editor formatting in AI result preview panes
-**Next:** Browser-verify a fresh DOCX upload and `/documents/[id]/preview` comparison against the original Word layout
+**Last completed:** Added coordinate-aware PDF layout reconstruction
+**Next:** Browser-verify a fresh PDF upload against its original layout, then re-check DOCX preview comparison remains unchanged
 
 ---
 
@@ -127,6 +127,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-26
+Feature: Coordinate-Aware PDF Layout Reconstruction
+Status: Completed
+Files changed: lib/parsing/parse-pdf.ts, lib/parsing/parse-pdf.test.ts, context/library-docs.md, context/progress-tracker.md
+What was completed: Replaced the primary PDF ingestion path from merged plain text extraction with positioned text item extraction. PDF fragments are now grouped into visual lines, headings, paragraphs, lists, and page separators before being converted through Markdown into TipTap editor JSON. The parser stores extraction metadata and keeps the original-file-preserved warning honest for PDFs.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/parsing/parse-pdf.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning.
+Follow-up: Upload a representative PDF resume in the browser and compare the editor layout against the original PDF. Existing DOCX/Markdown/TXT paths were not changed.
+```
 
 ```txt
 Date: 2026-06-24

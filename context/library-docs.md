@@ -855,6 +855,34 @@ formatting_metadata
 
 ---
 
+## unpdf
+
+unpdf is used for PDF text extraction.
+
+### Usage
+
+Use `extractTextItems()` for editable PDF ingestion so positioned text fragments
+can be reconstructed into visual lines, paragraphs, headings, lists, and page
+separators before conversion into TipTap JSON. Avoid `extractText(...,
+mergePages: true)` as the primary ingestion path because it collapses PDF text
+into a flat string and loses layout signals.
+
+`extractText()` remains acceptable as a degraded fallback when positioned item
+extraction returns no usable text.
+
+### Rules
+
+- PDF layout reconstruction is heuristic and must keep the original file
+  preserved.
+- PDF imports should keep a clear formatting warning; do not imply
+  pixel-perfect editable PDF reconstruction.
+- Prefer coordinate-aware grouping over newline-driven `plainTextToEditorJson`
+  for PDF uploads.
+- Store extraction metadata such as page count, item count, and line count in
+  `formatting_metadata` when available.
+
+---
+
 ## Zod
 
 Zod is used for validation.
