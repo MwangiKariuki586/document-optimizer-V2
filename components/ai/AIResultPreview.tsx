@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ChevronDown, Sparkles, TriangleAlert } from "lucide-react";
+import { ChevronDown, TriangleAlert } from "lucide-react";
 
 import { ChangeNavigator } from "@/components/ai/ChangeNavigator";
 import type { PreviewChangeAnchor } from "@/components/ai/ChangeNavigator";
@@ -43,23 +43,6 @@ const suggestionLabels: Record<SuggestionType, string> = {
   structure: "Structure",
 };
 
-function countSuggestions(suggestions: { type: SuggestionType }[]) {
-  return suggestions.reduce<Record<SuggestionType, number>>(
-    (acc, suggestion) => {
-      acc[suggestion.type] += 1;
-      return acc;
-    },
-    {
-      clarity: 0,
-      conciseness: 0,
-      formatting: 0,
-      grammar: 0,
-      tone: 0,
-      structure: 0,
-    },
-  );
-}
-
 function truncateLabel(value: string, fallback: string): string {
   const normalized = value.replace(/\s+/g, " ").trim();
 
@@ -78,6 +61,7 @@ function buildChangeAnchors(input: {
     type: SuggestionType;
     originalText: string;
     suggestedText: string;
+    explanation?: string;
   }>;
 }): PreviewChangeAnchor[] {
   return input.suggestions
@@ -100,11 +84,22 @@ function buildChangeAnchors(input: {
           `${suggestionLabels[suggestion.type]} change`,
         ),
         type: suggestion.type,
+        originalText: suggestion.originalText,
+        suggestedText: suggestion.suggestedText,
+        explanation: suggestion.explanation,
         currentIndex: Math.max(0, currentIndex),
         proposedIndex: Math.max(0, proposedIndex),
       };
     })
     .filter((change): change is PreviewChangeAnchor => change !== null);
+}
+
+function getPreviewModeLabel(mode: PreviewMode): string {
+  if (mode === "side-by-side") {
+    return "Side-by-side";
+  }
+
+  return "Proposed only";
 }
 
 function normalizePreview(preview: PreviewPayload) {
@@ -199,10 +194,6 @@ function normalizePreview(preview: PreviewPayload) {
 export function AIResultPreview({ preview }: AIResultPreviewProps) {
   const router = useRouter();
   const display = useMemo(() => normalizePreview(preview), [preview]);
-  const suggestionCounts = useMemo(
-    () => countSuggestions(display.suggestions),
-    [display.suggestions],
-  );
   const [previewMode, setPreviewMode] = useState<PreviewMode>("side-by-side");
   const [syncScroll, setSyncScroll] = useState(true);
   const [comparisonSettingsOpen, setComparisonSettingsOpen] = useState(false);
@@ -213,10 +204,6 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
   const [proposedEdited, setProposedEdited] = useState(false);
   const [activeChangeId, setActiveChangeId] = useState<string | null>(null);
 
-  const totalImprovements = Object.values(suggestionCounts).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
   const changeAnchors = useMemo(
     () =>
       buildChangeAnchors({
@@ -226,9 +213,12 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
       }),
     [display.originalMarkdown, display.suggestions, proposedMarkdown],
   );
-  const changeTotal = totalImprovements || display.suggestions.length;
-  const changedCategoryCount =
-    Object.values(suggestionCounts).filter(Boolean).length || 1;
+  const effectiveActiveChangeId =
+    activeChangeId &&
+    changeAnchors.some((change) => change.id === activeChangeId)
+      ? activeChangeId
+      : (changeAnchors[0]?.id ?? null);
+
   const canApply =
     display.showApply &&
     proposedMarkdown.trim().length > 0 &&
@@ -303,10 +293,12 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                 emptyProposedText={display.emptyProposedText}
                 edited={proposedEdited}
                 changes={changeAnchors}
-                activeChangeId={activeChangeId}
+                activeChangeId={effectiveActiveChangeId}
+                onSelectChange={setActiveChangeId}
                 onProposedMarkdownChange={setProposedMarkdown}
                 onProposedEditedChange={setProposedEdited}
               />
+
               <div className="mt-2 shrink-0">
                 <PreviewActionBar
                   documentId={display.documentId}
@@ -319,7 +311,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
               </div>
             </div>
 
-            <aside className="grid min-h-0 gap-3 rounded-xl bg-accent-muted  xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
+            <aside className="grid min-h-0 min-w-0 gap-3 overflow-hidden rounded-xl bg-accent-muted xl:flex xl:h-full xl:flex-col">
               <section className="rounded-xl border border-border-light bg-surface p-3">
                 <button
                   type="button"
@@ -334,10 +326,8 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                       Comparison settings
                     </span>
                     <span className="mt-0.5 block text-[11px] leading-4 text-text-muted">
-                      {previewMode === "side-by-side"
-                        ? "Side-by-side"
-                        : "Proposed only"}{" "}
-                      · Sync {syncScroll ? "on" : "off"}
+                      {getPreviewModeLabel(previewMode)} · Sync{" "}
+                      {syncScroll ? "on" : "off"}
                     </span>
                   </span>
                   <ChevronDown
@@ -363,33 +353,9 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
 
               <ChangeNavigator
                 changes={changeAnchors}
-                activeChangeId={activeChangeId}
+                activeChangeId={effectiveActiveChangeId}
                 onSelect={setActiveChangeId}
               />
-
-              <section className="rounded-xl border border-border-light bg-surface p-4 xl:shrink-0">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-ai" />
-                  <h2 className="text-sm font-semibold text-text-primary">
-                    AI Summary
-                  </h2>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-text-secondary">
-                  {display.summary ||
-                    "Here is what the AI improved in your document."}
-                </p>
-                <div className="mt-3 rounded-lg border border-border-light bg-surface-secondary px-3 py-2">
-                  <p className="text-[11px] font-semibold text-text-primary">
-                    {changeTotal} proposed change
-                    {changeTotal === 1 ? "" : "s"}
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-4 text-text-secondary">
-                    Across {changedCategoryCount} key area
-                    {changedCategoryCount === 1 ? "" : "s"}. Preview only - your
-                    document has not changed yet.
-                  </p>
-                </div>
-              </section>
             </aside>
           </div>
         </section>

@@ -12,8 +12,13 @@ import {
   Undo2,
 } from "lucide-react";
 
+import type { PreviewChangeAnchor } from "@/components/ai/ChangeNavigator";
 import { isEditorJson } from "@/lib/documents/editor-json";
 import { editorExtensions } from "@/lib/editor/editor-extensions";
+import {
+  findSuggestionHighlightRanges,
+  SuggestionHighlight,
+} from "@/lib/editor/suggestion-highlight";
 import type { Json } from "@/lib/supabase/types";
 
 type EditableProposedResultProps = {
@@ -23,8 +28,11 @@ type EditableProposedResultProps = {
   edited: boolean;
   wordCount: number;
   characterCount: number;
+  changes: PreviewChangeAnchor[];
+  activeChangeId: string | null;
   onMarkdownChange: (markdown: string) => void;
   onEditedChange: (edited: boolean) => void;
+  onSelectChange?: (changeId: string) => void;
   onScroll?: () => void;
 };
 
@@ -43,8 +51,11 @@ export const EditableProposedResult = forwardRef<
     edited,
     wordCount,
     characterCount,
+    changes,
+    activeChangeId,
     onMarkdownChange,
     onEditedChange,
+    onSelectChange,
     onScroll,
   },
   ref,
@@ -56,9 +67,16 @@ export const EditableProposedResult = forwardRef<
   const richInitialContent = isEditorJson(initialEditorJson)
     ? initialEditorJson
     : null;
+  const previewEditorExtensions = useMemo(
+    () => [
+      ...editorExtensions,
+      SuggestionHighlight.configure({ onHighlightClick: onSelectChange }),
+    ],
+    [onSelectChange],
+  );
 
   const editor = useEditor({
-    extensions: editorExtensions,
+    extensions: previewEditorExtensions,
     content: richInitialContent ?? initialMarkdown,
     contentType: richInitialContent ? undefined : "markdown",
     immediatelyRender: false,
@@ -75,6 +93,32 @@ export const EditableProposedResult = forwardRef<
   });
   const canUndo = editor?.can().undo() ?? false;
   const canRedo = editor?.can().redo() ?? false;
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const ranges = findSuggestionHighlightRanges(
+      editor.state.doc,
+      changes.map((change) => ({
+        id: change.id,
+        originalText: change.suggestedText,
+        category: change.type,
+        issueLabel: change.explanation || change.label,
+      })),
+    );
+
+    editor.commands.setSuggestionHighlights(ranges);
+  }, [changes, editor]);
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    editor.commands.setActiveSuggestionHighlight(activeChangeId);
+  }, [activeChangeId, editor]);
 
   useEffect(() => {
     if (!editor) {

@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Implemented Optimization Highlights in the editor suggestions flow
-**Next:** Browser-verify inline suggestion highlight interactions in `/documents/[id]`, then browser-verify a fresh PDF upload against its original layout and re-check DOCX preview comparison remains unchanged
+**Last completed:** Compressed preview Changes cards
+**Next:** Browser-verify `/documents/[id]/preview` Changes rail with real suggestions, then verify `/documents/[id]/preview?applied=1` warning behavior and inline suggestion highlight interactions
 
 ---
 
@@ -127,6 +127,126 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-27
+Feature: Compact Preview Changes Cards
+Status: Completed
+Files changed: components/ai/SuggestionChangeCard.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Converted preview-review change cards from full Change/Impact panels into compact navigator cards. Each card now shows the affected-text title, category chip, a tiny before-to-after hint, and one short impact sentence. Full original/suggested context stays in the current/proposed panes, which are selected and scrolled by clicking the card.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` to confirm the right rail scans quickly and card selection still lands on the exact highlighted text in both panes.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Changes Card Expansion and Keyboard Navigation
+Status: Completed
+Files changed: components/ai/SuggestionChangeCard.tsx, components/ai/ChangeNavigator.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed per-card overflow containment that made each Changes card behave like its own clipped scroll section. Cards now expand vertically and wrap Change/Impact content while the Changes column remains the only scroll container. Added ArrowDown/ArrowUp keyboard navigation on the Changes list so users can move from the selected card to the next or previous change, with existing pane/card scrolling following the selection.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` to confirm the cards are fully visible in the scrollable column and arrow-key navigation moves through the highlighted changes.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Highlight Matching and Changes Rail Width Regression
+Status: Completed
+Files changed: lib/editor/suggestion-highlight.ts, lib/editor/suggestion-highlight.test.ts, components/ai/SuggestionChangeCard.tsx, components/ai/ChangeNavigator.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Fixed the real current-pane highlight gap by replacing single-text-node snippet matching with normalized document-wide matching that maps text back to ProseMirror positions across formatted text nodes and block boundaries. Added regression tests for formatted-node and paragraph-split anchors. Restored narrow Changes rail containment with horizontal-only overflow clipping, scrollbar gutter, full-width bounded cards, and no browser default focus outline expanding the active card.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with real suggestions to confirm every current/proposed anchor highlights and the Changes cards remain inside the right column.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Pane Suggestion Highlights
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/PreviewComparison.tsx, components/ai/ReadOnlyCurrentDocument.tsx, components/ai/EditableProposedResult.tsx, components/ai/ChangeNavigator.tsx, components/ai/SuggestionChangeCard.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed explicit Selected/View/Included labels and numeric marker chips from preview-review change cards so active state is communicated by the card outline only. Reused the existing TipTap SuggestionHighlight extension in both preview panes: current document highlights originalText, proposed result highlights suggestedText, category-specific highlight styles match EditorWorkspace, active highlights keep their type-specific line styling, highlight clicks select and smoothly reveal the matching Changes card, and card selection scrolls to the exact highlighted span in both panes before falling back to approximate ratios.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with real suggestions to confirm category-specific highlights appear in both columns and selecting each card centers the exact current/proposed text.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Remove Changed Sections Preview Mode
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/PreviewComparison.tsx, components/ai/PreviewModeToggle.tsx, components/ai/ChangedSectionsComparison.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the redundant Changed Sections preview mode now that the right-rail Changes cards provide the compact change-and-impact review. Restored Side-by-side as the default preview mode, kept Proposed only as the focused editing mode, removed the obsolete ChangedSectionsComparison component, and simplified PreviewComparison to render only the full current/proposed panes.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` to confirm Comparison settings only shows Side-by-side and Proposed only, and that selecting a Changes card still scrolls the full panes.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Changes Rail Width and Visibility Constraint
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/ChangeNavigator.tsx, components/ai/SuggestionChangeCard.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added width containment to the AI Result Preview right rail, ChangeNavigator, and preview-review suggestion cards so long labels/snippets/impact text cannot force the Changes rail beyond its fixed column. Removed vertical clipping from the cards and changed the before/after Change display to a narrow-rail-safe vertical stack so Change and Impact content remains fully visible.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with long suggestion text to confirm the Changes rail stays inside the column and each card body remains fully visible.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Changes Highlight and Compact Impact List
+Status: Completed
+Files changed: components/ai/SuggestionChangeCard.tsx, components/ai/ChangeNavigator.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reworked the AI Result Preview Changes rail so it starts with a compact Change highlights summary, then a collapsible Changes dropdown. Simplified preview-review suggestion cards so every card uses the same compact structure with only Change and Impact sections; active selection now changes emphasis only instead of switching to a larger Original/Suggested/Why layout.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with a real AI request and a suggestion-selection preview to confirm the highlight summary and compact change list scan cleanly.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Review Suggestion Change Cards
+Status: Completed
+Files changed: components/ai/SuggestionChangeCard.tsx, components/ai/ChangeNavigator.tsx, components/ai/AIResultPreview.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a reusable preview-review suggestion change card and wired the AI Result Preview Changes rail to render those cards. The preview cards reuse suggestion-card visual language, stay compact by default, expand only for the active change, show Original/Suggested/Why detail, and avoid repeating editor-only Apply/Ignore controls. AI Result Preview now auto-selects the first anchored change when changes are available.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with a real AI request and a suggestion-selection preview to confirm the right rail feels connected to suggestion cards without becoming repetitive.
+```
+
+```txt
+Date: 2026-06-26
+Feature: Preview Rail Summary Card Removal
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/ChangeNavigator.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the AI Summary card from the AI Result Preview right rail. Expanded ChangeNavigator so it fills the remaining rail height and its list scrolls internally, letting change cards use the space previously occupied by the summary card.
+Verification: npx.cmd tsc --noEmit passed.
+Follow-up: Browser-review `/documents/[id]/preview` with real AI suggestions to confirm the Changes list uses the freed space cleanly at desktop and narrow widths.
+```
+
+```txt
+Date: 2026-06-26
+Feature: Preview Category Metric Strip Placement
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Moved the compact category metric pills out of the right AI Summary card and into the preview center column below the comparison surface, matching the structural position of `EditorStatusBar` under the editor canvas. The right AI Summary now keeps summary and total-change context while the center-column strip carries the category counts.
+Verification: npx.cmd tsc --noEmit passed.
+Follow-up: Browser-review `/documents/[id]/preview` with real AI suggestions to confirm the pills sit in the editor status-bar position at desktop and narrow widths.
+```
+
+```txt
+Date: 2026-06-26
+Feature: Applied Suggestions Review Warning Scope
+Status: Completed
+Files changed: lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, context/progress-tracker.md
+What was completed: Changed the applied-suggestions preview builder so it reconstructs the before view from all safely matched applied suggestions instead of falling back to the current document when only one applied suggestion is stale. The global warning now appears only when no applied suggestions can be reconstructed, preventing the warning from being always visible during normal applied-review comparison.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/suggestions/suggestions.service.test.ts lib/suggestions/suggestion-replace.test.ts passed.
+Follow-up: Browser-review `/documents/[id]/preview?applied=1` after applying suggestions to confirm the warning only appears for fully unreconstructable applied reviews.
+```
+
+```txt
+Date: 2026-06-26
+Feature: AI Result Preview Comparison Optimization
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/PreviewComparison.tsx, components/ai/PreviewModeToggle.tsx, components/ai/ChangeNavigator.tsx, components/ai/ChangedSectionsComparison.tsx, context/build-plan.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Made Changed Sections the default AI Result Preview review mode. Added a dedicated changed-sections comparison surface that shows only anchored current/proposed passages with category badges, selected-state scrolling, and calm fallback copy when no anchors exist. Kept Side-by-side and Proposed only available in Comparison settings. Improved the change navigator so it opens by default and shows category labels plus original snippets. Added category-count chips inside the AI Summary rail so users can understand the change mix before scanning individual changes.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; npm.cmd run build passed; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` with a real AI request and a suggestion-selection preview to confirm changed-section snippets, navigator selection, full-pane mode switching, and apply behavior remain clear.
+```
 
 ```txt
 Date: 2026-06-26

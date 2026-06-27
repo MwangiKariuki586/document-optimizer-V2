@@ -780,24 +780,34 @@ export async function getAppliedSuggestionsPreview(
     return null;
   }
 
-  const currentMarkdown = document.current_markdown ?? "";
-  const previewItems = suggestions.map((suggestion) => ({
+  return buildAppliedSuggestionsReviewPreview({
+    document,
+    suggestions,
+  });
+}
+
+export function buildAppliedSuggestionsReviewPreview(input: {
+  document: DocumentPreviewRow;
+  suggestions: DocumentSuggestion[];
+}): SuggestionPreview {
+  const currentMarkdown = input.document.current_markdown ?? "";
+  const previewItems = input.suggestions.map((suggestion) => ({
     ...suggestion,
     safety: getReplacementSafety(currentMarkdown, suggestion.suggestedText),
   }));
-  const unsafeItems = previewItems.filter((item) => item.safety !== "safe");
+  const safeItems = previewItems.filter((item) => item.safety === "safe");
   const originalMarkdown =
-    unsafeItems.length === 0
+    safeItems.length > 0
       ? applyReplacementsSafely(
           currentMarkdown,
-          suggestions.map((suggestion) => ({
+          safeItems.map((suggestion) => ({
             originalText: suggestion.suggestedText,
             suggestedText: suggestion.originalText,
           })),
         )
       : currentMarkdown;
   const warnings =
-    unsafeItems.length > 0
+    safeItems.length === 0 && previewItems.length > 0
       ? [
           "Some applied suggestions no longer match the current document exactly, so the before view may match the current document.",
         ]
@@ -805,16 +815,16 @@ export async function getAppliedSuggestionsPreview(
 
   return {
     kind: "applied_suggestions",
-    id: `${document.id}-applied`,
-    documentId: document.id,
-    documentTitle: document.title,
+    id: `${input.document.id}-applied`,
+    documentId: input.document.id,
+    documentTitle: input.document.title,
     originalMarkdown,
     proposedMarkdown: currentMarkdown,
     originalEditorJson: markdownToEditorJson(originalMarkdown),
-    proposedEditorJson: document.editor_json,
+    proposedEditorJson: input.document.editor_json,
     canApply: false,
-    summary: `Review ${suggestions.length} applied AI suggestion${
-      suggestions.length === 1 ? "" : "s"
+    summary: `Review ${input.suggestions.length} applied AI suggestion${
+      input.suggestions.length === 1 ? "" : "s"
     } against the current document.`,
     warnings,
     suggestions: previewItems,

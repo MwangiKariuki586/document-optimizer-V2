@@ -1211,7 +1211,7 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 
 **Purpose:**
 
-Client preview orchestrator for AI-generated document changes. Composes the premium review workflow as a full-width result workspace: editor-style document rail, top preview controls, metrics strip, current vs proposed comparison, editable proposed result, right insight rail, and preview-only Apply to Document.
+Client preview orchestrator for AI-generated document changes. Composes the premium review workflow as a full-width result workspace: current/proposed comparison panes, editable proposed result, right insight rail, and preview-only Apply to Document.
 
 **Used on:**
 
@@ -1235,8 +1235,7 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 - Full AI action output preview via `requestId`.
 - Single suggestion preview via `suggestionId`.
 - Multi-suggestion preview via server-backed `selectionId`.
-- Summary metric strip for total proposed changes, category counts, and preview-only safety copy.
-- Right insight rail with AI Summary, Change Navigator, and Document Safety cards.
+- Right insight rail with Comparison settings and a full-height Change Navigator.
 - Empty revised result branch for analysis-only outputs.
 - Formatting/fidelity warning branch when pending batch suggestions no longer match safely.
 
@@ -1250,15 +1249,15 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 - Multi-suggestion apply calls `POST /api/documents/[id]/suggestions/selections/[selectionId]/apply`.
 - Every apply path snapshots the current document before updating content.
 - Regenerate appears only for full AI request previews; suggestion previews return to the editor.
-- View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on in side-by-side mode and uses proportional scroll syncing.
+- View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on for side-by-side mode and uses proportional scroll syncing.
 - The proposed pane is a TipTap editor seeded from Markdown and marks `Edited preview` when changed.
 - Desktop layout follows the editor workspace viewport pattern: fixed app-height shell beside the global sidebar, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in the right summary rail plus original/proposed comparison panes.
 - Uses the global `AppSidebar`; the preview workspace does not render its own left navigation rail.
 - Top and bottom Apply buttons share `canApply`, `isApplying`, and `handleApply`; both must stay disabled/loading together.
-- Preview chrome is intentionally compact: view/sync controls live in a collapsed Comparison settings disclosure in the right AI rail, not above the document panes; warning strip and comparison gaps are reduced; and the bottom action bar stays short so the document panes get maximum vertical space. Change-count context belongs in the right AI Summary rail, not above the document panes.
-- The right insight rail uses a tinted accent container to separate AI Summary, Changes, and Document Safety from the document comparison panes.
-- The right insight rail order is Comparison settings, Changes, AI Summary. Changes is collapsed by default and shows a subtle count badge in the header so proposed edits remain visible without consuming rail height. Document Safety belongs in the bottom action bar, not the rail.
-- The right insight rail itself should not scroll on desktop; let only long AI Summary content consume remaining space while Document Safety stays visible.
+- Preview chrome is intentionally compact: view/sync controls live in a collapsed Comparison settings disclosure in the right AI rail, not above the document panes; warning strip and comparison gaps are reduced; and the bottom action bar stays short so the document panes get maximum vertical space.
+- The right insight rail uses a tinted accent container to separate Comparison settings and Changes from the document comparison panes.
+- The right insight rail order is Comparison settings, then Changes. Changes is open by default, fills the remaining rail height, and shows category labels plus source snippets so users can jump between proposed edits. Document Safety belongs in the bottom action bar, not the rail.
+- The right insight rail itself should not scroll on desktop; the Changes list scrolls internally when the available rail height is full.
 
 ### PreviewComparison
 
@@ -1266,7 +1265,7 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 
 **Purpose:**
 
-Comparison workspace body for AI Result Preview. Hosts the read-only current pane and editable proposed pane, supports side-by-side/proposed-only view modes, and synchronizes scrolling proportionally when enabled.
+Comparison workspace body for AI Result Preview. Hosts the read-only current pane and editable proposed pane, supports side-by-side/proposed-only view modes, and synchronizes full-pane scrolling proportionally when enabled.
 
 **Used on:**
 
@@ -1275,8 +1274,8 @@ Comparison workspace body for AI Result Preview. Hosts the read-only current pan
 **Rules:**
 
 - `"use client"`. Owns pane scroll refs and feedback-loop protection for sync scroll.
-- Side-by-side is the default desktop review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
-- Change navigator anchors use approximate scroll ratios when exact section mapping is unavailable.
+- Side-by-side is the default review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
+- Change navigator selection first scrolls to the exact active `data-suggestion-id` highlight in both current/proposed panes; approximate scroll ratios are only the fallback when a decoration is unavailable.
 - Current and proposed pane bodies avoid outer padding so document content gets maximum horizontal space; keep a smaller readable inset inside the document surface itself.
 - Passes `currentEditorJson` and `initialProposedEditorJson` through to TipTap panes when preview services provide structured content.
 
@@ -1296,6 +1295,7 @@ Read-only current document pane for preview comparison.
 
 - Uses the existing `.document-editor` surface pattern for document-like reading.
 - Renders a non-editable TipTap instance. Prefer `editorJson` for rich document fidelity; fall back to Markdown parsing only when structured JSON is unavailable.
+- Reuses `SuggestionHighlight` to decorate the active/current source text by suggestion category; clicking a highlight selects the matching Changes card.
 - Never mutates document content.
 
 ### EditableProposedResult
@@ -1314,17 +1314,18 @@ Editable TipTap proposed result pane. Seeds content from Markdown, serializes ed
 
 - `"use client"`. Uses shared `editorExtensions` with `contentType: "markdown"`.
 - Accepts `initialEditorJson` for rich proposed previews and falls back to Markdown content for AI-only revised results.
+- Reuses `SuggestionHighlight` to decorate proposed `suggestedText` by suggestion category; clicking a highlight selects the matching Changes card.
 - Shows `Edited preview` when the proposed result differs from the initial AI output.
 - Header includes functional undo/redo controls wired to the TipTap editor history; controls are disabled when no undo/redo step is available.
 - Apply must use this edited markdown.
 
-### ChangeSummary / ChangeNavigator
+### ChangeSummary / ChangeNavigator / SuggestionChangeCard
 
-**Path:** `components/ai/ChangeSummary.tsx`, `components/ai/ChangeNavigator.tsx`
+**Path:** `components/ai/ChangeSummary.tsx`, `components/ai/ChangeNavigator.tsx`, `components/ai/SuggestionChangeCard.tsx`
 
 **Purpose:**
 
-Compact summary and lightweight change navigation for AI Result Preview.
+Compact change navigation for AI Result Preview. `SuggestionChangeCard` provides the preview-review card pattern that reuses suggestion-card visual language without duplicating editor Apply/Ignore cards.
 
 **Used on:**
 
@@ -1332,8 +1333,14 @@ Compact summary and lightweight change navigation for AI Result Preview.
 
 **Rules:**
 
-- `ChangeSummary` remains available as a standalone component, but AI Result Preview does not render it above the document panes; preview change-count context is summarized inside the right AI Summary rail.
-- `ChangeNavigator` is a collapsed-by-default disclosure with a subtle change-count badge; it only renders when useful text anchors are available and should not block preview if exact mapping is unavailable.
+- `ChangeSummary` remains available as a standalone component, but AI Result Preview does not render it above the document panes.
+- `ChangeNavigator` keeps the detailed list behind a collapsible Changes dropdown, open by default, and fills the remaining right-rail height. Do not add a separate highlights summary above it while the cards and document panes already show change context.
+- `SuggestionChangeCard` preview-review mode must use the same compact structure for every card: affected-text title, category chip, tiny `before → after` hint, and one short impact sentence. Active state changes emphasis only through border/background; do not add Selected/View/Included status markers or numeric marker chips.
+- The Changes column is the only scroll container. Do not make individual cards or card sections scrollable; cards should stay compact because the full current/proposed change is shown in the document panes.
+- The right-rail container and navigator must use `min-w-0` and keep horizontal overflow contained at the list level so long suggestion text never exceeds the fixed preview column.
+- In the narrow preview rail, `SuggestionChangeCard` should not duplicate full original/suggested text blocks; use only the compact hint because clicking the card scrolls to the exact change in the document panes.
+- The active change is selected automatically when anchored changes exist so the rail has one outlined card while all cards remain visually consistent. Selecting a card or clicking a document highlight should smoothly reveal the matching active card in the Changes list.
+- When focus is in the Changes list, ArrowDown selects the next change and ArrowUp selects the previous change.
 
 ### PreviewModeToggle / SyncScrollToggle / PreviewActionBar
 
@@ -1364,12 +1371,13 @@ TipTap/ProseMirror extension for inline AI Optimization Highlights in the editor
 **Used on:**
 
 - `/documents/[id]` via `EditorWorkspace`
+- `/documents/[id]/preview` via `ReadOnlyCurrentDocument` and `EditableProposedResult`
 
 **Rules:**
 
-- This is an editor utility, not a visual component. Pending suggestions are matched by snippet and rendered as category-specific `.suggestion-highlight-*` decorations.
+- This is an editor utility, not a visual component. Pending suggestions are matched by normalized document-wide snippet search and rendered as category-specific `.suggestion-highlight-*` decorations. Matching must work across formatted text-node splits and block boundaries.
 - Decoration metadata includes stable suggestion id, optimization category, and issue label. Hover uses the native title tooltip with category and issue label.
-- Clicking a decoration reports the suggestion id to `EditorWorkspace`; active highlights use `.is-active`.
+- Clicking a decoration reports the suggestion id to `EditorWorkspace` or the preview Changes rail. Active highlights use `.is-active` as an outline/filter only so category-specific line styling remains visible.
 - Missing snippets are skipped gracefully. The side panel keeps unmatched suggestions visible with review-needed copy.
 
 ---

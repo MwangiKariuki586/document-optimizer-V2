@@ -97,50 +97,100 @@ function mapRanges(
     .filter((range) => range.from < range.to && range.to <= doc.content.size);
 }
 
+function normalizeSearchText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function createNormalizedDocumentIndex(doc: ProseMirrorNode) {
+  let text = "";
+  const positionMap: number[] = [];
+  let previousWasSpace = true;
+  let previousTextEnd: number | null = null;
+
+  doc.descendants((node, position) => {
+    if (!node.isText || !node.text) {
+      return true;
+    }
+
+    if (
+      previousTextEnd !== null &&
+      position > previousTextEnd &&
+      !previousWasSpace
+    ) {
+      text += " ";
+      positionMap.push(position);
+      previousWasSpace = true;
+    }
+
+    for (let offset = 0; offset < node.text.length; offset += 1) {
+      const character = node.text[offset];
+
+      if (!character) {
+        continue;
+      }
+
+      if (/\s/.test(character)) {
+        if (!previousWasSpace) {
+          text += " ";
+          positionMap.push(position + offset);
+          previousWasSpace = true;
+        }
+
+        continue;
+      }
+
+      text += character;
+      positionMap.push(position + offset);
+      previousWasSpace = false;
+    }
+
+    previousTextEnd = position + node.text.length;
+
+    return true;
+  });
+
+  return {
+    text: text.trim(),
+    positionMap: previousWasSpace ? positionMap.slice(0, -1) : positionMap,
+  };
+}
+
 export function findSuggestionHighlightRanges(
   doc: ProseMirrorNode,
   suggestions: SuggestionHighlightInput[],
 ): SuggestionHighlightRange[] {
   const ranges: SuggestionHighlightRange[] = [];
-  const pending = new Map(
-    suggestions
-      .filter((suggestion) => suggestion.originalText.trim().length > 0)
-      .map((suggestion) => [
-        suggestion.id,
-        {
-          snippet: suggestion.originalText.replace(/\s+/g, " ").trim(),
-          category: suggestion.category,
-          issueLabel: suggestion.issueLabel,
-        },
-      ]),
-  );
+  const documentIndex = createNormalizedDocumentIndex(doc);
 
-  doc.descendants((node, position) => {
-    if (!node.isText || !node.text || pending.size === 0) {
-      return true;
+  for (const suggestion of suggestions) {
+    const snippet = normalizeSearchText(suggestion.originalText);
+
+    if (snippet.length === 0) {
+      continue;
     }
 
-    const normalizedText = node.text.replace(/\s+/g, " ");
+    const snippetIndex = documentIndex.text.indexOf(snippet);
 
-    for (const [id, suggestion] of pending.entries()) {
-      const snippetIndex = normalizedText.indexOf(suggestion.snippet);
-
-      if (snippetIndex < 0) {
-        continue;
-      }
-
-      ranges.push({
-        id,
-        from: position + snippetIndex,
-        to: position + snippetIndex + suggestion.snippet.length,
-        category: suggestion.category,
-        issueLabel: suggestion.issueLabel,
-      });
-      pending.delete(id);
+    if (snippetIndex < 0) {
+      continue;
     }
 
-    return true;
-  });
+    const from = documentIndex.positionMap[snippetIndex];
+    const lastPosition =
+      documentIndex.positionMap[snippetIndex + snippet.length - 1];
+
+    if (from === undefined || lastPosition === undefined) {
+      continue;
+    }
+
+    ranges.push({
+      id: suggestion.id,
+      from,
+      to: lastPosition + 1,
+      category: suggestion.category,
+      issueLabel: suggestion.issueLabel,
+    });
+  }
 
   return ranges;
 }

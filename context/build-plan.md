@@ -461,11 +461,13 @@ Purpose: `/documents/[id]/preview` is the required approval checkpoint for full 
 - Current document read-only pane
 - Editable proposed result pane
 - Side-by-side comparison mode
+- Changed-sections comparison mode as the default review surface when exact anchors are available
 - Proposed-only mode
 - Sync scrolling toggle, default on
 - Original vs proposed content comparison
 - AI improvement summary
 - Lightweight change summary and navigator where exact anchors are available
+- Category counts and source snippets in the change navigator
 - Formatting/fidelity warnings where needed
 - Apply to Document action
 - Copy result button

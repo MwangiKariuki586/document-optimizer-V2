@@ -20,6 +20,7 @@ type PreviewComparisonProps = {
   edited: boolean;
   changes: PreviewChangeAnchor[];
   activeChangeId: string | null;
+  onSelectChange: (changeId: string) => void;
   onProposedMarkdownChange: (markdown: string) => void;
   onProposedEditedChange: (edited: boolean) => void;
 };
@@ -57,6 +58,27 @@ function getAnchorRatio(index: number, textLength: number): number {
   return Math.min(1, index / textLength);
 }
 
+function scrollHighlightIntoView(
+  container: HTMLDivElement,
+  changeId: string,
+): boolean {
+  const highlight = Array.from(
+    container.querySelectorAll<HTMLElement>("[data-suggestion-id]"),
+  ).find((element) => element.dataset.suggestionId === changeId);
+
+  if (!highlight) {
+    return false;
+  }
+
+  highlight.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "nearest",
+  });
+
+  return true;
+}
+
 export function PreviewComparison({
   mode,
   syncScroll,
@@ -69,6 +91,7 @@ export function PreviewComparison({
   edited,
   changes,
   activeChangeId,
+  onSelectChange,
   onProposedMarkdownChange,
   onProposedEditedChange,
 }: PreviewComparisonProps) {
@@ -119,13 +142,24 @@ export function PreviewComparison({
       currentProposedMarkdown.length,
     );
 
-    if (currentPaneRef.current) {
-      setScrollRatio(currentPaneRef.current, currentRatio);
-    }
+    const animationFrame = window.requestAnimationFrame(() => {
+      const currentScrolled = currentPaneRef.current
+        ? scrollHighlightIntoView(currentPaneRef.current, activeChangeId)
+        : false;
+      const proposedScrolled = proposedPaneRef.current
+        ? scrollHighlightIntoView(proposedPaneRef.current, activeChangeId)
+        : false;
 
-    if (proposedPaneRef.current) {
-      setScrollRatio(proposedPaneRef.current, proposedRatio);
-    }
+      if (!currentScrolled && currentPaneRef.current) {
+        setScrollRatio(currentPaneRef.current, currentRatio);
+      }
+
+      if (!proposedScrolled && proposedPaneRef.current) {
+        setScrollRatio(proposedPaneRef.current, proposedRatio);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
   }, [
     activeChangeId,
     changes,
@@ -146,7 +180,10 @@ export function PreviewComparison({
           editorJson={currentEditorJson}
           wordCount={currentMetrics.wordCount}
           characterCount={currentMetrics.characterCount}
+          changes={changes}
+          activeChangeId={activeChangeId}
           hidden={mode === "proposed-only"}
+          onSelectChange={onSelectChange}
           onScroll={() => syncPaneScroll("current")}
         />
         <EditableProposedResult
@@ -157,6 +194,9 @@ export function PreviewComparison({
           edited={edited}
           wordCount={proposedMetrics.wordCount}
           characterCount={proposedMetrics.characterCount}
+          changes={changes}
+          activeChangeId={activeChangeId}
+          onSelectChange={onSelectChange}
           onMarkdownChange={onProposedMarkdownChange}
           onEditedChange={onProposedEditedChange}
           onScroll={() => syncPaneScroll("proposed")}
