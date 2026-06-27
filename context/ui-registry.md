@@ -1211,7 +1211,7 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 
 **Purpose:**
 
-Client preview orchestrator for AI-generated document changes. Composes the premium review workflow as a full-width result workspace: current/proposed comparison panes, editable proposed result, right insight rail, and preview-only Apply to Document.
+Client preview orchestrator for AI-generated document changes. Composes the premium review workflow as a full-width read-only result workspace: current/proposed comparison panes, proposed result, right insight rail, and navigation/export actions.
 
 **Used on:**
 
@@ -1243,17 +1243,12 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 
 - `"use client"`. Receives a discriminated preview payload from the server page.
 - Current and proposed panes receive rich `editor_json` when available so uploaded DOCX structure, links, images, tables, and marks render in preview instead of literal Markdown. Markdown remains the fallback for AI-only revised results.
-- Apply sends `{ editedMarkdown }` to the relevant apply endpoint so the edited proposed result is what gets persisted.
-- AI request apply calls `POST /api/documents/[id]/ai/[requestId]/apply`.
-- Single suggestion apply calls `POST /api/documents/[id]/suggestions/[suggestionId]/apply`.
-- Multi-suggestion apply calls `POST /api/documents/[id]/suggestions/selections/[selectionId]/apply`.
-- Every apply path snapshots the current document before updating content.
-- Regenerate appears only for full AI request previews; suggestion previews return to the editor.
+- AI Result Preview is read-only. It must not expose proposed-result editing, Apply to Document, undo/redo, zoom, or fullscreen controls.
+- Preview action bar exposes only Return to Editor and Export.
 - View modes: `side-by-side` default and `proposed-only`; sync scrolling defaults on for side-by-side mode and uses proportional scroll syncing.
-- The proposed pane is a TipTap editor seeded from Markdown and marks `Edited preview` when changed.
+- The proposed pane is a non-editable TipTap view seeded from rich JSON or Markdown.
 - Desktop layout follows the editor workspace viewport pattern: fixed app-height shell beside the global sidebar, `min-h-0` through the grid, hidden outer overflow, and internal scrolling in the right summary rail plus original/proposed comparison panes.
 - Uses the global `AppSidebar`; the preview workspace does not render its own left navigation rail.
-- Top and bottom Apply buttons share `canApply`, `isApplying`, and `handleApply`; both must stay disabled/loading together.
 - Preview chrome is intentionally compact: view/sync controls live in a collapsed Comparison settings disclosure in the right AI rail, not above the document panes; warning strip and comparison gaps are reduced; and the bottom action bar stays short so the document panes get maximum vertical space.
 - The right insight rail uses a tinted accent container to separate Comparison settings and Changes from the document comparison panes.
 - The right insight rail order is Comparison settings, then Changes. Changes is open by default, fills the remaining rail height, and shows category labels plus source snippets so users can jump between proposed edits. Document Safety belongs in the bottom action bar, not the rail.
@@ -1265,7 +1260,7 @@ className="grid h-full min-h-[540px] gap-3 lg:grid-cols-2 xl:min-h-0 xl:overflow
 
 **Purpose:**
 
-Comparison workspace body for AI Result Preview. Hosts the read-only current pane and editable proposed pane, supports side-by-side/proposed-only view modes, and synchronizes full-pane scrolling proportionally when enabled.
+Comparison workspace body for AI Result Preview. Hosts the read-only current pane and read-only proposed pane, supports side-by-side/proposed-only view modes, and synchronizes full-pane scrolling proportionally when enabled.
 
 **Used on:**
 
@@ -1274,7 +1269,7 @@ Comparison workspace body for AI Result Preview. Hosts the read-only current pan
 **Rules:**
 
 - `"use client"`. Owns pane scroll refs and feedback-loop protection for sync scroll.
-- Side-by-side is the default review mode. Proposed-only hides the current pane for focused editing or smaller layouts.
+- Side-by-side is the default review mode. Proposed-only hides the current pane for focused review or smaller layouts.
 - Change navigator selection first scrolls to the exact active `data-suggestion-id` highlight in both current/proposed panes; approximate scroll ratios are only the fallback when a decoration is unavailable.
 - Current and proposed pane bodies avoid outer padding so document content gets maximum horizontal space; keep a smaller readable inset inside the document surface itself.
 - Passes `currentEditorJson` and `initialProposedEditorJson` through to TipTap panes when preview services provide structured content.
@@ -1304,7 +1299,7 @@ Read-only current document pane for preview comparison.
 
 **Purpose:**
 
-Editable TipTap proposed result pane. Seeds content from Markdown, serializes edited content with `editor.getMarkdown()`, and reports whether the preview was modified.
+Read-only TipTap proposed result pane. Seeds content from rich JSON or Markdown and decorates proposed changes for review.
 
 **Used on:**
 
@@ -1312,12 +1307,10 @@ Editable TipTap proposed result pane. Seeds content from Markdown, serializes ed
 
 **Rules:**
 
-- `"use client"`. Uses shared `editorExtensions` with `contentType: "markdown"`.
+- `"use client"`. Uses shared `editorExtensions` with `editable: false`.
 - Accepts `initialEditorJson` for rich proposed previews and falls back to Markdown content for AI-only revised results.
 - Reuses `SuggestionHighlight` to decorate proposed `suggestedText` by suggestion category; clicking a highlight selects the matching Changes card.
-- Shows `Edited preview` when the proposed result differs from the initial AI output.
-- Header includes functional undo/redo controls wired to the TipTap editor history; controls are disabled when no undo/redo step is available.
-- Apply must use this edited markdown.
+- Does not expose editing controls, undo/redo, zoom, or fullscreen actions.
 
 ### ChangeSummary / ChangeNavigator / SuggestionChangeCard
 
@@ -1358,7 +1351,8 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 - `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
 - `SyncScrollToggle` displays `Sync scrolling: On / Off`.
-- `PreviewActionBar` renders the compact bottom action bar with Regenerate, Return to Editor, Apply to Document, and a `Safety checks passed` popover. The safety popover is absolutely positioned above the button so opening it does not increase footer height. It is scoped to the document comparison column only, not below the AI rail, so the AI rail keeps independent vertical space.
+- `PreviewActionBar` renders the compact bottom action bar with Return to Editor and Export only. Do not show Apply to Document, Regenerate, or Safety checks in this bar.
+- Export links to `/documents/[id]/export`; the export workspace loads the current saved document by route id.
 
 ### SuggestionHighlight
 

@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Compressed preview Changes cards
+**Last completed:** Made AI Result Preview read-only
 **Next:** Browser-verify `/documents/[id]/preview` Changes rail with real suggestions, then verify `/documents/[id]/preview?applied=1` warning behavior and inline suggestion highlight interactions
 
 ---
@@ -99,7 +99,7 @@ Update this file after every completed feature. Any AI agent reading this should
   allowed in the editor after ownership checks, replacement safety validation,
   and a pre-change version snapshot.
 - Decision: Multi-suggestion preview selections are stored in short-lived `suggestion_preview_selections` rows so preview URLs carry only `selectionId` and final apply revalidates ownership/current document safety server-side.
-- Decision: AI Result Preview is a premium review workspace with current vs proposed comparison, editable proposed result, synchronous proportional scrolling, and final apply using the edited proposed markdown.
+- Decision: AI Result Preview is a premium read-only review workspace with current vs proposed comparison, synchronous proportional scrolling, and no Apply/editing controls on the preview page. Users return to the editor for changes or export the current saved document from `/documents/[id]/export`.
 - Decision: Single suggestion cards and Apply All use direct, version-safe
   editor mutations. The rail does not support manual selection. Review Applied
   Suggestions opens `/documents/[id]/preview?applied=1` as a read-only
@@ -127,6 +127,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-27
+Feature: Read-Only AI Result Preview Actions
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, components/ai/AIResultPreview.tsx, components/ai/PreviewComparison.tsx, components/ai/EditableProposedResult.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed Apply to Document from the AI Result Preview action bar and removed proposed-result editing support from the preview page. The proposed result pane is now read-only; edited-preview state, undo/redo, zoom in/out, and fullscreen controls are removed. The preview action bar now only returns to the editor or opens the export workspace for the current saved document.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Browser-review `/documents/[id]/preview` to confirm the proposed pane is read-only, no removed controls are visible, change-card navigation still selects highlights, and Export opens `/documents/[id]/export`.
+```
+
+```txt
+Date: 2026-06-27
+Feature: Preview Action Bar Simplification
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, components/ai/AIResultPreview.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the Regenerate and Safety checks controls from the AI Result Preview action bar. Kept Return to Editor and added an Export link to `/documents/[id]/export`. This temporary edit-to-apply direction was superseded by the Read-Only AI Result Preview Actions update above.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestion-replace.test.ts lib/documents/editor-conversion.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed.
+Follow-up: Use the read-only preview verification flow documented in the latest log entry.
+```
 
 ```txt
 Date: 2026-06-27

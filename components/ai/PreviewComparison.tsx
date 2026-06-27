@@ -17,12 +17,9 @@ type PreviewComparisonProps = {
   initialProposedEditorJson?: Json | null;
   currentProposedMarkdown: string;
   emptyProposedText: string;
-  edited: boolean;
   changes: PreviewChangeAnchor[];
   activeChangeId: string | null;
   onSelectChange: (changeId: string) => void;
-  onProposedMarkdownChange: (markdown: string) => void;
-  onProposedEditedChange: (edited: boolean) => void;
 };
 
 function getDocumentMetrics(markdown: string) {
@@ -88,12 +85,9 @@ export function PreviewComparison({
   initialProposedEditorJson,
   currentProposedMarkdown,
   emptyProposedText,
-  edited,
   changes,
   activeChangeId,
   onSelectChange,
-  onProposedMarkdownChange,
-  onProposedEditedChange,
 }: PreviewComparisonProps) {
   const currentPaneRef = useRef<HTMLDivElement | null>(null);
   const proposedPaneRef = useRef<HTMLDivElement | null>(null);
@@ -191,14 +185,11 @@ export function PreviewComparison({
           initialMarkdown={initialProposedMarkdown}
           initialEditorJson={initialProposedEditorJson}
           emptyText={emptyProposedText}
-          edited={edited}
           wordCount={proposedMetrics.wordCount}
           characterCount={proposedMetrics.characterCount}
           changes={changes}
           activeChangeId={activeChangeId}
           onSelectChange={onSelectChange}
-          onMarkdownChange={onProposedMarkdownChange}
-          onEditedChange={onProposedEditedChange}
           onScroll={() => syncPaneScroll("proposed")}
         />
       </div>

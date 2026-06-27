@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { ChevronDown, TriangleAlert } from "lucide-react";
 
@@ -15,7 +14,6 @@ import {
 } from "@/components/ai/PreviewModeToggle";
 import { SyncScrollToggle } from "@/components/ai/SyncScrollToggle";
 import type { AIRequestPreview } from "@/lib/ai/ai.types";
-import { appToast } from "@/lib/feedback/toast";
 import type { SuggestionPreview } from "@/lib/suggestions/suggestions.types";
 
 export type PreviewPayload =
@@ -122,19 +120,13 @@ function normalizePreview(preview: PreviewPayload) {
       proposedMarkdown: revisedMarkdown,
       proposedEditorJson: null,
       emptyProposedText:
-        "This AI result is analysis-only. You can still draft a proposed result here before applying.",
+        "This AI result is analysis-only.",
       summary: data.output.summary,
       warnings: data.output.warnings,
       suggestions: data.output.suggestions,
-      canApply: revisedMarkdown.length > 0,
-      applyUrl: `/api/documents/${data.documentId}/ai/${data.id}/apply`,
-      applyError: "Could not apply AI result.",
-      applySuccess: "AI result applied. A version snapshot was created first.",
       usageLabel: `${data.provider ?? "AI"} ${data.model ?? "model"} - ${
         (data.inputTokens ?? 0) + (data.outputTokens ?? 0)
       } tokens`,
-      showRegenerate: true,
-      showApply: true,
     };
   }
 
@@ -170,95 +162,37 @@ function normalizePreview(preview: PreviewPayload) {
     originalEditorJson: data.originalEditorJson,
     proposedEditorJson: data.proposedEditorJson,
     emptyProposedText:
-      "This suggestion cannot be applied safely as an automatic replacement. Edit the proposed result to apply a reviewed full-document result.",
+      "This suggestion cannot be shown as an automatic full-document replacement.",
     summary: data.summary,
     warnings: data.warnings,
     suggestions: data.suggestions,
-    canApply: data.canApply,
-    applyUrl: isSingle
-      ? `/api/documents/${data.documentId}/suggestions/${data.id}/apply`
-      : `/api/documents/${data.documentId}/suggestions/selections/${
-          data.selectionId ?? data.id
-        }/apply`,
-    applyError: "Could not apply suggestion changes.",
-    applySuccess:
-      "Suggestion changes applied. A version snapshot was created first.",
     usageLabel: `${data.suggestions.length} suggestion${
       data.suggestions.length === 1 ? "" : "s"
     } ready for review`,
-    showRegenerate: false,
-    showApply: !data.readOnly,
   };
 }
 
 export function AIResultPreview({ preview }: AIResultPreviewProps) {
-  const router = useRouter();
   const display = useMemo(() => normalizePreview(preview), [preview]);
   const [previewMode, setPreviewMode] = useState<PreviewMode>("side-by-side");
   const [syncScroll, setSyncScroll] = useState(true);
   const [comparisonSettingsOpen, setComparisonSettingsOpen] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [proposedMarkdown, setProposedMarkdown] = useState(
-    display.proposedMarkdown,
-  );
-  const [proposedEdited, setProposedEdited] = useState(false);
   const [activeChangeId, setActiveChangeId] = useState<string | null>(null);
 
   const changeAnchors = useMemo(
     () =>
       buildChangeAnchors({
         currentMarkdown: display.originalMarkdown,
-        proposedMarkdown,
+        proposedMarkdown: display.proposedMarkdown,
         suggestions: display.suggestions,
       }),
-    [display.originalMarkdown, display.suggestions, proposedMarkdown],
+    [display.originalMarkdown, display.proposedMarkdown, display.suggestions],
   );
   const effectiveActiveChangeId =
     activeChangeId &&
     changeAnchors.some((change) => change.id === activeChangeId)
       ? activeChangeId
       : (changeAnchors[0]?.id ?? null);
-
-  const canApply =
-    display.showApply &&
-    proposedMarkdown.trim().length > 0 &&
-    (display.canApply || proposedEdited);
-
-  const handleApply = async () => {
-    if (!canApply || isApplying) {
-      return;
-    }
-
-    setIsApplying(true);
-
-    try {
-      const response = await fetch(display.applyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          proposedEdited ? { editedMarkdown: proposedMarkdown } : {},
-        ),
-      });
-      const data: {
-        success: boolean;
-        error?: string;
-        data?: { versionNumber: number };
-      } = await response.json();
-
-      if (!response.ok || !data.success) {
-        appToast.error(data.error ?? display.applyError);
-        return;
-      }
-
-      appToast.success(display.applySuccess);
-      router.push(`/documents/${display.documentId}/export`);
-      router.refresh();
-    } catch {
-      appToast.error(`${display.applyError} Please try again.`);
-    } finally {
-      setIsApplying(false);
-    }
-  };
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
@@ -289,25 +223,15 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                 currentEditorJson={display.originalEditorJson}
                 initialProposedMarkdown={display.proposedMarkdown}
                 initialProposedEditorJson={display.proposedEditorJson}
-                currentProposedMarkdown={proposedMarkdown}
+                currentProposedMarkdown={display.proposedMarkdown}
                 emptyProposedText={display.emptyProposedText}
-                edited={proposedEdited}
                 changes={changeAnchors}
                 activeChangeId={effectiveActiveChangeId}
                 onSelectChange={setActiveChangeId}
-                onProposedMarkdownChange={setProposedMarkdown}
-                onProposedEditedChange={setProposedEdited}
               />
 
               <div className="mt-2 shrink-0">
-                <PreviewActionBar
-                  documentId={display.documentId}
-                  canApply={canApply}
-                  isApplying={isApplying}
-                  showRegenerate={display.showRegenerate}
-                  showApply={display.showApply}
-                  onApply={handleApply}
-                />
+                <PreviewActionBar documentId={display.documentId} />
               </div>
             </div>
 
