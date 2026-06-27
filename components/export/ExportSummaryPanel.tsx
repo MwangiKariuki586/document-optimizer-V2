@@ -69,7 +69,7 @@ export function ExportSummaryPanel({
   const SelectedIcon = selected.icon;
 
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
+    <aside className="flex min-h-0 flex-col h-full overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
       <div className="min-h-0 flex-1 overflow-y-auto p-5">
         <h2 className="text-sm font-semibold text-text-primary">
           Export Summary

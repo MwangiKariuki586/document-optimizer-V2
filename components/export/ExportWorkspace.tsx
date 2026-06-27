@@ -187,32 +187,33 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
-      <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden">
-        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="min-h-0 overflow-y-auto rounded-xl  ">
-            <div className=" pb-5">
-              <PageHeader
-                eyebrow="Export workspace"
-                title="Export Document"
-                description="Choose how you want to export your optimized document."
-              />
-            </div>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 xl:h-full xl:overflow-hidden">
+        <div className="rounded-xl bg-transparent px-0 py-0">
+          <PageHeader
+            eyebrow="Export workspace"
+            title="Export Document"
+            description="Choose how you want to export your optimized document."
+          />
+        </div>
 
-            <section className="">
-              <h2 className="text-sm font-semibold text-text-primary">
-                1. Choose Export Format
-              </h2>
-              <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                {exportFormats.map((format) => (
-                  <ExportFormatCard
-                    key={format.id}
-                    format={format}
-                    selectedFormat={selectedFormat}
-                    onSelect={handleFormatSelect}
-                  />
-                ))}
-              </div>
-            </section>
+        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)]">
+          <div className="xl:col-span-2">
+            <h2 className="text-sm font-semibold text-text-primary">
+              1. Choose Export Format
+            </h2>
+          </div>
+
+          <section className="min-h-0 overflow-y-auto rounded-xl">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {exportFormats.map((format) => (
+                <ExportFormatCard
+                  key={format.id}
+                  format={format}
+                  selectedFormat={selectedFormat}
+                  onSelect={handleFormatSelect}
+                />
+              ))}
+            </div>
 
             <div className="mt-6">
               <ExportOptionsPanel
@@ -238,21 +239,23 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
             </section>
           </section>
 
-          <ExportSummaryPanel
-            documentTitle={document.title}
-            versionNumber={document.versionNumber}
-            wordCount={document.wordCount}
-            estimatedPages={estimatedPages}
-            estimatedFileSize={estimatedFileSize}
-            selectedFormat={selectedFormat}
-            formats={exportFormats}
-            options={options}
-            status={status}
-            result={result}
-            errorMessage={errorMessage}
-            onGenerate={handleGenerateExport}
-            onDownload={downloadExport}
-          />
+          <div className="flex min-h-0 flex-col xl:h-full">
+            <ExportSummaryPanel
+              documentTitle={document.title}
+              versionNumber={document.versionNumber}
+              wordCount={document.wordCount}
+              estimatedPages={estimatedPages}
+              estimatedFileSize={estimatedFileSize}
+              selectedFormat={selectedFormat}
+              formats={exportFormats}
+              options={options}
+              status={status}
+              result={result}
+              errorMessage={errorMessage}
+              onGenerate={handleGenerateExport}
+              onDownload={downloadExport}
+            />
+          </div>
         </div>
       </div>
     </main>
