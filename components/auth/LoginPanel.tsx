@@ -45,7 +45,11 @@ export function LoginPanel({ hasClerk }: LoginPanelProps) {
     <div className="auth-modal rounded-2xl border border-border bg-surface p-2 shadow-popover">
       <div className="border-b border-border-light px-6 py-5 text-center">
         <div className="mx-auto flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-overlay">
-          <img src="/logo.png" alt="Docufine" className="h-11 w-11 object-cover" />
+          <img
+            src="/logo.png"
+            alt="Docufine"
+            className="h-11 w-11 object-cover"
+          />
         </div>
         <p className="mt-3 text-sm font-semibold text-text-primary">Docufine</p>
         <p className="mt-1 text-xs leading-4 text-text-muted">

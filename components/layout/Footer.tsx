@@ -17,9 +17,16 @@ export function Footer() {
     <footer className="border-t border-border-light bg-surface px-4 py-10">
       <div className="mx-auto grid max-w-[1200px] gap-8 text-sm text-text-secondary md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start">
         <div className="max-w-md">
-          <Link href="/" className="inline-flex items-center gap-3 text-text-primary">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-3 text-text-primary"
+          >
             <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-overlay">
-              <img src="/logo.png" alt="Docufine" className="h-9 w-9 object-cover" />
+              <img
+                src="/logo.png"
+                alt="Docufine"
+                className="h-9 w-9 object-cover"
+              />
             </span>
             <span className="text-base font-bold">Docufine</span>
           </Link>
