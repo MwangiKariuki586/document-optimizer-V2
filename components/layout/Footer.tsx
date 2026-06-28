@@ -18,10 +18,10 @@ export function Footer() {
       <div className="mx-auto grid max-w-[1200px] gap-8 text-sm text-text-secondary md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start">
         <div className="max-w-md">
           <Link href="/" className="inline-flex items-center gap-3 text-text-primary">
-            <span className="flex size-9 items-center justify-center rounded-md bg-accent text-sm font-bold text-accent-foreground">
-              DO
+            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md bg-overlay">
+              <img src="/logo.png" alt="Docufine" className="h-9 w-9 object-cover" />
             </span>
-            <span className="text-base font-bold">Document Optimizer</span>
+            <span className="text-base font-bold">Docufine</span>
           </Link>
           <p className="mt-4 text-sm leading-6 text-text-secondary">
             Improve documents with AI while every change stays previewed,
@@ -65,7 +65,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border-light pt-5 text-xs text-text-muted md:col-span-3 md:flex md:items-center md:justify-between">
-          <p>&copy; 2026 Document Optimizer. All rights reserved.</p>
+          <p>&copy; 2026 Docufine. All rights reserved.</p>
           <p className="mt-2 md:mt-0">
             Built for controlled document improvement.
           </p>

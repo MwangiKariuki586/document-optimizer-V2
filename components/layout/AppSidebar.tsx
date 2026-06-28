@@ -207,8 +207,8 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
           <Link
             href="/dashboard"
             className="relative flex size-9 items-center justify-center overflow-hidden rounded-full bg-overlay"
-            aria-label="Document Optimizer dashboard"
-            title="Document Optimizer"
+            aria-label="Docufine dashboard"
+            title="Docufine"
           >
             <span className="absolute h-11 w-1 -rotate-45 rounded-full bg-surface" />
             <span className="absolute h-11 w-1 -rotate-45 translate-x-1.5 rounded-full bg-surface/80" />
@@ -222,7 +222,7 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
               <span className="absolute h-11 w-1 -rotate-45 -translate-x-1.5 rounded-full bg-surface/60" />
             </span>
             <span className="truncate text-sm font-bold leading-5 text-text-primary">
-              Document Optimizer
+              Docufine
             </span>
           </Link>
         )}

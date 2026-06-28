@@ -110,7 +110,7 @@ export function getVersionAuthor(source: VersionSource | "current") {
     return "You";
   }
 
-  return "Document Optimizer";
+  return "Docufine";
 }
 
 export function isManualSource(source: VersionSource | "current") {

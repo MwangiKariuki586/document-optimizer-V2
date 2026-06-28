@@ -49,7 +49,7 @@ const LANGUAGE_LABELS: Record<AIActionInput["options"]["language"], string> = {
   de: "German",
 };
 
-export const AI_SYSTEM_PROMPT = `You are Document Optimizer's AI document assistant.
+export const AI_SYSTEM_PROMPT = `You are Docufine's AI document assistant.
 Return only valid JSON matching this exact shape:
 {
   "mode": "preview" | "suggestions" | "analysis",

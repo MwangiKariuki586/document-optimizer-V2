@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Document Optimizer",
+  title: "Docufine",
   description:
     "AI-powered document improvement with preview-first edits and version safety.",
 };

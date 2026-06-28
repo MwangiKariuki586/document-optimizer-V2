@@ -15,12 +15,10 @@ export function PublicNavbar() {
     <header className="px-4 py-3 backdrop-blur">
       <nav className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-6">
         <Link href="/" className="flex items-center gap-3 text-text-primary">
-          <span className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
-            DO
+          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-overlay">
+            <img src="/logo.png" alt="Docufine" className="h-9 w-9 object-cover" />
           </span>
-          <span className="text-[19px] font-bold leading-7">
-            Document Optimizer
-          </span>
+          <span className="text-[19px] font-bold leading-7">Docufine</span>
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
