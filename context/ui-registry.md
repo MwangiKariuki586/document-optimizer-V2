@@ -1451,7 +1451,7 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 
 **Purpose:**
 
-Real export workspace with shared `PageHeader`, export format selection, export options, preview/status area, formatting warning, API-backed generation, automatic same-origin download, and sticky export summary rail. Document navigation comes from the global `AppSidebar`.
+Real export workspace with shared `PageHeader`, export format selection, export options, formatting warning, API-backed generation, automatic same-origin download, in-route success state, and sticky export summary rail. Document navigation comes from the global `AppSidebar`.
 
 **Used on:**
 
@@ -1469,13 +1469,14 @@ className="min-h-0 overflow-y-auto rounded-xl border border-border bg-surface p-
 **Variants:**
 
 - Formats: DOCX, PDF, Markdown, TXT, HTML.
-- Export states: idle, processing with `CometSpinner`, ready with Download Again fallback action, error with warning copy.
+- Export states: idle, processing with `CometSpinner`, ready success interface with primary download and secondary navigation actions, error with warning copy.
 
 **Rules:**
 
 - Export calls `POST /api/documents/[id]/export` with the selected format and options.
 - The API verifies ownership, generates the file server-side, uploads to the private `exports` bucket, creates an `exports` row, records export usage, and returns a download route.
 - Successful export automatically triggers the same-origin download route so DOCX, PDF, Markdown, TXT, and HTML download without navigating away from the export page.
+- Successful export stays on `/documents/[id]/export` and swaps the main workspace area to `ExportSuccessPanel`; do not create a duplicate success route for this terminal export state.
 - Uses the global `AppSidebar` document context links so export is reachable from the document workspace.
 - Uses `PageHeader` for the primary title and secure export action chip.
 - Summary rail stays narrow on desktop while the format/options workspace gets the remaining width.
@@ -1496,7 +1497,49 @@ Export configuration panel with token-styled toggle controls and compact select 
 
 **Path:** `components/export/ExportSummaryPanel.tsx`
 
-Right-side export summary rail with selected document, format, options, document stats, AI improvement totals placeholder, loading/ready/error states, Download Again fallback, and secure export footer.
+Right-side export summary rail with selected document, format, options, document stats, applied AI improvement totals, loading/ready/error states, optional Download Again fallback, and secure export footer.
+
+**Rules:**
+
+- Applied AI improvement totals come from owned `suggestions` rows with `status = applied`, grouped by normalized suggestion type.
+- Legacy `seo` suggestion rows count as Structure, and legacy `style` rows count as Tone.
+- Do not render hardcoded category counts in this panel.
+
+### ExportSuccessPanel
+
+**Path:** `components/export/ExportSuccessPanel.tsx`
+
+**Purpose:**
+
+In-route export completion interface shown after a successful export generation and automatic download start.
+
+**Used on:**
+
+- `/documents/[id]/export`
+
+**Core classes:**
+
+```txt
+className="min-h-0 overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft"
+className="h-full min-h-0 overflow-y-auto p-5 md:p-6"
+className="mx-auto flex max-w-4xl flex-col items-center text-center"
+className="mx-auto mt-5 max-w-4xl"
+className="mx-auto mt-5 max-w-4xl rounded-xl border border-border bg-surface p-4 md:p-5"
+className="mt-3 grid gap-3 md:grid-cols-3"
+```
+
+**Variants:**
+
+- Primary Download File action reuses the returned export download route.
+- Secondary actions link back to the editor, reset the workspace for another format, or open the Documents Library.
+- Success icon uses small lucide `Sparkle` accents around the check mark to match the provided success mock without custom SVG or div art.
+
+**Rules:**
+
+- Render as the ready state of `ExportWorkspace`; do not add a standalone success page.
+- Keep the primary and secondary actions directly under the success message so they are visible before the export details on desktop-height viewports.
+- Keep the right-side `ExportSummaryPanel` visible on desktop so document, format, option, and stats context persists after completion.
+- Use the completion timestamp captured by `ExportWorkspace` instead of recomputing the export time during render.
 
 ---
 
@@ -1793,6 +1836,8 @@ Route-specific skeleton screens for document creation and document workspaces. E
 
 - Full-height editor, preview, versions, and export loading screens must use the same `max-w-[1600px]` shell and desktop overflow behavior as their loaded workspaces.
 - `/documents/new` must preserve the creation panel, 280px guidance rail, and secure-file footer geometry.
+- `/documents/[id]/export` format-card skeletons must preserve the real `ExportFormatCard` anatomy: icon block, title line, extension line, and compact description lines inside each bordered card.
+- `/documents/[id]/export` loading summary rail must start on the same grid row as the format-card skeletons, not beside the page header.
 - Use structural placeholders only; do not expose unknown document titles, versions, preview content, or export metadata during loading.
 - Every route-level skeleton must expose `aria-busy="true"` and a concise loading label on its primary workspace region.
 

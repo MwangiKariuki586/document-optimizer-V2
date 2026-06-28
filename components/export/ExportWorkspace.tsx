@@ -12,6 +12,7 @@ import {
 import { ExportFormatCard } from "@/components/export/ExportFormatCard";
 import { ExportOptionsPanel } from "@/components/export/ExportOptionsPanel";
 import { ExportSummaryPanel } from "@/components/export/ExportSummaryPanel";
+import { ExportSuccessPanel } from "@/components/export/ExportSuccessPanel";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type {
   ExportFormat,
@@ -23,9 +24,11 @@ import type {
 } from "@/components/export/export.types";
 import type { EditorDocument } from "@/lib/documents/document.types";
 import { appToast } from "@/lib/feedback/toast";
+import type { AppliedSuggestionSummary } from "@/lib/suggestions/suggestions.types";
 
 type ExportWorkspaceProps = {
   document: EditorDocument;
+  improvementSummary: AppliedSuggestionSummary;
 };
 
 const exportFormats: ExportFormatOption[] = [
@@ -104,24 +107,30 @@ function downloadExport(result: ExportResult) {
   link.remove();
 }
 
-export function ExportWorkspace({ document }: ExportWorkspaceProps) {
+export function ExportWorkspace({
+  document,
+  improvementSummary,
+}: ExportWorkspaceProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("docx");
   const [options, setOptions] = useState<ExportOptionsState>(defaultOptions);
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [result, setResult] = useState<ExportResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [completedAt, setCompletedAt] = useState<string | null>(null);
 
   const estimatedPages = Math.max(1, Math.ceil(document.wordCount / 350));
   const estimatedFileSize = useMemo(
     () => estimateFileSize(document.wordCount, selectedFormat),
     [document.wordCount, selectedFormat],
   );
+  const isExportReady = status === "ready" && result !== null;
 
   const toggleOption = (key: ExportOptionKey) => {
     setOptions((current) => ({ ...current, [key]: !current[key] }));
     setStatus("idle");
     setResult(null);
     setErrorMessage(null);
+    setCompletedAt(null);
   };
 
   const selectOption = (
@@ -132,6 +141,7 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
     setStatus("idle");
     setResult(null);
     setErrorMessage(null);
+    setCompletedAt(null);
   };
 
   const handleFormatSelect = (format: ExportFormat) => {
@@ -139,6 +149,14 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
     setStatus("idle");
     setResult(null);
     setErrorMessage(null);
+    setCompletedAt(null);
+  };
+
+  const handleExportAnotherFormat = () => {
+    setStatus("idle");
+    setResult(null);
+    setErrorMessage(null);
+    setCompletedAt(null);
   };
 
   const handleGenerateExport = async () => {
@@ -168,8 +186,9 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
 
       setResult(payload.data);
       setStatus("ready");
+      setCompletedAt(new Date().toISOString());
       downloadExport(payload.data);
-      appToast.success("Export started.");
+      appToast.success("Export completed. Your download has started.");
 
       if (payload.data.warning) {
         appToast.warning(payload.data.warning);
@@ -191,53 +210,74 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
         <div className="rounded-xl bg-transparent px-0 py-0">
           <PageHeader
             eyebrow="Export workspace"
-            title="Export Document"
-            description="Choose how you want to export your optimized document."
+            title={isExportReady ? "Export Completed" : "Export Document"}
+            description={
+              isExportReady
+                ? "Your document has been exported and is ready to download."
+                : "Choose how you want to export your optimized document."
+            }
           />
         </div>
 
         <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)]">
-          <div className="xl:col-span-2">
-            <h2 className="text-sm font-semibold text-text-primary">
-              1. Choose Export Format
-            </h2>
-          </div>
-
-          <section className="min-h-0 overflow-y-auto rounded-xl">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              {exportFormats.map((format) => (
-                <ExportFormatCard
-                  key={format.id}
-                  format={format}
-                  selectedFormat={selectedFormat}
-                  onSelect={handleFormatSelect}
-                />
-              ))}
+          {!isExportReady ? (
+            <div className="xl:col-span-2">
+              <h2 className="text-sm font-semibold text-text-primary">
+                1. Choose Export Format
+              </h2>
             </div>
+          ) : null}
 
-            <div className="mt-6">
-              <ExportOptionsPanel
-                options={options}
-                onToggle={toggleOption}
-                onSelect={selectOption}
-              />
-            </div>
-
-            <section className="mt-6 rounded-xl border border-warning-light bg-warning-muted p-4 text-warning-foreground">
-              <div className="flex gap-3">
-                <Settings2 className="mt-0.5 size-4 shrink-0" />
-                <div>
-                  <h2 className="text-sm font-semibold">
-                    Formatting review recommended
-                  </h2>
-                  <p className="mt-1 text-xs leading-5">
-                    PDF and Word exports may differ slightly from the editable
-                    workspace. Your original uploaded file remains preserved.
-                  </p>
-                </div>
+          {isExportReady ? (
+            <ExportSuccessPanel
+              documentId={document.id}
+              documentTitle={document.title}
+              selectedFormat={selectedFormat}
+              formats={exportFormats}
+              options={options}
+              result={result}
+              estimatedFileSize={estimatedFileSize}
+              completedAt={completedAt ?? new Date().toISOString()}
+              onDownload={downloadExport}
+              onExportAnother={handleExportAnotherFormat}
+            />
+          ) : (
+            <section className="min-h-0 overflow-y-auto rounded-xl">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                {exportFormats.map((format) => (
+                  <ExportFormatCard
+                    key={format.id}
+                    format={format}
+                    selectedFormat={selectedFormat}
+                    onSelect={handleFormatSelect}
+                  />
+                ))}
               </div>
+
+              <div className="mt-6">
+                <ExportOptionsPanel
+                  options={options}
+                  onToggle={toggleOption}
+                  onSelect={selectOption}
+                />
+              </div>
+
+              <section className="mt-6 rounded-xl border border-warning-light bg-warning-muted p-4 text-warning-foreground">
+                <div className="flex gap-3">
+                  <Settings2 className="mt-0.5 size-4 shrink-0" />
+                  <div>
+                    <h2 className="text-sm font-semibold">
+                      Formatting review recommended
+                    </h2>
+                    <p className="mt-1 text-xs leading-5">
+                      PDF and Word exports may differ slightly from the editable
+                      workspace. Your original uploaded file remains preserved.
+                    </p>
+                  </div>
+                </div>
+              </section>
             </section>
-          </section>
+          )}
 
           <div className="flex min-h-0 flex-col xl:h-full">
             <ExportSummaryPanel
@@ -252,8 +292,10 @@ export function ExportWorkspace({ document }: ExportWorkspaceProps) {
               status={status}
               result={result}
               errorMessage={errorMessage}
+              improvementSummary={improvementSummary}
               onGenerate={handleGenerateExport}
               onDownload={downloadExport}
+              showFooterAction={!isExportReady}
             />
           </div>
         </div>

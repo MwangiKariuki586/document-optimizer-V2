@@ -14,6 +14,7 @@ import type {
   ExportResult,
   ExportStatus,
 } from "@/components/export/export.types";
+import type { AppliedSuggestionSummary } from "@/lib/suggestions/suggestions.types";
 
 type ExportSummaryPanelProps = {
   documentTitle: string;
@@ -27,8 +28,10 @@ type ExportSummaryPanelProps = {
   status: ExportStatus;
   result: ExportResult | null;
   errorMessage: string | null;
+  improvementSummary: AppliedSuggestionSummary;
   onGenerate: () => void;
   onDownload: (result: ExportResult) => void;
+  showFooterAction?: boolean;
 };
 
 type SummaryToggleOption = {
@@ -61,8 +64,10 @@ export function ExportSummaryPanel({
   status,
   result,
   errorMessage,
+  improvementSummary,
   onGenerate,
   onDownload,
+  showFooterAction = true,
 }: ExportSummaryPanelProps) {
   const selected =
     formats.find((format) => format.id === selectedFormat) ?? formats[0];
@@ -110,31 +115,6 @@ export function ExportSummaryPanel({
 
         <div className="border-b border-border-light py-5">
           <h3 className="text-xs font-semibold uppercase tracking-normal text-text-muted">
-            Options
-          </h3>
-          <div className="mt-3 space-y-2">
-            {optionLabels.map((option) => {
-              const included = options[option.key];
-
-              return (
-                <div
-                  key={option.key}
-                  className="flex items-center gap-2 text-sm text-text-secondary"
-                >
-                  {included ? (
-                    <CheckCircle2 className="size-4 shrink-0 text-success" />
-                  ) : (
-                    <XCircle className="size-4 shrink-0 text-text-muted" />
-                  )}
-                  <span>{option.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="border-b border-border-light py-5">
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-text-muted">
             Document Stats
           </h3>
           <dl className="mt-3 space-y-2 text-sm">
@@ -163,21 +143,49 @@ export function ExportSummaryPanel({
           <p className="text-sm font-semibold text-accent">
             AI Improvements Applied
           </p>
-          <p className="mt-3 text-[28px] font-bold leading-8 text-text-primary">
-            128
-          </p>
-          <div className="mt-4 space-y-2 text-xs text-text-secondary">
-            {[
-              ["Clarity", "45"],
-              ["Tone", "32"],
-              ["Structure", "28"],
-              ["SEO", "23"],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between">
-                <span>{label}</span>
-                <span className="font-semibold text-text-primary">{value}</span>
-              </div>
-            ))}
+
+          {improvementSummary.items.length > 0 ? (
+            <div className="mt-4 space-y-2 text-xs text-text-secondary">
+              {improvementSummary.items.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between"
+                >
+                  <span>{item.label}</span>
+                  <span className="font-semibold text-text-primary">
+                    {item.count.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-3 text-xs leading-5 text-text-secondary">
+              No applied AI suggestions yet.
+            </p>
+          )}
+        </div>
+        <div className="border-b border-border-light py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-normal text-text-muted">
+            Options
+          </h3>
+          <div className="mt-3 space-y-2">
+            {optionLabels.map((option) => {
+              const included = options[option.key];
+
+              return (
+                <div
+                  key={option.key}
+                  className="flex items-center gap-2 text-sm text-text-secondary"
+                >
+                  {included ? (
+                    <CheckCircle2 className="size-4 shrink-0 text-success" />
+                  ) : (
+                    <XCircle className="size-4 shrink-0 text-text-muted" />
+                  )}
+                  <span>{option.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -194,28 +202,30 @@ export function ExportSummaryPanel({
         ) : null}
       </div>
 
-      <div className="shrink-0  p-4">
-        {status === "ready" && result ? (
-          <button
-            type="button"
-            onClick={() => onDownload(result)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
-          >
-            <Download className="size-4" />
-            Download Again
-          </button>
-        ) : (
-          <LoadingButton
-            className="w-full"
-            isLoading={status === "processing"}
-            loadingText="Exporting"
-            disabled={status === "processing"}
-            onClick={onGenerate}
-          >
-            Export
-          </LoadingButton>
-        )}
-      </div>
+      {showFooterAction ? (
+        <div className="shrink-0 p-4">
+          {status === "ready" && result ? (
+            <button
+              type="button"
+              onClick={() => onDownload(result)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition hover:bg-accent-dark"
+            >
+              <Download className="size-4" />
+              Download Again
+            </button>
+          ) : (
+            <LoadingButton
+              className="w-full"
+              isLoading={status === "processing"}
+              loadingText="Exporting"
+              disabled={status === "processing"}
+              onClick={onGenerate}
+            >
+              Export
+            </LoadingButton>
+          )}
+        </div>
+      ) : null}
     </aside>
   );
 }

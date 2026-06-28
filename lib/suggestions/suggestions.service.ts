@@ -24,6 +24,7 @@ import { suggestionTypeSchema } from "@/lib/suggestions/suggestions.validators";
 import type {
   ApplyAllSuggestionsResult,
   ApplySuggestionResult,
+  AppliedSuggestionSummary,
   DocumentSuggestion,
   SuggestionPreview,
   SuggestionPreviewItem,
@@ -45,6 +46,10 @@ type SuggestionRow = {
   status: string;
   created_at: string;
   updated_at: string;
+};
+
+type AppliedSuggestionSummaryRow = {
+  type: string;
 };
 
 type DocumentPreviewRow = {
@@ -784,6 +789,74 @@ export async function getAppliedSuggestionsPreview(
     document,
     suggestions,
   });
+}
+
+const SUGGESTION_TYPE_LABELS: Record<SuggestionType, string> = {
+  clarity: "Clarity",
+  grammar: "Grammar",
+  tone: "Tone",
+  conciseness: "Conciseness",
+  structure: "Structure",
+  formatting: "Formatting",
+};
+
+const SUGGESTION_TYPE_ORDER: SuggestionType[] = [
+  "clarity",
+  "grammar",
+  "tone",
+  "conciseness",
+  "structure",
+  "formatting",
+];
+
+export function buildAppliedSuggestionSummary(
+  rows: AppliedSuggestionSummaryRow[],
+): AppliedSuggestionSummary {
+  const counts = new Map<SuggestionType, number>();
+
+  for (const row of rows) {
+    const type = toSuggestionType(row.type);
+
+    if (!type) {
+      continue;
+    }
+
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+
+  const items = SUGGESTION_TYPE_ORDER.map((type) => ({
+    label: SUGGESTION_TYPE_LABELS[type],
+    count: counts.get(type) ?? 0,
+  })).filter((item) => item.count > 0);
+
+  return {
+    total: items.reduce((sum, item) => sum + item.count, 0),
+    items,
+  };
+}
+
+export async function getAppliedSuggestionSummary(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+  },
+): Promise<AppliedSuggestionSummary> {
+  const { data, error } = await supabase
+    .from("suggestions")
+    .select("type")
+    .eq("document_id", input.documentId)
+    .eq("user_id", input.userId)
+    .eq("status", "applied");
+
+  if (error) {
+    console.error("[suggestions/applied-summary]", error.message);
+    throw new Error("Failed to load applied suggestion summary");
+  }
+
+  return buildAppliedSuggestionSummary(
+    ((data ?? []) as AppliedSuggestionSummaryRow[]),
+  );
 }
 
 export function buildAppliedSuggestionsReviewPreview(input: {

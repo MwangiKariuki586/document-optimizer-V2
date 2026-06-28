@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Made AI Result Preview read-only
+**Last completed:** Added in-route export success interface
 **Next:** Browser-verify `/documents/[id]/preview` Changes rail with real suggestions, then verify `/documents/[id]/preview?applied=1` warning behavior and inline suggestion highlight interactions
 
 ---
@@ -127,6 +127,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-28
+Feature: Export Loading Format Card Skeletons
+Status: Completed
+Files changed: app/(app)/documents/[id]/export/loading.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced empty export format loading rectangles with structured skeleton cards that match the live ExportFormatCard anatomy: icon block, title, extension, and description lines. Adjusted the export loading layout so the right summary rail starts on the same grid row as the format-card skeletons instead of beside the page header.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning.
+Follow-up: Browser-review `/documents/[id]/export` during route loading to confirm the skeleton card rhythm matches the loaded format cards.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Dynamic Export Improvement Summary
+Status: Completed
+Files changed: app/(app)/documents/[id]/export/page.tsx, components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.types.ts, lib/suggestions/suggestions.service.test.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the hardcoded AI Improvements Applied export summary with real owned applied-suggestion counts. The export page now loads a server-side applied suggestion summary for the authenticated document, normalizes legacy seo/style suggestion types into Structure/Tone, passes the summary into the export workspace, and renders dynamic totals/categories with an empty state when no applied AI suggestions exist.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/suggestions/suggestions.service.test.ts passed.
+Follow-up: Browser-review `/documents/[id]/export` on a document with applied suggestions to confirm the summary counts match the applied suggestion rail/history.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Export Success Interface
+Status: Completed
+Files changed: components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, components/export/ExportSuccessPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added an in-route export completion interface for `/documents/[id]/export` instead of creating a standalone success page. Successful exports now keep the existing export summary rail, show a dedicated success panel with export details, primary Download File action, Back to Editor, Export Another Format, and View Documents actions, and retain automatic download start after generation. The ready state now depends on the returned export result instead of a newly added timestamp state, so the success panel still appears if the dev server hot-reloads while an export is already ready. The success actions are positioned directly under the completion message so the important next steps are visible before export details. The success check now includes small sparkle accents around the icon to match the provided mock.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd test -- lib/export/export.service.test.ts lib/export/export-renderers.test.ts lib/export/export.validators.test.ts passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed with line-ending normalization warnings only.
+Follow-up: Browser-review `/documents/[id]/export` after generating an export to confirm the ready state matches `context/designs/export document success.png`, the automatic download starts, Download File works, and Export Another Format returns to the format/options workspace.
+```
 
 ```txt
 Date: 2026-06-27

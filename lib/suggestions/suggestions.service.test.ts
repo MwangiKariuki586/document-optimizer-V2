@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildAppliedSuggestionsReviewPreview } from "@/lib/suggestions/suggestions.service";
+import {
+  buildAppliedSuggestionSummary,
+  buildAppliedSuggestionsReviewPreview,
+} from "@/lib/suggestions/suggestions.service";
 import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
 
 function suggestion(
@@ -69,5 +72,35 @@ describe("buildAppliedSuggestionsReviewPreview", () => {
     expect(preview.warnings).toEqual([
       "Some applied suggestions no longer match the current document exactly, so the before view may match the current document.",
     ]);
+  });
+});
+
+describe("buildAppliedSuggestionSummary", () => {
+  it("counts applied suggestions by normalized type", () => {
+    const summary = buildAppliedSuggestionSummary([
+      { type: "clarity" },
+      { type: "clarity" },
+      { type: "grammar" },
+      { type: "style" },
+      { type: "seo" },
+      { type: "unknown" },
+    ]);
+
+    expect(summary).toEqual({
+      total: 5,
+      items: [
+        { label: "Clarity", count: 2 },
+        { label: "Grammar", count: 1 },
+        { label: "Tone", count: 1 },
+        { label: "Structure", count: 1 },
+      ],
+    });
+  });
+
+  it("returns an empty summary when no applied suggestion types are countable", () => {
+    expect(buildAppliedSuggestionSummary([{ type: "unknown" }])).toEqual({
+      total: 0,
+      items: [],
+    });
   });
 });

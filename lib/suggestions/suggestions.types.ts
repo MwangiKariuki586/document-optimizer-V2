@@ -41,6 +41,16 @@ export type ApplyAllSuggestionsResult = {
   wordCount: number;
 };
 
+export type AppliedSuggestionSummaryItem = {
+  label: string;
+  count: number;
+};
+
+export type AppliedSuggestionSummary = {
+  total: number;
+  items: AppliedSuggestionSummaryItem[];
+};
+
 export type SuggestionPreviewItem = DocumentSuggestion & {
   safety: "safe" | "missing" | "ambiguous";
 };
