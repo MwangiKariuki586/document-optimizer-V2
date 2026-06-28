@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Added in-route export success interface
+**Last completed:** Matched homepage confidence layout to reference
 **Next:** Browser-verify `/documents/[id]/preview` Changes rail with real suggestions, then verify `/documents/[id]/preview?applied=1` warning behavior and inline suggestion highlight interactions
 
 ---
@@ -130,10 +130,60 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-28
+Feature: Homepage Confidence Sections
+Status: Completed
+Files changed: app/page.tsx, components/layout/PublicNavbar.tsx, components/layout/Footer.tsx, components/marketing/DocumentSafety.tsx, components/marketing/SupportedFormats.tsx, components/marketing/UseCases.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added concrete confidence-building homepage sections for Document Safety, Supported Formats, and Use Cases, then matched them to the supplied reference layout: split safety copy with a 2x2 divider grid, supported-format rows in one bordered list, centered use-case columns, and a single lower feature band. Public navigation now links to How It Works, Safety, Formats, and Use Cases, while the footer groups product links and trust links around the same active destinations.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed with line-ending normalization warnings only; Playwright local homepage checks at 1440px and 390px found no horizontal overflow and confirmed the expected confidence headings/nav destinations.
+Follow-up: Browser-review `/` for final visual taste against the supplied reference.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Homepage Active Section Navigation
+Status: Completed
+Files changed: components/layout/PublicNavbar.tsx, components/layout/Footer.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed stale Features and Resources section links from the public homepage navigation because the landing page does not have distinct destinations for those sections. The footer now only links to the active How It Works section, and the navbar follows the same active-section rule.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed with line-ending normalization warnings only.
+Follow-up: Browser-review `/` to confirm the public nav and footer no longer point users to missing sections.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Homepage Footer Optimization
+Status: Completed
+Files changed: components/layout/Footer.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Reworked the public footer so it no longer mirrors the navbar. The footer now uses a distinct multi-column layout with brand promise, active homepage section links, safety reassurance points, and a separated muted copyright row.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning; git diff --check passed with line-ending normalization warnings only.
+Follow-up: Browser-review `/` to confirm the footer reads as a footer and has comfortable spacing on desktop and mobile.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Homepage May Riley Preview Image
+Status: Completed
+Files changed: components/marketing/OptimizationPreview.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Updated the homepage optimization preview to use the existing `public/May_riley_resume.png` screenshot instead of the previous marketing preview image, including matching Next Image dimensions and aspect ratio.
+Verification: Confirmed `public/May_riley_resume.png` is 1822x1078.
+Follow-up: Browser-review `/` to confirm the screenshot crop and spacing feel right across desktop and mobile.
+```
+
+```txt
+Date: 2026-06-28
+Feature: Homepage Optimization Preview Image
+Status: Completed
+Files changed: components/marketing/OptimizationPreview.tsx, public/marketing/optimization-preview.png, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the hand-built homepage optimization preview mockup with the provided static editor screenshot. The image now lives in public marketing assets and renders through Next Image inside the existing token-based landing preview shell.
+Verification: Clipboard image saved as 1824x1077 PNG; npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning.
+Follow-up: Browser-review `/` to confirm the screenshot crop and spacing feel right across desktop and mobile.
+```
+
+```txt
+Date: 2026-06-28
 Feature: Export Loading Format Card Skeletons
 Status: Completed
 Files changed: app/(app)/documents/[id]/export/loading.tsx, context/ui-registry.md, context/progress-tracker.md
-What was completed: Replaced empty export format loading rectangles with structured skeleton cards that match the live ExportFormatCard anatomy: icon block, title, extension, and description lines. Adjusted the export loading layout so the right summary rail starts on the same grid row as the format-card skeletons instead of beside the page header.
+What was completed: Replaced empty export format loading rectangles with structured skeleton cards that match the live ExportFormatCard anatomy: icon block, title, extension, and description lines. Adjusted the export loading layout so the right summary rail aligns with the top of the format-card skeletons instead of the section label or page header.
 Verification: npx.cmd tsc --noEmit passed; npm.cmd run lint passed with one pre-existing unrelated AccountUsageWorkspace warning.
 Follow-up: Browser-review `/documents/[id]/export` during route loading to confirm the skeleton card rhythm matches the loaded format cards.
 ```

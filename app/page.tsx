@@ -2,10 +2,13 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { PublicNavbar } from "@/components/layout/PublicNavbar";
+import { DocumentSafety } from "@/components/marketing/DocumentSafety";
 import { Features } from "@/components/marketing/Features";
 import { Hero } from "@/components/marketing/Hero";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
 import { OptimizationPreview } from "@/components/marketing/OptimizationPreview";
+import { SupportedFormats } from "@/components/marketing/SupportedFormats";
+import { UseCases } from "@/components/marketing/UseCases";
 
 const hasClerk = Boolean(
   process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY,
@@ -27,6 +30,9 @@ export default async function Home() {
         <Hero />
         <OptimizationPreview />
         <HowItWorks />
+        <DocumentSafety />
+        <SupportedFormats />
+        <UseCases />
         <Features />
       </main>
       <Footer />

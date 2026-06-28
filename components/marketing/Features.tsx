@@ -38,15 +38,15 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="px-4 pb-12 pt-4">
-      <div className="mx-auto grid max-w-[1200px] gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <section className="px-4 pb-16 pt-12">
+      <div className="mx-auto grid max-w-[1200px] overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft md:grid-cols-2 lg:grid-cols-4">
         {features.map(({ Icon, ...feature }) => (
           <article
             key={feature.title}
-            className="flex items-center gap-4 rounded-xl border border-border-light bg-surface p-4 shadow-card-soft"
+            className="flex items-center gap-4 border-b border-border-light p-5 last:border-b-0 md:[&:nth-child(n+3)]:border-b-0 md:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0"
           >
             <div
-              className={`flex size-14 shrink-0 items-center justify-center rounded-xl ${feature.iconClassName}`}
+              className={`flex size-14 shrink-0 items-center justify-center rounded-full ${feature.iconClassName}`}
             >
               <Icon className="size-7" strokeWidth={1.8} />
             </div>

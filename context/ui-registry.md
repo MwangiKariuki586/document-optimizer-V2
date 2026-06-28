@@ -161,7 +161,7 @@ className="border-b border-border-light px-6 py-5 text-center"
 
 **Purpose:**
 
-Public homepage navigation with logo, marketing links, login, and primary Get Started action.
+Public homepage navigation with logo, active landing links, login, and primary Get Started action.
 
 **Used on:**
 
@@ -170,7 +170,7 @@ Public homepage navigation with logo, marketing links, login, and primary Get St
 **Core classes:**
 
 ```txt
-className="border-b border-border-light bg-background-soft/95 px-4 py-3 backdrop-blur"
+className="px-4 py-3 backdrop-blur"
 className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between rounded-2xl border border-border-light bg-surface px-4 shadow-card-soft md:px-6"
 ```
 
@@ -182,6 +182,7 @@ className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between rou
 
 - Keep public and authenticated navigation visually consistent.
 - Get Started points to `/login` until Clerk auth-aware routing is added.
+- Only include middle navigation links for active homepage sections.
 
 ### Footer
 
@@ -189,7 +190,7 @@ className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between rou
 
 **Purpose:**
 
-Public footer with product identity, section links, and short product promise.
+Public footer with product identity, product links, safety reassurance, and copyright.
 
 **Used on:**
 
@@ -198,8 +199,9 @@ Public footer with product identity, section links, and short product promise.
 **Core classes:**
 
 ```txt
-className="border-t border-border-light bg-background-soft px-4 py-8"
-className="mx-auto flex max-w-[1200px] flex-col gap-5 text-sm text-text-secondary md:flex-row md:items-center md:justify-between"
+className="border-t border-border-light bg-surface px-4 py-10"
+className="mx-auto grid max-w-[1200px] gap-8 text-sm text-text-secondary md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-start"
+className="border-t border-border-light pt-5 text-xs text-text-muted md:col-span-3 md:flex md:items-center md:justify-between"
 ```
 
 **Variants:**
@@ -208,7 +210,9 @@ className="mx-auto flex max-w-[1200px] flex-col gap-5 text-sm text-text-secondar
 
 **Rules:**
 
-- Use project navigation labels and token-based typography only.
+- Do not mirror the navbar as a single horizontal strip.
+- Keep footer links limited to active homepage sections.
+- Use the footer for product promise, safety reassurance, and muted legal copy.
 
 ### AppSidebar
 
@@ -356,7 +360,7 @@ className="flex size-5 items-center justify-center rounded-full bg-accent text-a
 
 **Purpose:**
 
-Large product-workspace visual showing document suggestions, preview-first editing, document quality, and insights.
+Large product-workspace screenshot showing the editor, AI actions, and document quality metrics.
 
 **Used on:**
 
@@ -365,10 +369,8 @@ Large product-workspace visual showing document suggestions, preview-first editi
 **Core classes:**
 
 ```txt
-className="mx-auto max-w-[1200px] rounded-2xl border border-border-light bg-surface p-2 shadow-card"
-className="grid gap-4 bg-surface-secondary p-4 lg:grid-cols-[270px_minmax(0,1fr)_270px]"
-className="relative flex size-20 shrink-0 items-center justify-center rounded-full bg-[conic-gradient(var(--color-accent)_86%,var(--color-accent-light)_0)]"
-className="grid grid-cols-[80px_1fr_28px] items-center gap-2 text-xs"
+className="mx-auto max-w-[1200px] overflow-hidden rounded-2xl border border-border-light bg-surface p-2 shadow-card"
+className="aspect-[1822/1078] w-full rounded-xl object-cover"
 ```
 
 **Variants:**
@@ -377,9 +379,9 @@ className="grid grid-cols-[80px_1fr_28px] items-center gap-2 text-xs"
 
 **Rules:**
 
-- Use mock data only during homepage UI phase.
-- Must communicate preview-first edits and structure preservation.
-- Document Quality card uses a conic score ring, summary progress bar, and score-mapped metric bars.
+- Uses the static image at `public/May_riley_resume.png`.
+- Keep the screenshot framed in the same token-based landing card shell.
+- Preserve the image aspect ratio so the workspace chrome does not stretch.
 
 ### HowItWorks
 
@@ -412,6 +414,100 @@ className="relative z-10 mx-auto flex size-16 items-center justify-center rounde
 - Desktop uses an unframed timeline with icon circles, numbered chips, and a dotted connector.
 - Mobile stacks steps vertically without the connector line.
 
+### DocumentSafety
+
+**Path:** `components/marketing/DocumentSafety.tsx`
+
+**Purpose:**
+
+Confidence section explaining preview-first AI, original-file preservation, version-safe edits, and private file handling.
+
+**Used on:**
+
+- Homepage
+
+**Core classes:**
+
+```txt
+className="px-4 pt-16"
+className="mx-auto grid max-w-[1200px] gap-10 border-t border-border-light pt-16 lg:grid-cols-[0.72fr_1fr] lg:gap-14"
+className="grid border-border-light md:grid-cols-2 md:border-l"
+className="border-border-light py-7 md:border-r md:px-9 md:py-9 lg:min-h-[210px]"
+```
+
+**Variants:**
+
+- None
+
+**Rules:**
+
+- Use this as the `#document-safety` navbar/footer destination.
+- Keep claims concrete and aligned with implemented preview/version/private-storage behavior.
+- Match the confidence reference layout: left copy column, right 2x2 divider grid, no individual cards.
+
+### SupportedFormats
+
+**Path:** `components/marketing/SupportedFormats.tsx`
+
+**Purpose:**
+
+Homepage confidence section that sets clear expectations for DOCX, PDF, Markdown, and TXT support.
+
+**Used on:**
+
+- Homepage
+
+**Core classes:**
+
+```txt
+className="px-4 pt-12"
+className="mx-auto grid max-w-[1200px] gap-10 border-t border-border-light pt-12 lg:grid-cols-[0.72fr_1fr] lg:items-center lg:gap-14"
+className="overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft"
+className="grid gap-4 border-b border-border-light p-4 last:border-b-0 md:grid-cols-[64px_92px_minmax(0,1fr)_160px]"
+```
+
+**Variants:**
+
+- None
+
+**Rules:**
+
+- Use this as the `#supported-formats` navbar/footer destination.
+- Be explicit about PDF formatting limits; do not imply pixel-perfect PDF editing.
+- Render formats as one bordered list with row dividers, not separate cards.
+- Status pills should wrap inside the row and not force horizontal overflow.
+
+### UseCases
+
+**Path:** `components/marketing/UseCases.tsx`
+
+**Purpose:**
+
+Homepage confidence section showing concrete document scenarios for resumes, reports, academic writing, and long-form drafts.
+
+**Used on:**
+
+- Homepage
+
+**Core classes:**
+
+```txt
+className="px-4 pt-12"
+className="mx-auto max-w-[1200px] border-t border-border-light pt-12"
+className="mt-10 grid gap-0 md:grid-cols-2 lg:grid-cols-4"
+className="border-border-light py-5 md:px-8 lg:min-h-[210px] lg:border-r lg:last:border-r-0"
+```
+
+**Variants:**
+
+- None
+
+**Rules:**
+
+- Use this as the `#use-cases` navbar/footer destination.
+- Keep use cases concrete and document-focused.
+- Match the reference layout with centered copy and divided columns rather than cards.
+
 ### Features
 
 **Path:** `components/marketing/Features.tsx`
@@ -427,9 +523,9 @@ Feature cards for document safety, AI control, versioning, and export workflow.
 **Core classes:**
 
 ```txt
-className="mx-auto grid max-w-[1200px] gap-4 md:grid-cols-2 lg:grid-cols-4"
-className="flex items-center gap-4 rounded-xl border border-border-light bg-surface p-4 shadow-card-soft"
-className="flex size-14 shrink-0 items-center justify-center rounded-xl"
+className="mx-auto grid max-w-[1200px] overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft md:grid-cols-2 lg:grid-cols-4"
+className="flex items-center gap-4 border-b border-border-light p-5 last:border-b-0 md:[&:nth-child(n+3)]:border-b-0 md:[&:nth-child(odd)]:border-r lg:border-b-0 lg:border-r lg:last:border-r-0"
+className="flex size-14 shrink-0 items-center justify-center rounded-full"
 ```
 
 **Variants:**
@@ -438,8 +534,8 @@ className="flex size-14 shrink-0 items-center justify-center rounded-xl"
 
 **Rules:**
 
-- Use cards only for individual repeated feature items.
-- Match the landing reference with compact horizontal cards and colored icon tiles.
+- Use a single bordered feature band, not separate cards.
+- Match the landing reference with compact horizontal items and colored circular icon tiles.
 
 ### BottomCta
 
@@ -1837,7 +1933,7 @@ Route-specific skeleton screens for document creation and document workspaces. E
 - Full-height editor, preview, versions, and export loading screens must use the same `max-w-[1600px]` shell and desktop overflow behavior as their loaded workspaces.
 - `/documents/new` must preserve the creation panel, 280px guidance rail, and secure-file footer geometry.
 - `/documents/[id]/export` format-card skeletons must preserve the real `ExportFormatCard` anatomy: icon block, title line, extension line, and compact description lines inside each bordered card.
-- `/documents/[id]/export` loading summary rail must start on the same grid row as the format-card skeletons, not beside the page header.
+- `/documents/[id]/export` loading summary rail must align with the top of the format-card skeletons, not the section label or page header; keep the label inside the left column and offset the desktop summary rail accordingly.
 - Use structural placeholders only; do not expose unknown document titles, versions, preview content, or export metadata during loading.
 - Every route-level skeleton must expose `aria-busy="true"` and a concise loading label on its primary workspace region.
 

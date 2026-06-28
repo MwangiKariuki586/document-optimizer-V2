@@ -16,13 +16,11 @@ export default function DocumentExportLoading() {
           />
         </div>
 
-        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)]">
-          <div className="xl:col-span-2">
-            <div className="h-4 w-44 animate-pulse rounded bg-surface-tertiary" />
-          </div>
-
+        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]">
           <section className="min-h-0 overflow-y-auto rounded-xl">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <div className="h-4 w-44 animate-pulse rounded bg-surface-tertiary" />
+
+            <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div
                   key={index}
@@ -58,7 +56,7 @@ export default function DocumentExportLoading() {
             </div>
           </section>
 
-          <aside className="min-h-[480px] rounded-xl border border-border bg-surface p-5 shadow-card-soft">
+          <aside className="min-h-[480px] rounded-xl border border-border bg-surface p-5 shadow-card-soft xl:mt-7">
             <div className="h-5 w-36 animate-pulse rounded bg-surface-tertiary" />
             <div className="mt-5 h-20 animate-pulse rounded-xl bg-surface-tertiary" />
             <div className="mt-5 space-y-4">
