@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:playwright": "playwright test",
+    "test:ai-actions": "playwright test tests/playwright/ai-actions.spec.ts",
     "worker:ingestion": "tsx worker/document-ingestion.worker.ts"
   },
   "dependencies": {
@@ -41,6 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

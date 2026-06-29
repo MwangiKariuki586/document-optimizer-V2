@@ -229,10 +229,7 @@ export function AIActionsPanel({
   };
 
   const handleRetry = () => {
-    clearProgressTimers();
-    setStatus("idle");
-    setErrorMessage(null);
-    setReadyResult(null);
+    void handleRunAction();
   };
 
   const handleSelectAction = (key: AIActionKey) => {
@@ -297,15 +294,15 @@ export function AIActionsPanel({
         {status === "error" && errorMessage ? (
           <div className="shrink-0 border-b border-border-light p-3">
             <InlineAlert title="AI action failed" variant="error">
-              {errorMessage}
+              <p>{errorMessage}</p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="mt-3 inline-flex items-center justify-center rounded-md border border-error-light bg-surface px-3 py-1.5 text-xs font-semibold text-error-foreground transition hover:bg-error-light"
+              >
+                Try again
+              </button>
             </InlineAlert>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="mt-2 text-xs font-medium text-accent transition hover:text-accent-dark"
-            >
-              Try again
-            </button>
           </div>
         ) : null}
 

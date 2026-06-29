@@ -1285,7 +1285,7 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 **Variants:**
 
 - Action cards with category-tinted icon tiles (ai, info, success, warning, accent).
-- Status: idle, processing (`LoadingButton` + CometSpinner), ready (success strip + saved request id), error (`InlineAlert` + retry).
+- Status: idle, processing (`LoadingButton` + CometSpinner), ready (success strip + saved request id), error (`InlineAlert` with an in-alert retry button).
 
 **Rules:**
 
@@ -1300,6 +1300,7 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 - Completed responses include only the suggestions persisted for that AI request. `EditorWorkspace` de-duplicates and merges them locally, avoiding a follow-up full suggestions request.
 - Action settings are collapsed by default behind a settings disclosure with a one-line summary. Expanding exposes tone, audience, language, and preserve-structure controls; select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
+- The error-state Try again control lives inside the `InlineAlert` body and re-runs the selected action with the current settings rather than only resetting the panel to idle.
 
 ### AIResultPreview
 

@@ -48,4 +48,24 @@ describe("normalizeProviderResponse", () => {
       }),
     ).toThrow(AIProviderError);
   });
+
+  it("normalizes nullable optional fields from provider JSON", () => {
+    const result = normalizeProviderResponse({
+      input,
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      text: JSON.stringify({
+        mode: "suggestions",
+        summary: "Suggested clearer phrasing.",
+        revisedMarkdown: null,
+        suggestions: null,
+        analysis: null,
+        warnings: null,
+      }),
+    });
+
+    expect(result.output.analysis).toEqual({ notes: [] });
+    expect(result.output.suggestions).toEqual([]);
+    expect(result.output.warnings).toEqual([]);
+  });
 });

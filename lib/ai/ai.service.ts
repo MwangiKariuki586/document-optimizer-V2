@@ -253,14 +253,25 @@ export async function runDocumentAIAction(
 
     const persistenceStartedAt = performance.now();
     await markAIRequestCompleted(supabase, input.userId, requestId, result);
-    const savedSuggestions = await saveSuggestionsFromAIResult(supabase, {
-      userId: input.userId,
-      documentId: input.documentId,
-      aiRequestId: requestId,
-      action: input.action,
-      originalMarkdown: input.contentMarkdown,
-      output: result.output,
-    });
+    let savedSuggestions: DocumentSuggestion[] = [];
+
+    try {
+      savedSuggestions = await saveSuggestionsFromAIResult(supabase, {
+        userId: input.userId,
+        documentId: input.documentId,
+        aiRequestId: requestId,
+        action: input.action,
+        originalMarkdown: input.contentMarkdown,
+        output: result.output,
+      });
+    } catch (error) {
+      console.error("[ai/run-document-action] suggestion persistence failed", {
+        documentId: input.documentId,
+        requestId,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+
     console.log("[ai/run-document-action] suggestions saved", {
       documentId: input.documentId,
       requestId,

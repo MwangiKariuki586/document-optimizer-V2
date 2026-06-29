@@ -129,6 +129,36 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 _Add completed work notes here after each feature._
 
 ```txt
+Date: 2026-06-29
+Feature: AI Action Error Retry Styling
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Moved the AI action Try again recovery control inside the inline error alert and changed retry behavior so it immediately re-runs the selected AI action with the current settings instead of only resetting the panel to idle.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run test:ai-actions passed 9 Playwright tests; npm.cmd run lint passed with existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-trigger an AI action failure on `/documents/[id]` to confirm the compact alert styling and retry transition feel right in the live editor rail.
+```
+
+```txt
+Date: 2026-06-28
+Feature: AI Action Playwright Coverage
+Status: Completed
+Files changed: package.json, package-lock.json, playwright.config.ts, tests/playwright/ai-actions.spec.ts, context/progress-tracker.md
+What was completed: Added the Playwright test runner and dedicated AI action scripts. Added deterministic Playwright coverage for every AI action key through the real AI router and DeepSeek provider path with mocked DeepSeek chat-completion responses, including preview-mode and suggestion-mode assertions.
+Verification: npm.cmd run test:ai-actions passed 9 Playwright tests covering optimize, improve_clarity, fix_grammar, rewrite, summarize, translate, tone_analyze, seo_analyze, and simplify_language; npx.cmd tsc --noEmit passed; npm.cmd test passed 26 files / 120 tests; npm.cmd run lint passed with existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run a real authenticated AI action on `/documents/[id]` if live DeepSeek/Supabase integration confirmation is needed beyond deterministic provider-path tests.
+```
+
+```txt
+Date: 2026-06-28
+Feature: AI Action Failure Hardening
+Status: Completed
+Files changed: lib/ai/ai.validators.ts, lib/ai/ai-normalize.test.ts, lib/ai/ai.service.ts, lib/ai/ai.service.test.ts, context/progress-tracker.md
+What was completed: Hardened AI action execution against the current DeepSeek failure mode by treating nullable optional provider fields such as analysis, suggestions, and warnings as missing values that receive the existing schema defaults. Isolated suggestion persistence failures so a valid completed AI response is no longer flipped back to failed if suggestion insertion fails after the AI request output has already been saved.
+Verification: npx.cmd vitest run lib/ai/ai-normalize.test.ts lib/ai/ai.service.test.ts lib/ai/ai.validators.test.ts passed; npx.cmd tsc --noEmit passed; npm.cmd run lint passed with existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run an AI action on `/documents/[id]` to confirm the editor now receives a completed result for the previously failing Improve Clarity flow.
+```
+
+```txt
 Date: 2026-06-28
 Feature: Homepage Confidence Sections
 Status: Completed

@@ -110,13 +110,19 @@ export const aiAnalysisOutputSchema = z
   })
   .default({ notes: [] });
 
+const nullableDefaultArray = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => (value === null ? undefined : value), schema);
+
 export const aiActionOutputSchema = z.object({
   mode: z.enum(["preview", "suggestions", "analysis"]),
   summary: z.string().trim().min(1),
   revisedMarkdown: z.string().nullable().default(null),
-  suggestions: z.array(aiSuggestionOutputSchema).default([]),
-  analysis: aiAnalysisOutputSchema,
-  warnings: z.array(z.string().trim().min(1)).default([]),
+  suggestions: nullableDefaultArray(z.array(aiSuggestionOutputSchema).default([])),
+  analysis: z.preprocess(
+    (value) => (value === null ? undefined : value),
+    aiAnalysisOutputSchema,
+  ),
+  warnings: nullableDefaultArray(z.array(z.string().trim().min(1)).default([])),
 });
 
 export function parseAIActionInput(input: unknown) {
