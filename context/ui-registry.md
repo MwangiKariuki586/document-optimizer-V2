@@ -1285,7 +1285,7 @@ className="rounded-lg border border-border-light bg-surface-secondary p-2.5" (ac
 
 **Variants:**
 
-- Action cards: Improvement Scan, Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, Translate Document.
+- Action cards: Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, Translate Document.
 - Setup variants: Tone Alignment target tone and audience/purpose, Summarize & Shorten output type and length, Translate Document target-language select, style, and terms to preserve.
 - Status: idle, processing (`LoadingButton` + CometSpinner), ready (adaptive footer CTA only; success feedback comes from Sonner), error (`InlineAlert` with an in-alert retry button).
 
@@ -1297,11 +1297,13 @@ className="rounded-lg border border-border-light bg-surface-secondary p-2.5" (ac
 - `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`. The panel stays in its compact processing state until the direct request returns a completed or failed result.
 - Inline suggestion actions switch users to the suggestions rail only when fresh pending suggestions are returned. Summary, translation, and major structure results stay in the panel; the footer CTA changes to `View result` and links to `/documents/[id]/preview?requestId=...`.
 - Empty inline reruns do not become the active suggestion scope. When prior suggestions exist, the editor switches the suggestion scope back to `All AI actions` with status `All`, Sonner shows an informational message, and the AI Actions footer CTA changes to run the action again instead of sending users to an empty suggestions view.
-- Do not reintroduce legacy default action names such as Optimize, Rewrite, Improve Clarity, Fix Grammar, Tone Analyze, SEO Analyze, or Simplify Language.
-- Footer CTA labels are action-specific and outcome-oriented: Scan for
-  Improvements, Check for Errors, Find Readability Fixes, Check Tone Fit,
-  Review Structure, Summarize, and Translate. Loading text uses matching short
-  verbs such as Scanning, Checking, Summarizing, and Translating.
+- Do not reintroduce legacy/default-general action names such as Improvement
+  Scan, Optimize, Rewrite, Improve Clarity, Fix Grammar, Tone Analyze, SEO
+  Analyze, or Simplify Language.
+- Footer CTA labels are action-specific and outcome-oriented: Check for Errors,
+  Find Readability Fixes, Check Tone Fit, Review Structure, Summarize, and
+  Translate. Loading text uses matching short verbs such as Checking,
+  Summarizing, and Translating.
 - Completed responses include only the suggestions persisted for that AI request. `EditorWorkspace` de-duplicates and merges them locally, avoiding a follow-up full suggestions request.
 - Action settings use a compact disclosure with a one-line summary. Setup controls are available for Tone Alignment, Summarize & Shorten, and Translate Document; the disclosure collapses when an action run starts so completed results keep the footer CTA visible. Select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.

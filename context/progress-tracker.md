@@ -111,7 +111,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
 - Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
 - Decision: AI actions remain request-bound for the current MVP. The authenticated route runs the provider, persists the request result and suggestions, and returns them together; a separate AI worker and polling route are out of scope. DeepSeek retries one transient failure and may fall back to Gemini only for the default unpinned path.
-- Decision: Default AI actions are outcome-based: Improvement Scan, Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, and Translate Document. Inline actions return optimization highlights; summary, translation, and major structure changes route through `/documents/[id]/preview` result modes before saving or applying.
+- Decision: Default AI actions are outcome-based: Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, and Translate Document. Inline actions return optimization highlights; summary, translation, and major structure changes route through `/documents/[id]/preview` result modes before saving or applying. Improvement Scan remains readable for historical rows but is no longer exposed as a default runnable action.
 - Decision: Rich uploaded content now treats `editor_json` as the canonical editable document model. DOCX ingestion converts mammoth HTML into TipTap JSON for new uploads, Markdown ingestion parses Markdown into structured JSON, and `current_markdown` remains the derived portable/AI fallback representation.
 - Decision: AI result preview panes render TipTap content instead of literal markdown. Preview services pass current/proposed `editor_json` when available, and preview components fall back to markdown parsing only when rich JSON is unavailable.
 
@@ -128,6 +128,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-30
+Feature: Remove generalized Improvement Scan action
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, tests/playwright/ai-actions.spec.ts, scripts/test-ai-action-latency.ts, context/architecture.md, context/build-plan.md, context/project-overview.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed Improvement Scan from the default runnable AI Actions panel because it generalized across the focused action set. The panel now defaults to Proofread & Correct, default action documentation lists six distinct actions, and the latency script defaults to Proofread & Correct. Historical/backend handling for existing improvement_scan rows remains intact.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run test:ai-actions` passed 6 Playwright provider-path tests. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check the AI Actions panel to confirm only the six focused actions appear and the first selected action is Proofread & Correct.
+```
 
 ```txt
 Date: 2026-06-30

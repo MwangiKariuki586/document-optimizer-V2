@@ -108,15 +108,6 @@ const TRANSLATION_STYLE_OPTIONS = [
 
 const AI_ACTIONS: AIActionDefinition[] = [
   {
-    key: "improvement_scan",
-    label: "Improvement Scan",
-    description:
-      "Highlight opportunities across clarity, grammar, tone, structure, and formatting.",
-    icon: Sparkles,
-    accentClass: "bg-ai-muted text-ai-dark",
-    workflow: "inline_suggestions",
-  },
-  {
     key: "proofread_correct",
     label: "Proofread & Correct",
     description: "Correct grammar, spelling, punctuation, and typos.",
@@ -227,7 +218,7 @@ export function AIActionsPanel({
   onRunAction,
 }: AIActionsPanelProps) {
   const [selectedAction, setSelectedAction] =
-    useState<AIActionKey>("improvement_scan");
+    useState<AIActionKey>("proofread_correct");
   const [settings, setSettings] = useState<AIActionSettings>({
     tone: "professional",
     audience: "general",

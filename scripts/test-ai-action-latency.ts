@@ -23,7 +23,7 @@ type TimingRow = {
   ms: number;
 };
 
-const action = (process.env.AI_ACTION as AIActionKey | undefined) ?? "improvement_scan";
+const action = (process.env.AI_ACTION as AIActionKey | undefined) ?? "proofread_correct";
 
 const options: AIActionOptions = {
   tone: "professional",

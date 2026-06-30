@@ -284,7 +284,6 @@ Result and persisted suggestions are returned to the editor
 Default AI actions are outcome-based:
 
 ```txt
-improvement_scan      -> inline suggestions
 proofread_correct     -> inline suggestions
 improve_readability   -> inline suggestions
 tone_alignment        -> setup + inline suggestions

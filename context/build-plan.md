@@ -368,7 +368,6 @@ Build the AI actions panel with mock data,referencing context/designs/results pr
 **UI:**
 
 - AI action cards/buttons:
-  - Improvement Scan
   - Proofread & Correct
   - Improve Readability
   - Tone Alignment

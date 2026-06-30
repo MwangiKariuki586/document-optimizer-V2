@@ -126,7 +126,6 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 ### AI Actions
 
 - User selects an AI action:
-  - Improvement Scan
   - Proofread & Correct
   - Improve Readability
   - Tone Alignment

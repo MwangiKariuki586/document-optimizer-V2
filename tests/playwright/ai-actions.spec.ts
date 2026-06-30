@@ -4,7 +4,6 @@ import { runAIAction } from "../../lib/ai/ai-router";
 import type { AIActionKey, AIActionOptions } from "../../lib/ai/ai.types";
 
 const AI_ACTIONS: AIActionKey[] = [
-  "improvement_scan",
   "proofread_correct",
   "improve_readability",
   "tone_alignment",
