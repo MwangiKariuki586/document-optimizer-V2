@@ -130,6 +130,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 _Add completed work notes here after each feature._
 
 ```txt
+Date: 2026-06-30
+Feature: Tone Alignment hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Verified Tone Alignment prompt guidance is setup-driven and tone-only, added persistence caps so it saves at most 6 tone suggestions, added regression coverage that rejects non-tone categories, and made the latency smoke script pass realistic target tone and audience/purpose options for this workflow.
+Verification: Focused tests passed: `npx.cmd vitest run lib/suggestions/suggestions.service.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts` with 3 files / 25 tests. `npx.cmd tsc --noEmit` passed. Full backend smoke passed with `AI_ACTION=tone_alignment`: DeepSeek generated 6 suggestions, saved 5, rejected 1 unanchored candidate, total 14196 ms. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run Tone Alignment from `/documents/[id]`, confirm the setup panel values are reflected in the generated reasons, and inspect whether all saved suggestions are genuinely audience/tone-fit changes.
+```
+
+```txt
 Date: 2026-06-29
 Feature: AI Actions Workflow Refactor
 Status: Completed

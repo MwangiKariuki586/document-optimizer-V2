@@ -32,6 +32,11 @@ const options: AIActionOptions = {
   preserveStructure: true,
 };
 
+if (action === "tone_alignment") {
+  options.toneTarget = "professional";
+  options.audienceOrPurpose = "hiring manager reviewing a technical resume";
+}
+
 function loadEnvLocal() {
   const envPath = resolve(process.cwd(), ".env.local");
   const envFile = readFileSync(envPath, "utf8");

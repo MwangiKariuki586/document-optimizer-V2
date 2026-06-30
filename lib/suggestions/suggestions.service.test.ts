@@ -238,4 +238,30 @@ describe("getAISuggestionCandidateRejectionReason", () => {
       }),
     ).toBe("wrong_action_category");
   });
+
+  it("restricts tone alignment to tone suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "tone_alignment",
+        suggestion: {
+          ...baseSuggestion,
+          type: "tone",
+        },
+        type: "tone",
+        originalText: "Original wording",
+      }),
+    ).toBeNull();
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "tone_alignment",
+        suggestion: {
+          ...baseSuggestion,
+          type: "clarity",
+        },
+        type: "clarity",
+        originalText: "Original wording",
+      }),
+    ).toBe("wrong_action_category");
+  });
 });

@@ -115,6 +115,8 @@ const ACTION_MAX_SAVED_SUGGESTIONS: Partial<Record<AIActionKey, number>> = {
   improve_readability: 6,
   improve_clarity: 6,
   simplify_language: 6,
+  tone_alignment: 6,
+  tone_analyze: 6,
 };
 
 function toSuggestionType(value: string): SuggestionType | null {

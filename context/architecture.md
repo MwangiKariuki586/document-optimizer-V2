@@ -314,6 +314,9 @@ into readability, tone, structure, or broad style edits.
 Improve Readability only saves clarity and conciseness suggestions and is
 capped to a small high-confidence set so it cannot drift into proofreading,
 tone alignment, formatting, structure, or summarization.
+Tone Alignment only saves tone-category suggestions, caps the saved set, and
+requires each reason to explain how the wording better fits the selected tone,
+audience, or purpose.
 
 AI output records include workflow metadata:
 

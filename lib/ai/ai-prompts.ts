@@ -8,7 +8,7 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
   improve_readability:
     "Make confusing sentences, phrases, or words easier to read while preserving the original meaning. Focus on readability and simpler phrasing only. Do not shorten the document into a summary, perform grammar-only cleanup, restructure the document, or change tone unless needed for readability.",
   tone_alignment:
-    "Adjust writing style to match the selected tone, audience, and purpose. Suggest only tone-focused changes and explain why each improves audience fit.",
+    "Adjust writing style to match the selected tone, audience, and purpose. Suggest only tone-focused changes that improve audience fit. Do not perform grammar cleanup, readability rewrites, structural changes, summarization, or translation.",
   structure_flow:
     "Improve document organization, headings, section order, paragraph flow, repeated ideas, and logical progression. Use minor suggestions for small fixes and a full result only for major restructuring.",
   summarize_shorten:
@@ -43,7 +43,7 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   improve_readability:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence clarity or conciseness suggestions that preserve meaning. Use only category/type \"clarity\" or \"conciseness\". Do not include grammar-only, tone, structure, formatting, or summary suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   tone_alignment:
-    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only tone suggestions. Include why each suggestion better fits the target audience or purpose. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence tone suggestions. Use only category/type \"tone\". Each reason must explain why the suggested tone better fits the selected audience or purpose. Do not include grammar, clarity, conciseness, structure, formatting, summary, or translation suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   structure_flow:
     "For minor organization fixes, return mode \"suggestions\", workflow \"inline_suggestions\", structureChangeLevel \"minor\", and section or paragraph-level structure suggestions. For major restructuring, return mode \"preview\", workflow \"result_preview\", resultMode \"optimization\", structureChangeLevel \"major\", and revisedMarkdown as the full structured result. Never silently rearrange content.",
   summarize_shorten:
