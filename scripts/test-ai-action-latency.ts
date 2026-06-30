@@ -42,6 +42,12 @@ if (action === "summarize_shorten") {
   options.summaryLength = "brief";
 }
 
+if (action === "translate_document") {
+  options.targetLanguage = "sw";
+  options.translationStyle = "professional";
+  options.termsToPreserve = "Identigate, Laravel, Node.js, Next.js";
+}
+
 function loadEnvLocal() {
   const envPath = resolve(process.cwd(), ".env.local");
   const envFile = readFileSync(envPath, "utf8");

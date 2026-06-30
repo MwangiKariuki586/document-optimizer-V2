@@ -136,6 +136,36 @@ describe("saveSuggestionsFromAIResult", () => {
 
     expect(result).toEqual([]);
   });
+
+  it("does not persist suggestions for translation results", async () => {
+    const result = await saveSuggestionsFromAIResult({} as never, {
+      userId: "user-1",
+      documentId: "doc-1",
+      aiRequestId: "request-1",
+      action: "translate_document",
+      originalMarkdown: "Original document content.",
+      output: {
+        mode: "preview",
+        workflow: "result_preview",
+        resultMode: "translation",
+        targetLanguage: "sw",
+        summary: "Created a translation.",
+        revisedMarkdown: "Maudhui ya hati yaliyotafsiriwa.",
+        suggestions: [
+          {
+            type: "clarity",
+            originalText: "Original document content.",
+            suggestedText: "Maudhui ya hati yaliyotafsiriwa.",
+            explanation: "Should not be saved for translation results.",
+          },
+        ],
+        analysis: { notes: [] },
+        warnings: [],
+      },
+    });
+
+    expect(result).toEqual([]);
+  });
 });
 
 describe("getAISuggestionCandidateRejectionReason", () => {

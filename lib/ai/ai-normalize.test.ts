@@ -190,4 +190,46 @@ describe("normalizeProviderResponse", () => {
       }),
     ).toThrow(AIProviderError);
   });
+
+  it("forces translate document output into translation preview mode without suggestions", () => {
+    const result = normalizeProviderResponse({
+      input: {
+        ...input,
+        action: "translate_document",
+        options: {
+          ...input.options,
+          targetLanguage: "sw",
+          translationStyle: "professional",
+          termsToPreserve: "Docufine",
+        },
+      },
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      text: JSON.stringify({
+        mode: "suggestions",
+        workflow: "inline_suggestions",
+        resultMode: "summary",
+        targetLanguage: null,
+        summary: "Created a Swahili translation.",
+        revisedMarkdown: "# Wasifu\n\nHati iliyotafsiriwa.",
+        suggestions: [
+          {
+            type: "clarity",
+            originalText: "Document content",
+            suggestedText: "Hati iliyotafsiriwa",
+            explanation: "Provider should not return this for translation.",
+          },
+        ],
+        analysis: { notes: [] },
+        warnings: [],
+      }),
+    });
+
+    expect(result.mode).toBe("preview");
+    expect(result.output.workflow).toBe("result_preview");
+    expect(result.output.resultMode).toBe("translation");
+    expect(result.output.targetLanguage).toBe("sw");
+    expect(result.output.suggestions).toEqual([]);
+    expect(result.output.revisedMarkdown).toBe("# Wasifu\n\nHati iliyotafsiriwa.");
+  });
 });

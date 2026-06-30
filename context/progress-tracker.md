@@ -131,6 +131,16 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-30
+Feature: Translate Document hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-prompts.test.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/progress-tracker.md
+What was completed: Tightened Translate Document so only translation setup reaches the provider prompt: source language, target language, translation style, and preserved terms. Removed generic tone/audience leakage from the shared prompt body. Normalization forces Translate Document into preview/result_preview with resultMode translation, strips provider suggestions, uses the requested target language when the provider omits it, and result-only persistence skips any suggestion rows.
+Verification: Focused tests passed: `npx.cmd vitest run lib/ai/ai-prompts.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts lib/suggestions/suggestions.service.test.ts` with 4 files / 34 tests. `npx.cmd tsc --noEmit` passed. Live backend smoke passed with `AI_ACTION=translate_document`: DeepSeek returned preview/result_preview, saved 0 suggestions, total 35021 ms. `npm.cmd run test:ai-actions` passed 7 Playwright provider-path tests. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run Translate Document from `/documents/[id]` with a non-default target language and confirm the Results page is translated to the selected language while preserving configured terms.
+```
+
+```txt
+Date: 2026-06-30
 Feature: Summarize & Shorten language leak hardening
 Status: Completed
 Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-prompts.test.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/progress-tracker.md

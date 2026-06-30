@@ -161,9 +161,11 @@ function buildActionSetup(input: AIActionInput, language: string): string {
       : language;
 
     return [
+      `Source language: ${language}`,
       `Target language: ${targetLanguage}`,
       `Translation style: ${input.options.translationStyle ?? "natural"}`,
       `Terms to preserve: ${input.options.termsToPreserve ?? "none"}`,
+      "Do not summarize, shorten, proofread, or create inline suggestions.",
     ].join("\n");
   }
 
@@ -191,9 +193,7 @@ export function buildAIUserPrompt(input: AIActionInput): string {
   return `${title}
 Action: ${input.action}
 Instruction: ${ACTION_INSTRUCTIONS[input.action]}
-Tone: ${input.options.tone}
-Audience: ${input.options.audience}
-Language: ${language}
+Document language: ${language}
 ${setup}
 Structure: ${preserveStructure}
 Output guidance: ${ACTION_OUTPUT_GUIDANCE[input.action]}

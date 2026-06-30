@@ -44,6 +44,11 @@ describe("buildAIUserPrompt", () => {
     expect(prompt).toContain("Target language: Swahili");
     expect(prompt).toContain("Translation style: natural");
     expect(prompt).toContain("Terms to preserve: Identigate");
+    expect(prompt).toContain("Do not summarize, shorten, proofread, or create inline suggestions.");
     expect(prompt).not.toContain("Do not translate the document.");
+    expect(prompt).not.toContain("Summary output type:");
+    expect(prompt).not.toContain("Summary length:");
+    expect(prompt).not.toContain("Target tone:");
+    expect(prompt).not.toContain("Audience:");
   });
 });
