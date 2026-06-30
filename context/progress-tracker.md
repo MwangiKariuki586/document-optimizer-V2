@@ -131,6 +131,16 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-30
+Feature: Structure & Flow hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, tests/playwright/ai-actions.spec.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Tightened Structure & Flow so minor runs return only section-level or paragraph-level structure suggestions, while major restructuring returns a preview-only optimization result with no inline suggestion persistence. Normalization now defaults preview-style structure output to `structureChangeLevel = major`, and persistence skips major structure results even if a provider includes suggestions.
+Verification: Focused tests passed: `npx.cmd vitest run lib/suggestions/suggestions.service.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts` with 3 files / 27 tests. `npx.cmd tsc --noEmit` passed. Full backend smoke passed with `AI_ACTION=structure_flow`: DeepSeek returned preview/result_preview, saved 0 suggestions, skipped major-structure suggestion persistence, total 13085 ms. `npm.cmd run test:ai-actions` passed 7 Playwright provider-path tests. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run Structure & Flow from `/documents/[id]`, confirm major restructuring opens `/documents/[id]/preview?requestId=...`, and inspect minor-document cases for structure-only inline suggestions.
+```
+
+```txt
+Date: 2026-06-30
 Feature: Tone Alignment hardening
 Status: Completed
 Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/architecture.md, context/progress-tracker.md

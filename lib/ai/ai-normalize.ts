@@ -57,6 +57,29 @@ function getDefaultResultMode(input: AIActionInput, output: AIActionOutput) {
   return undefined;
 }
 
+function getDefaultStructureChangeLevel(
+  input: AIActionInput,
+  output: AIActionOutput,
+) {
+  if (input.action !== "structure_flow") {
+    return output.structureChangeLevel;
+  }
+
+  if (output.structureChangeLevel) {
+    return output.structureChangeLevel;
+  }
+
+  if (
+    output.mode === "preview" ||
+    output.workflow === "result_preview" ||
+    Boolean(output.revisedMarkdown)
+  ) {
+    return "major" as const;
+  }
+
+  return "minor" as const;
+}
+
 function stripIrrelevantOutputMetadata(
   input: AIActionInput,
   parsedJson: unknown,
@@ -124,10 +147,7 @@ export function normalizeProviderResponse({
     ...parsedOutput.data,
     workflow: getDefaultWorkflow(input, parsedOutput.data),
     resultMode: getDefaultResultMode(input, parsedOutput.data),
-    structureChangeLevel:
-      input.action === "structure_flow"
-        ? (parsedOutput.data.structureChangeLevel ?? "minor")
-        : parsedOutput.data.structureChangeLevel,
+    structureChangeLevel: getDefaultStructureChangeLevel(input, parsedOutput.data),
     targetLanguage:
       input.action === "translate_document"
         ? (parsedOutput.data.targetLanguage ?? input.options.targetLanguage)

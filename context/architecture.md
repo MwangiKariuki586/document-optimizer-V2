@@ -317,6 +317,10 @@ tone alignment, formatting, structure, or summarization.
 Tone Alignment only saves tone-category suggestions, caps the saved set, and
 requires each reason to explain how the wording better fits the selected tone,
 audience, or purpose.
+Structure & Flow minor runs only save structure-category section or paragraph
+suggestions. Major structure runs are result-preview only; any generated
+suggestions on that path are ignored by persistence so the user reviews the
+full proposed organization before applying it.
 
 AI output records include workflow metadata:
 

@@ -105,4 +105,27 @@ describe("normalizeProviderResponse", () => {
     expect(result.output.structureChangeLevel).toBeUndefined();
     expect(result.output.suggestions).toHaveLength(1);
   });
+
+  it("defaults structure preview output to a major optimization result", () => {
+    const result = normalizeProviderResponse({
+      input: {
+        ...input,
+        action: "structure_flow",
+      },
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      text: JSON.stringify({
+        mode: "preview",
+        summary: "Reorganized the document.",
+        revisedMarkdown: "# Improved structure\n\nA clearer document flow.",
+        suggestions: [],
+        analysis: { notes: ["Major section ordering changes."] },
+        warnings: [],
+      }),
+    });
+
+    expect(result.output.workflow).toBe("result_preview");
+    expect(result.output.resultMode).toBe("optimization");
+    expect(result.output.structureChangeLevel).toBe("major");
+  });
 });

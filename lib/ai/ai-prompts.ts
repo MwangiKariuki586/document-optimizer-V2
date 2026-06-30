@@ -10,7 +10,7 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
   tone_alignment:
     "Adjust writing style to match the selected tone, audience, and purpose. Suggest only tone-focused changes that improve audience fit. Do not perform grammar cleanup, readability rewrites, structural changes, summarization, or translation.",
   structure_flow:
-    "Improve document organization, headings, section order, paragraph flow, repeated ideas, and logical progression. Use minor suggestions for small fixes and a full result only for major restructuring.",
+    "Improve document organization, headings, section order, paragraph flow, repeated ideas, and logical progression. For minor issues, suggest only section-level or paragraph-level structure changes. For major restructuring, return a full proposed document for preview. Do not perform grammar cleanup, tone alignment, summarization, or translation.",
   summarize_shorten:
     "Create the requested concise version or summary. Preserve the original document by returning a separate result preview, not inline suggestions.",
   translate_document:
@@ -45,7 +45,7 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   tone_alignment:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence tone suggestions. Use only category/type \"tone\". Each reason must explain why the suggested tone better fits the selected audience or purpose. Do not include grammar, clarity, conciseness, structure, formatting, summary, or translation suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   structure_flow:
-    "For minor organization fixes, return mode \"suggestions\", workflow \"inline_suggestions\", structureChangeLevel \"minor\", and section or paragraph-level structure suggestions. For major restructuring, return mode \"preview\", workflow \"result_preview\", resultMode \"optimization\", structureChangeLevel \"major\", and revisedMarkdown as the full structured result. Never silently rearrange content.",
+    "For minor organization fixes, return mode \"suggestions\", workflow \"inline_suggestions\", structureChangeLevel \"minor\", revisedMarkdown null, and up to 6 section-level or paragraph-level suggestions. Use only category/type \"structure\". For major restructuring, return mode \"preview\", workflow \"result_preview\", resultMode \"optimization\", structureChangeLevel \"major\", revisedMarkdown as the full structured result, and suggestions as an empty array. Never silently rearrange content, and do not include grammar, clarity, tone, conciseness, formatting, summary, or translation suggestions.",
   summarize_shorten:
     "Return mode \"preview\", workflow \"result_preview\", resultMode \"summary\", revisedMarkdown as the requested summary or shortened version, and suggestions as an empty array. Do not create optimization highlights.",
   translate_document:

@@ -38,6 +38,14 @@ function buildProviderOutput(action: AIActionKey) {
   const isResultAction = RESULT_ACTIONS.has(action);
   const isTranslation = action === "translate_document";
   const isSummary = action === "summarize_shorten";
+  const suggestionType =
+    action === "proofread_correct"
+      ? "grammar"
+      : action === "tone_alignment"
+        ? "tone"
+        : action === "structure_flow"
+          ? "structure"
+          : "clarity";
 
   return {
     mode: isResultAction ? "preview" : "suggestions",
@@ -57,8 +65,8 @@ function buildProviderOutput(action: AIActionKey) {
             actionType: action === "summarize_shorten" || action === "translate_document"
               ? undefined
               : action,
-            type: action === "proofread_correct" ? "grammar" : "clarity",
-            category: action === "proofread_correct" ? "grammar" : "clarity",
+            type: suggestionType,
+            category: suggestionType,
             issueLabel: "Direct wording",
             originalText: "improve user-facing workflows",
             suggestedText: "improve workflows for users",

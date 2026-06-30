@@ -106,6 +106,7 @@ const ACTION_ALLOWED_SUGGESTION_TYPES: Partial<
   simplify_language: new Set(["clarity", "conciseness"]),
   tone_alignment: new Set(["tone"]),
   tone_analyze: new Set(["tone"]),
+  structure_flow: new Set(["structure"]),
 };
 
 const ACTION_MAX_SAVED_SUGGESTIONS: Partial<Record<AIActionKey, number>> = {
@@ -117,6 +118,7 @@ const ACTION_MAX_SAVED_SUGGESTIONS: Partial<Record<AIActionKey, number>> = {
   simplify_language: 6,
   tone_alignment: 6,
   tone_analyze: 6,
+  structure_flow: 6,
 };
 
 function toSuggestionType(value: string): SuggestionType | null {
@@ -502,6 +504,23 @@ export async function saveSuggestionsFromAIResult(
     originalLength: input.originalMarkdown.length,
     fallbackLength: input.fallbackMarkdown?.length ?? 0,
   });
+
+  if (
+    input.action === "structure_flow" &&
+    (input.output.workflow === "result_preview" ||
+      input.output.structureChangeLevel === "major" ||
+      input.output.mode === "preview")
+  ) {
+    console.log("[suggestions/save-from-ai] skipping major structure result", {
+      documentId: input.documentId,
+      aiRequestId: input.aiRequestId,
+      action: input.action,
+      workflow: input.output.workflow,
+      structureChangeLevel: input.output.structureChangeLevel,
+    });
+
+    return [];
+  }
 
   for (const suggestion of suggestions) {
     const type = toSuggestionType(suggestion.type);

@@ -264,4 +264,30 @@ describe("getAISuggestionCandidateRejectionReason", () => {
       }),
     ).toBe("wrong_action_category");
   });
+
+  it("restricts structure flow inline suggestions to structure suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "structure_flow",
+        suggestion: {
+          ...baseSuggestion,
+          type: "structure",
+        },
+        type: "structure",
+        originalText: "Original wording",
+      }),
+    ).toBeNull();
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "structure_flow",
+        suggestion: {
+          ...baseSuggestion,
+          type: "clarity",
+        },
+        type: "clarity",
+        originalText: "Original wording",
+      }),
+    ).toBe("wrong_action_category");
+  });
 });
