@@ -311,6 +311,9 @@ Suggestion persistence also enforces action-specific boundaries where the
 workflow requires it. Proofread & Correct only saves grammar-category
 corrections and is capped to a small high-confidence set so it cannot drift
 into readability, tone, structure, or broad style edits.
+Improve Readability only saves clarity and conciseness suggestions and is
+capped to a small high-confidence set so it cannot drift into proofreading,
+tone alignment, formatting, structure, or summarization.
 
 AI output records include workflow metadata:
 

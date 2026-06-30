@@ -101,6 +101,9 @@ const ACTION_ALLOWED_SUGGESTION_TYPES: Partial<
 > = {
   proofread_correct: new Set(["grammar"]),
   fix_grammar: new Set(["grammar"]),
+  improve_readability: new Set(["clarity", "conciseness"]),
+  improve_clarity: new Set(["clarity", "conciseness"]),
+  simplify_language: new Set(["clarity", "conciseness"]),
   tone_alignment: new Set(["tone"]),
   tone_analyze: new Set(["tone"]),
 };
@@ -109,6 +112,9 @@ const ACTION_MAX_SAVED_SUGGESTIONS: Partial<Record<AIActionKey, number>> = {
   improvement_scan: 6,
   proofread_correct: 8,
   fix_grammar: 8,
+  improve_readability: 6,
+  improve_clarity: 6,
+  simplify_language: 6,
 };
 
 function toSuggestionType(value: string): SuggestionType | null {

@@ -6,7 +6,7 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
   proofread_correct:
     "Correct only grammar, spelling, punctuation, capitalization, and typos. Avoid broad rewrites, readability edits, tone changes, structural changes, formatting changes, or summarization.",
   improve_readability:
-    "Make confusing sentences, phrases, or words easier to read while preserving the original meaning. Do not shorten the document into a summary.",
+    "Make confusing sentences, phrases, or words easier to read while preserving the original meaning. Focus on readability and simpler phrasing only. Do not shorten the document into a summary, perform grammar-only cleanup, restructure the document, or change tone unless needed for readability.",
   tone_alignment:
     "Adjust writing style to match the selected tone, audience, and purpose. Suggest only tone-focused changes and explain why each improves audience fit.",
   structure_flow:
@@ -41,7 +41,7 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   proofread_correct:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 8 high-confidence grammar, spelling, punctuation, capitalization, or typo suggestions. Use category/type \"grammar\" for every suggestion. If more than 8 issues exist, choose the most clear and important corrections. Do not suggest style, tone, clarity, conciseness, formatting, or structure changes. Each suggestion.originalText must be an exact substring from the original document.",
   improve_readability:
-    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and clarity or conciseness suggestions that preserve meaning. Do not summarize. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence clarity or conciseness suggestions that preserve meaning. Use only category/type \"clarity\" or \"conciseness\". Do not include grammar-only, tone, structure, formatting, or summary suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   tone_alignment:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only tone suggestions. Include why each suggestion better fits the target audience or purpose. Each suggestion.originalText must be an exact substring from the original document.",
   structure_flow:

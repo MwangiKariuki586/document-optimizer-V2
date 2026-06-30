@@ -200,4 +200,42 @@ describe("getAISuggestionCandidateRejectionReason", () => {
       }),
     ).toBeNull();
   });
+
+  it("restricts improve readability to clarity and conciseness suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "improve_readability",
+        suggestion: {
+          ...baseSuggestion,
+          type: "clarity",
+        },
+        type: "clarity",
+        originalText: "Original wording",
+      }),
+    ).toBeNull();
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "improve_readability",
+        suggestion: {
+          ...baseSuggestion,
+          type: "conciseness",
+        },
+        type: "conciseness",
+        originalText: "Original wording",
+      }),
+    ).toBeNull();
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "improve_readability",
+        suggestion: {
+          ...baseSuggestion,
+          type: "grammar",
+        },
+        type: "grammar",
+        originalText: "Original wording",
+      }),
+    ).toBe("wrong_action_category");
+  });
 });

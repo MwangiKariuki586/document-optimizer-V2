@@ -1695,6 +1695,16 @@ Follow-up: Continue Phase 1 / 02 Auth.
 
 ```txt
 Date: 2026-06-30
+Feature: Improve Readability hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Tightened Improve Readability prompt guidance to focus only on readability, simpler phrasing, and meaning preservation. Added action-specific persistence boundaries so Improve Readability only saves clarity and conciseness suggestions and caps saved suggestions to 6, preventing drift into proofreading, tone, structure, formatting, or summarization.
+Verification: Focused tests passed: `npx.cmd vitest run lib/suggestions/suggestions.service.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts` with 24 tests. `npx.cmd tsc --noEmit` passed. Full backend smoke for `AI_ACTION=improve_readability` generated 6 suggestions, saved 6, rejected none, total 10.053s, provider + normalization 6.832s. `npm.cmd run lint` passed with existing unrelated warnings.
+Follow-up: Browser-run Improve Readability and inspect whether the six suggestions are genuinely readability-focused rather than grammar or tone edits.
+```
+
+```txt
+Date: 2026-06-30
 Feature: Proofread rerun metadata tolerance
 Status: Completed
 Files changed: lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, context/progress-tracker.md
