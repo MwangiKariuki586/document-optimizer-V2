@@ -71,6 +71,16 @@ type SelectionRow = {
   expires_at: string;
 };
 
+type AISuggestionCandidate = NonNullable<AIActionOutput["suggestions"]>[number];
+
+type AISuggestionRejectionReason =
+  | "invalid_type"
+  | "empty_replacement"
+  | "no_op"
+  | "cosmetic_whitespace"
+  | "unanchored"
+  | "duplicate_target";
+
 const SUGGESTION_FRIENDLY_ACTIONS = new Set<AIActionKey>([
   "proofread_correct",
   "improve_readability",
@@ -117,6 +127,66 @@ function toSuggestionStatus(value: string): SuggestionStatus {
   }
 
   return "pending";
+}
+
+function normalizeForValueComparison(value: string): string {
+  return value.trim().replace(/\s+/gu, " ");
+}
+
+function getAISuggestionValueRejectionReason(
+  suggestion: AISuggestionCandidate,
+  type: SuggestionType,
+): AISuggestionRejectionReason | null {
+  const originalText = suggestion.originalText.trim();
+  const suggestedText = suggestion.suggestedText.trim();
+
+  if (!suggestedText) {
+    return "empty_replacement";
+  }
+
+  if (originalText === suggestedText) {
+    return "no_op";
+  }
+
+  if (
+    type !== "formatting" &&
+    normalizeForValueComparison(originalText) ===
+      normalizeForValueComparison(suggestedText)
+  ) {
+    return "cosmetic_whitespace";
+  }
+
+  return null;
+}
+
+export function getAISuggestionCandidateRejectionReason(input: {
+  suggestion: AISuggestionCandidate;
+  type: SuggestionType | null;
+  originalText: string | null;
+  seenOriginalTexts?: Set<string>;
+}): AISuggestionRejectionReason | null {
+  if (!input.type) {
+    return "invalid_type";
+  }
+
+  const valueRejection = getAISuggestionValueRejectionReason(
+    input.suggestion,
+    input.type,
+  );
+
+  if (valueRejection) {
+    return valueRejection;
+  }
+
+  if (!input.originalText) {
+    return "unanchored";
+  }
+
+  if (input.seenOriginalTexts?.has(input.originalText)) {
+    return "duplicate_target";
+  }
+
+  return null;
 }
 
 function mapSuggestionRow(row: SuggestionRow): DocumentSuggestion | null {
@@ -382,7 +452,13 @@ export async function saveSuggestionsFromAIResult(
 ): Promise<DocumentSuggestion[]> {
   const suggestions = input.output.suggestions ?? [];
   const rows: TablesInsert<"suggestions">[] = [];
-  let rejectedSuggestionCount = 0;
+  const rejectedSuggestions: Partial<Record<AISuggestionRejectionReason, number>> =
+    {};
+  const seenOriginalTexts = new Set<string>();
+
+  const rejectSuggestion = (reason: AISuggestionRejectionReason) => {
+    rejectedSuggestions[reason] = (rejectedSuggestions[reason] ?? 0) + 1;
+  };
 
   console.log("[suggestions/save-from-ai] input", {
     documentId: input.documentId,
@@ -396,22 +472,29 @@ export async function saveSuggestionsFromAIResult(
 
   for (const suggestion of suggestions) {
     const type = toSuggestionType(suggestion.type);
-
-    if (!type) {
-      continue;
-    }
-
     const originalText = resolveSuggestionOriginalTextFromCandidates(
       [input.originalMarkdown, input.fallbackMarkdown],
       suggestion.originalText,
       suggestion.location,
     );
+    const rejectionReason = getAISuggestionCandidateRejectionReason({
+      suggestion,
+      type,
+      originalText,
+      seenOriginalTexts,
+    });
 
-    if (!originalText) {
-      rejectedSuggestionCount += 1;
+    if (rejectionReason) {
+      rejectSuggestion(rejectionReason);
       continue;
     }
 
+    if (!type || !originalText) {
+      rejectSuggestion(!type ? "invalid_type" : "unanchored");
+      continue;
+    }
+
+    seenOriginalTexts.add(originalText);
     rows.push({
       user_id: input.userId,
       document_id: input.documentId,
@@ -458,7 +541,7 @@ export async function saveSuggestionsFromAIResult(
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
-      rejectedSuggestionCount,
+      rejectedSuggestions,
     });
 
     return [];
@@ -484,7 +567,7 @@ export async function saveSuggestionsFromAIResult(
     documentId: input.documentId,
     aiRequestId: input.aiRequestId,
     count: saved.length,
-    rejectedSuggestionCount,
+    rejectedSuggestions,
   });
 
   return saved;

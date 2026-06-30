@@ -1694,6 +1694,66 @@ Follow-up: Continue Phase 1 / 02 Auth.
 ```
 
 ```txt
+Date: 2026-06-30
+Feature: AI output schema hardening
+Status: Completed
+Files changed: lib/ai/ai.validators.ts, lib/ai/ai-normalize.ts, lib/ai/ai.validators.test.ts, context/progress-tracker.md
+What was completed: Hardened AI output parsing for intermittent provider shape failures by accepting `null` for optional top-level metadata, optional suggestion metadata, optional location fields, and optional analysis score fields. Updated normalization error logging to stringify Zod issue paths so Next dev logs preserve the actual invalid fields instead of `{}`.
+Verification: Direct provider/normalization smoke succeeded 5/5 before the schema hardening. Focused tests passed: `npx.cmd vitest run lib/ai/ai.validators.test.ts lib/ai/ai-normalize.test.ts lib/suggestions/suggestions.service.test.ts` with 20 tests. `npx.cmd tsc --noEmit` passed. Full backend latency smoke completed with 6 generated suggestions, 1 no-op rejected, and 5 saved suggestions. `npm.cmd run lint` passed with existing unrelated warnings.
+Follow-up: If another provider shape failure appears, the log should now include exact JSON issue paths for the next targeted tolerance rule.
+```
+
+```txt
+Date: 2026-06-30
+Feature: AI suggestion quality gate
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Tightened Improvement Scan prompt guidance to ask for up to 6 high-confidence suggestions, prefer no weak suggestions, and forbid no-op output. Added a server-side quality gate before suggestion insert that rejects invalid types, empty replacements, no-op suggestions, non-formatting whitespace-only changes, unanchored suggestions, and duplicate targets while logging rejection reason counts.
+Verification: Focused tests passed: `npx.cmd vitest run lib/suggestions/suggestions.service.test.ts lib/suggestions/suggestion-replace.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts` with 30 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings. Full latency script after the gate generated 6 suggestions and saved 6, with no rejected suggestions, total 10.897s, provider + normalization 7.211s, output tokens reduced to 1,069.
+Follow-up: Browser-review the six saved Improvement Scan suggestions for subjective usefulness and tune category/label quality if needed.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Full AI action latency breakdown
+Status: Completed
+Files changed: scripts/test-ai-action-latency.ts, context/progress-tracker.md
+What was completed: Added a full backend latency script that loads a document, creates an `ai_requests` row, runs Improvement Scan through DeepSeek and normalization, saves the AI output, anchors/inserts suggestions, and records usage. The first run exposed a stale live `suggestions_type_check` constraint that rejected `conciseness`/`formatting`; applied the existing `expand_suggestion_optimization_categories` migration to the active Supabase project and verified the constraint.
+Verification: Full latency run completed for a 345-word document: total 13.677s; load document 975ms; create request 500ms; provider call + normalization 10.522s; save output 729ms; anchor + insert suggestions 560ms; insert usage ledger 363ms. Generated 9 suggestions and saved 8. Supabase MCP confirmed `suggestions_type_check` includes grammar, clarity, tone, conciseness, structure, formatting, seo, and style. `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with existing unrelated warnings.
+Follow-up: Reduce provider time first; it accounts for roughly 77% of this full backend run.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Two-line provider latency benchmark
+Status: Completed
+Files changed: scripts/test-gemini.ts, scripts/test-deepseek.ts, context/progress-tracker.md
+What was completed: Shortened both direct provider benchmark scripts to the same two-line sample document while keeping the analysis task unchanged, then reran Gemini and DeepSeek with `.env.local` loaded from PowerShell.
+Verification: Two-line `scripts/test-gemini.ts` completed in 16.47s with 4,568 output characters; two-line `scripts/test-deepseek.ts` completed in 11.02s with 3,059 output characters; `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with existing unrelated `<img>` and unused `RecentActivityList` warnings.
+Follow-up: Add explicit output-length limits to the benchmark prompt or provider params before drawing final latency conclusions.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Doubled-input provider latency benchmark
+Status: Completed
+Files changed: scripts/test-gemini.ts, scripts/test-deepseek.ts, context/progress-tracker.md
+What was completed: Doubled the resume document body in both direct provider benchmark scripts and reran Gemini and DeepSeek with `.env.local` loaded from PowerShell.
+Verification: Doubled-input `scripts/test-gemini.ts` completed in 17.89s with 4,904 output characters; doubled-input `scripts/test-deepseek.ts` completed in 17.40s with 5,467 output characters; `npx.cmd tsc --noEmit` passed.
+Follow-up: Compare these direct free-text timings with the production structured Improvement Scan route after prompt-size reductions.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Gemini vs DeepSeek direct latency scripts
+Status: Completed
+Files changed: scripts/test-deepseek.ts, context/progress-tracker.md
+What was completed: Added `scripts/test-deepseek.ts` mirroring `scripts/test-gemini.ts` with the same resume-analysis prompt and a direct DeepSeek chat-completions call. Ran both scripts from PowerShell with `.env.local` loaded and measured command wall-clock latency.
+Verification: `scripts/test-gemini.ts` completed in 15.95s and returned 4,618 characters; `scripts/test-deepseek.ts` completed in 16.56s and returned 4,928 characters. `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with existing unrelated `<img>` and unused `RecentActivityList` warnings.
+Follow-up: For action latency decisions, benchmark the actual structured Improvement Scan prompt separately because these scripts use a simpler free-text analysis prompt.
+```
+
+```txt
 Date: 2026-06-29
 Feature: Improvement Scan rerun persistence
 Status: Completed

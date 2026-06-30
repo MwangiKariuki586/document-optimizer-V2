@@ -299,10 +299,13 @@ The completed response includes the suggestions persisted for that AI request,
 so the editor avoids a second full suggestions request. A separate AI worker is
 out of scope for the current MVP.
 
-Before suggestion persistence, each AI `originalText` is resolved against the
-exact document markdown. Harmless whitespace-only differences may be mapped
-back to the unique exact document slice. Missing or ambiguous anchors are
-discarded and never exposed as actionable pending suggestions.
+Before suggestion persistence, generated suggestions pass a value and safety
+gate. No-op replacements, empty replacements, duplicate targets, and
+cosmetic whitespace-only changes outside the formatting category are rejected.
+Each remaining AI `originalText` is resolved against the exact document
+markdown, with harmless whitespace-only differences mapped back to the unique
+exact document slice. Missing or ambiguous anchors are discarded and never
+exposed as actionable pending suggestions.
 
 AI output records include workflow metadata:
 

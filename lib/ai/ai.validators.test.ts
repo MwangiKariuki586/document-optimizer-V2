@@ -95,6 +95,54 @@ describe("aiActionOutputSchema", () => {
       });
     }
   });
+
+  it("accepts null optional metadata from provider output", () => {
+    const result = aiActionOutputSchema.safeParse({
+      mode: "suggestions",
+      workflow: null,
+      resultMode: null,
+      structureChangeLevel: null,
+      targetLanguage: null,
+      summary: "Found one issue.",
+      revisedMarkdown: null,
+      suggestions: [
+        {
+          id: null,
+          actionType: null,
+          type: "grammar",
+          category: null,
+          issueLabel: null,
+          originalText: "PostgresSQL",
+          suggestedText: "PostgreSQL",
+          explanation: "Corrects the product name.",
+          reason: null,
+          severity: null,
+          location: {
+            startOffset: null,
+            endOffset: null,
+            blockId: null,
+          },
+        },
+      ],
+      analysis: {
+        clarity: null,
+        tone: null,
+        structure: null,
+        seo: null,
+        notes: [],
+      },
+      warnings: null,
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.workflow).toBeUndefined();
+      expect(result.data.suggestions[0].severity).toBeUndefined();
+      expect(result.data.suggestions[0].location).toEqual({});
+      expect(result.data.analysis).toEqual({ notes: [] });
+    }
+  });
 });
 
 describe("runAIActionRequestSchema", () => {

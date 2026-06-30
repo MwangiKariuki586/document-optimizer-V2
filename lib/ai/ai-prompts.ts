@@ -37,7 +37,7 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
 
 const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   improvement_scan:
-    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and 5-10 concrete suggestions grouped across grammar, clarity, tone, conciseness, structure, and formatting where relevant. Do not return a full rewrite or summary. Each suggestion.originalText must be an exact substring from the original document, and include location.startOffset/location.endOffset when possible.",
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence suggestions grouped across grammar, clarity, tone, conciseness, structure, and formatting where relevant. Only include a suggestion if the replacement is meaningfully better than the original. Never include identical originalText and suggestedText. Prefer no suggestion over a weak suggestion. Do not return a full rewrite or summary. Each suggestion.originalText must be an exact substring from the original document, and include location.startOffset/location.endOffset when possible.",
   proofread_correct:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only grammar, spelling, punctuation, or typo suggestions. Each suggestion.originalText must be an exact substring from the original document.",
   improve_readability:
@@ -174,6 +174,7 @@ ${setup}
 Structure: ${preserveStructure}
 Output guidance: ${ACTION_OUTPUT_GUIDANCE[input.action]}
 Suggestion anchoring rule: copy every suggestion.originalText verbatim from Document Markdown, including punctuation, capitalization, and spacing. Never paraphrase originalText. If a passage cannot be copied exactly and uniquely, omit that suggestion.
+Suggestion quality rule: never include no-op suggestions, duplicate targets, or cosmetic whitespace-only changes unless the category is formatting.
 
 Document Markdown:
 ${input.contentMarkdown}`;

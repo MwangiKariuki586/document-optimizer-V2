@@ -180,7 +180,7 @@ export const aiSuggestionOutputSchema = z.preprocess((value) => {
         )
       : suggestion.location;
 
-  return {
+  const normalizedSuggestion: Record<string, unknown> = {
     ...suggestion,
     type: suggestion.type ?? suggestion.category,
     category: suggestion.category ?? suggestion.type,
@@ -188,6 +188,16 @@ export const aiSuggestionOutputSchema = z.preprocess((value) => {
     reason: suggestion.reason ?? suggestion.explanation,
     location,
   };
+
+  return nullishOptionalFieldsToUndefined(normalizedSuggestion, [
+    "id",
+    "actionType",
+    "category",
+    "issueLabel",
+    "reason",
+    "severity",
+    "location",
+  ]);
 }, z.object({
   id: z.string().trim().min(1).optional(),
   actionType: z
@@ -217,19 +227,56 @@ export const aiSuggestionOutputSchema = z.preprocess((value) => {
 }));
 
 export const aiAnalysisOutputSchema = z
-  .object({
+  .preprocess((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return value;
+    }
+
+    return nullishOptionalFieldsToUndefined(value as Record<string, unknown>, [
+      "clarity",
+      "tone",
+      "structure",
+      "seo",
+    ]);
+  }, z.object({
     clarity: z.number().int().min(0).max(100).optional(),
     tone: z.number().int().min(0).max(100).optional(),
     structure: z.number().int().min(0).max(100).optional(),
     seo: z.number().int().min(0).max(100).optional(),
     notes: z.array(z.string().trim().min(1)).default([]),
-  })
+  }))
   .default({ notes: [] });
 
 const nullableDefaultArray = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => (value === null ? undefined : value), schema);
 
-export const aiActionOutputSchema = z.object({
+function nullishOptionalFieldsToUndefined<T extends Record<string, unknown>>(
+  value: T,
+  fields: Array<keyof T>,
+): T {
+  return Object.fromEntries(
+    Object.entries(value).map(([key, fieldValue]) => [
+      key,
+      fields.includes(key as keyof T) &&
+      (fieldValue === null || fieldValue === undefined)
+        ? undefined
+        : fieldValue,
+    ]),
+  ) as T;
+}
+
+export const aiActionOutputSchema = z.preprocess((value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  return nullishOptionalFieldsToUndefined(value as Record<string, unknown>, [
+    "workflow",
+    "resultMode",
+    "structureChangeLevel",
+    "targetLanguage",
+  ]);
+}, z.object({
   mode: z.enum(["preview", "suggestions", "analysis"]),
   workflow: aiWorkflowSchema.optional(),
   resultMode: aiResultModeSchema.optional(),
@@ -243,7 +290,7 @@ export const aiActionOutputSchema = z.object({
     aiAnalysisOutputSchema,
   ),
   warnings: nullableDefaultArray(z.array(z.string().trim().min(1)).default([])),
-});
+}));
 
 export function parseAIActionInput(input: unknown) {
   return aiActionInputSchema.safeParse(input);

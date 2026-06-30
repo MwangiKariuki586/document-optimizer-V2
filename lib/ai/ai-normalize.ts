@@ -80,13 +80,16 @@ export function normalizeProviderResponse({
   const parsedOutput = parseAIActionOutput(parsedJson);
 
   if (!parsedOutput.success) {
-    console.error("[ai/normalize] invalid provider output", {
-      issues: parsedOutput.error.issues.map((issue) => ({
+    console.error(
+      "[ai/normalize] invalid provider output",
+      JSON.stringify({
+        issues: parsedOutput.error.issues.map((issue) => ({
         path: issue.path.join("."),
         code: issue.code,
         message: issue.message,
-      })),
-    });
+        })),
+      }),
+    );
     throw new AIProviderError("AI response did not match the expected shape");
   }
 

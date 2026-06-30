@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAppliedSuggestionSummary,
   buildAppliedSuggestionsReviewPreview,
+  getAISuggestionCandidateRejectionReason,
 } from "@/lib/suggestions/suggestions.service";
 import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
 
@@ -102,5 +103,75 @@ describe("buildAppliedSuggestionSummary", () => {
       total: 0,
       items: [],
     });
+  });
+});
+
+describe("getAISuggestionCandidateRejectionReason", () => {
+  const baseSuggestion = {
+    type: "clarity" as const,
+    originalText: "Original wording",
+    suggestedText: "Clearer wording",
+    explanation: "Makes the text easier to understand.",
+  };
+
+  it("rejects no-op suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: {
+          ...baseSuggestion,
+          suggestedText: "Original wording",
+        },
+        type: "clarity",
+        originalText: "Original wording",
+      }),
+    ).toBe("no_op");
+  });
+
+  it("rejects cosmetic whitespace-only changes outside formatting", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: {
+          ...baseSuggestion,
+          originalText: "Original   wording",
+          suggestedText: "Original wording",
+        },
+        type: "clarity",
+        originalText: "Original   wording",
+      }),
+    ).toBe("cosmetic_whitespace");
+  });
+
+  it("allows cosmetic whitespace changes for formatting suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: {
+          ...baseSuggestion,
+          type: "formatting",
+          originalText: "Original   wording",
+          suggestedText: "Original wording",
+        },
+        type: "formatting",
+        originalText: "Original   wording",
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects unanchored and duplicate suggestions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: baseSuggestion,
+        type: "clarity",
+        originalText: null,
+      }),
+    ).toBe("unanchored");
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: baseSuggestion,
+        type: "clarity",
+        originalText: "Original wording",
+        seenOriginalTexts: new Set(["Original wording"]),
+      }),
+    ).toBe("duplicate_target");
   });
 });
