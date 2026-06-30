@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   AlignLeft,
@@ -168,18 +168,49 @@ const AI_ACTIONS: AIActionDefinition[] = [
   },
 ];
 
+const ACTION_BUTTON_LABELS: Record<AIActionKey, string> = {
+  improvement_scan: "Scan for Improvements",
+  proofread_correct: "Check for Errors",
+  improve_readability: "Find Readability Fixes",
+  tone_alignment: "Check Tone Fit",
+  structure_flow: "Review Structure",
+  summarize_shorten: "Summarize",
+  translate_document: "Translate",
+  optimize: "Optimize",
+  improve_clarity: "Improve Clarity",
+  fix_grammar: "Check Grammar",
+  rewrite: "Rewrite",
+  summarize: "Summarize",
+  translate: "Translate",
+  tone_analyze: "Check Tone",
+  seo_analyze: "Review SEO",
+  simplify_language: "Simplify Language",
+};
+
+const ACTION_LOADING_LABELS: Record<AIActionKey, string> = {
+  improvement_scan: "Scanning...",
+  proofread_correct: "Checking...",
+  improve_readability: "Finding fixes...",
+  tone_alignment: "Checking tone...",
+  structure_flow: "Reviewing structure...",
+  summarize_shorten: "Summarizing...",
+  translate_document: "Translating...",
+  optimize: "Optimizing...",
+  improve_clarity: "Improving clarity...",
+  fix_grammar: "Checking grammar...",
+  rewrite: "Rewriting...",
+  summarize: "Summarizing...",
+  translate: "Translating...",
+  tone_analyze: "Checking tone...",
+  seo_analyze: "Reviewing SEO...",
+  simplify_language: "Simplifying...",
+};
+
 const selectClass =
   "h-8 w-full cursor-pointer appearance-none rounded-md border border-border bg-surface py-1 pl-2.5 pr-8 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-accent";
 
 const textInputClass =
   "h-8 w-full rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-primary placeholder:text-text-soft focus:outline-none focus:ring-2 focus:ring-accent";
-
-const AI_PROGRESS_STAGES = [
-  { delay: 0, message: "Preparing your document..." },
-  { delay: 1200, message: "Working through the content..." },
-  { delay: 4500, message: "Checking generated suggestions..." },
-  { delay: 7500, message: "Finalizing your result..." },
-] as const;
 
 function getOptionLabel<T extends string | undefined>(
   options: Array<{ value: T; label: string }>,
@@ -208,13 +239,8 @@ export function AIActionsPanel({
     targetLanguage: "sw",
     translationStyle: "natural",
   });
-  const [languageQuery, setLanguageQuery] = useState("");
   const [status, setStatus] = useState<AIActionStatus>("idle");
   const [settingsExpanded, setSettingsExpanded] = useState(true);
-  const [progressMessage, setProgressMessage] = useState<string>(
-    AI_PROGRESS_STAGES[0].message,
-  );
-  const progressTimers = useRef<number[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [readyResult, setReadyResult] = useState<{
     id: string;
@@ -227,43 +253,14 @@ export function AIActionsPanel({
 
   const selectedActionDef =
     AI_ACTIONS.find((action) => action.key === selectedAction) ?? AI_ACTIONS[0];
+  const selectedButtonLabel = ACTION_BUTTON_LABELS[selectedAction];
+  const selectedLoadingLabel = ACTION_LOADING_LABELS[selectedAction];
   const isProcessing = status === "processing";
   const isDisabled = isProcessing;
   const hasSetupControls =
     selectedAction === "tone_alignment" ||
     selectedAction === "summarize_shorten" ||
     selectedAction === "translate_document";
-  const filteredLanguages = useMemo(() => {
-    const query = languageQuery.trim().toLowerCase();
-
-    if (!query) {
-      return TRANSLATION_LANGUAGE_OPTIONS;
-    }
-
-    return TRANSLATION_LANGUAGE_OPTIONS.filter((option) =>
-      option.label.toLowerCase().includes(query),
-    );
-  }, [languageQuery]);
-
-  const clearProgressTimers = () => {
-    progressTimers.current.forEach((timer) => window.clearTimeout(timer));
-    progressTimers.current = [];
-  };
-
-  const startProgressMessages = () => {
-    clearProgressTimers();
-    setProgressMessage(AI_PROGRESS_STAGES[0].message);
-    progressTimers.current = AI_PROGRESS_STAGES.slice(1).map((stage) =>
-      window.setTimeout(() => setProgressMessage(stage.message), stage.delay),
-    );
-  };
-
-  useEffect(
-    () => () => {
-      progressTimers.current.forEach((timer) => window.clearTimeout(timer));
-    },
-    [],
-  );
 
   const handleRunAction = async () => {
     if (isProcessing) {
@@ -274,7 +271,6 @@ export function AIActionsPanel({
     setSettingsExpanded(false);
     setErrorMessage(null);
     setReadyResult(null);
-    startProgressMessages();
 
     try {
       const result = await onRunAction({
@@ -290,8 +286,6 @@ export function AIActionsPanel({
           ? error.message
           : "We could not complete this AI action right now. Try again.",
       );
-    } finally {
-      clearProgressTimers();
     }
   };
 
@@ -306,7 +300,6 @@ export function AIActionsPanel({
 
     setSelectedAction(key);
     setSettingsExpanded(true);
-    clearProgressTimers();
     setStatus("idle");
     setErrorMessage(null);
     setReadyResult(null);
@@ -590,18 +583,6 @@ export function AIActionsPanel({
               <div className="mt-3 grid gap-2">
                 <label className="grid gap-1">
                   <span className="text-[11px] font-medium text-text-muted">
-                    Find language
-                  </span>
-                  <input
-                    className={textInputClass}
-                    value={languageQuery}
-                    disabled={isDisabled}
-                    placeholder="Search supported languages"
-                    onChange={(event) => setLanguageQuery(event.target.value)}
-                  />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-[11px] font-medium text-text-muted">
                     Target language
                   </span>
                   <span className="relative">
@@ -617,7 +598,7 @@ export function AIActionsPanel({
                         }))
                       }
                     >
-                      {filteredLanguages.map((option) => (
+                      {TRANSLATION_LANGUAGE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
@@ -702,20 +683,20 @@ export function AIActionsPanel({
             >
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="size-4" />
-                Run {selectedActionDef.label} again
+                {selectedButtonLabel} again
               </span>
             </LoadingButton>
           ) : (
             <LoadingButton
               className="h-9 w-full text-xs font-semibold"
               isLoading={isProcessing}
-              loadingText={progressMessage}
+              loadingText={selectedLoadingLabel}
               disabled={isDisabled && !isProcessing}
               onClick={handleRunAction}
             >
               <span className="inline-flex items-center gap-2">
                 <Sparkles className="size-4" />
-                Run {selectedActionDef.label}
+                {selectedButtonLabel}
               </span>
             </LoadingButton>
           )}

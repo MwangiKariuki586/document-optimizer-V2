@@ -1205,7 +1205,7 @@ Suggestions, Apply All, and compact empty states.
 
 - Type badges: `Clarity` → info, `Grammar` → success, `Tone` → ai, `Structure` → warning, `SEO` → accent.
 - Suggestion card status: `pending` → AI muted card, `applied` → success muted card, `ignored` → secondary surface card.
-- Empty state: dashed bordered surface with a document icon and guidance to run an AI action.
+- Empty state: dashed bordered surface with a document icon and adaptive guidance.
 
 **Rules:**
 
@@ -1224,6 +1224,7 @@ Suggestions, Apply All, and compact empty states.
   active type chip can be clicked again to clear the filter.
 - Suggestion cards accept `activeSuggestionId` / `onFocusSuggestion` from `EditorWorkspace`. Active cards use `border-accent bg-accent-muted shadow-card-soft` and scroll into view when a highlighted document range is clicked.
 - The panel no longer owns a separate loading-suggestions branch. Initial suggestions come from the server page, and completed AI responses merge their persisted suggestion rows directly into editor state.
+- Empty states must be action-aware: result-only runs such as Summarize & Shorten and Translate Document point to the request preview, filter misses offer Clear filters, selected runs with no issues offer Run another action, and true empty documents offer Run AI Action.
 - Current Optimization Highlights behavior: the visible category set is Grammar,
   Clarity, Tone, Conciseness, Structure, and Formatting. The legend filters both
   pending cards and inline highlights. Single-card Apply and Ignore remove the
@@ -1285,7 +1286,7 @@ className="rounded-lg border border-border-light bg-surface-secondary p-2.5" (ac
 **Variants:**
 
 - Action cards: Improvement Scan, Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, Translate Document.
-- Setup variants: Tone Alignment target tone and audience/purpose, Summarize & Shorten output type and length, Translate Document searchable supported-language select, style, and terms to preserve.
+- Setup variants: Tone Alignment target tone and audience/purpose, Summarize & Shorten output type and length, Translate Document target-language select, style, and terms to preserve.
 - Status: idle, processing (`LoadingButton` + CometSpinner), ready (adaptive footer CTA only; success feedback comes from Sonner), error (`InlineAlert` with an in-alert retry button).
 
 **Rules:**
@@ -1297,10 +1298,10 @@ className="rounded-lg border border-border-light bg-surface-secondary p-2.5" (ac
 - Inline suggestion actions switch users to the suggestions rail only when fresh pending suggestions are returned. Summary, translation, and major structure results stay in the panel; the footer CTA changes to `View result` and links to `/documents/[id]/preview?requestId=...`.
 - Empty inline reruns do not become the active suggestion scope. When prior suggestions exist, the editor switches the suggestion scope back to `All AI actions` with status `All`, Sonner shows an informational message, and the AI Actions footer CTA changes to run the action again instead of sending users to an empty suggestions view.
 - Do not reintroduce legacy default action names such as Optimize, Rewrite, Improve Clarity, Fix Grammar, Tone Analyze, SEO Analyze, or Simplify Language.
-- While the request is pending, the Run button advances through timed progress
-  copy for preparation, content processing, suggestion checking, and result
-  finalization. The copy does not claim a percentage or authoritative backend
-  stage; it provides visible progress during the request-bound operation.
+- Footer CTA labels are action-specific and outcome-oriented: Scan for
+  Improvements, Check for Errors, Find Readability Fixes, Check Tone Fit,
+  Review Structure, Summarize, and Translate. Loading text uses matching short
+  verbs such as Scanning, Checking, Summarizing, and Translating.
 - Completed responses include only the suggestions persisted for that AI request. `EditorWorkspace` de-duplicates and merges them locally, avoiding a follow-up full suggestions request.
 - Action settings use a compact disclosure with a one-line summary. Setup controls are available for Tone Alignment, Summarize & Shorten, and Translate Document; the disclosure collapses when an action run starts so completed results keep the footer CTA visible. Select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
@@ -1496,7 +1497,7 @@ ambiguous anchors before cards are created.
 - Apply All sends an explicit owned batch request, validates every pending
   replacement, snapshots once, and updates the editor in place.
 - Ignore remains available in the rail because it only marks suggestion status and does not change document content.
-- Empty suggestions state must not strand users: show a compact `Choose AI Action` control that switches the right rail back to `AIActionsPanel`.
+- Empty suggestions state must not strand users: provide an adaptive CTA that switches to `AIActionsPanel`, clears filters, shows all suggestions, or opens a result preview depending on why the list is empty.
 - After an AI action, `EditorWorkspace` reloads suggestions and only switches to the suggestions rail when fresh pending suggestions exist; otherwise it keeps the AI Actions panel visible with the preview-ready result.
 
 ---

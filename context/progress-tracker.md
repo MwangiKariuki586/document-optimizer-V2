@@ -131,6 +131,46 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-30
+Feature: Translate setup language control simplification
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the redundant Find language search field from Translate Document setup. Target language is now the single language selector, followed by translation style and terms to preserve.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check Translate Document setup to confirm the compact panel spacing feels right with the search field removed.
+```
+
+```txt
+Date: 2026-06-30
+Feature: AI action CTA label polish
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced generic `Run [Action]` footer labels with outcome-oriented action labels: Scan for Improvements, Check for Errors, Find Readability Fixes, Check Tone Fit, Review Structure, Summarize, and Translate. Loading labels now match each action with concise verbs such as Scanning, Checking, Summarizing, and Translating.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check the AI Actions panel to confirm the shorter labels fit cleanly in the footer button on narrow rails.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Suggestions result CTA routing fix
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/progress-tracker.md
+What was completed: Fixed the Suggestions tab View result CTA so it builds an absolute document-scoped preview URL using the current document id instead of the previous relative `./preview` URL that could route to `/documents/preview`.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-click View result from a Translate Document or Summarize & Shorten empty state and confirm it opens `/documents/[id]/preview?requestId=...`.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Suggestions tab adaptive empty states
+Status: Completed
+Files changed: components/editor/EditorSuggestionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the generic no-matching-suggestions empty state with action-aware guidance. Result-preview actions such as Summarize & Shorten, Translate Document, and major Structure & Flow offer View result; filter misses offer Clear filters; selected runs with no inline issues offer Run another action or Show all suggestions; true empty documents offer Run AI Action.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check the Suggestions tab for Translate Document, a filtered-empty state, and a truly empty document to confirm the CTA copy and spacing feel right.
+```
+
+```txt
+Date: 2026-06-30
 Feature: Translate Document hardening
 Status: Completed
 Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-prompts.test.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/progress-tracker.md

@@ -911,6 +911,7 @@ export function EditorWorkspace({
               />
             ) : (
               <EditorSuggestionsPanel
+                documentId={document.id}
                 open={suggestionsOpen}
                 onReopen={() => setSuggestionsOpen(true)}
                 onOpenAIActions={() => setRightPanel("ai-actions")}

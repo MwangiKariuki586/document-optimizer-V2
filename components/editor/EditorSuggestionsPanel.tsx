@@ -44,6 +44,7 @@ export type SuggestionFilter = {
 };
 
 type EditorSuggestionsPanelProps = {
+  documentId: string;
   open: boolean;
   onClose?: () => void;
   onReopen: () => void;
@@ -128,6 +129,11 @@ const actionLabels: Record<AIActionRun["action"], string> = {
   simplify_language: "Simplify Language",
 };
 
+const resultOnlyActions = new Set<AIActionRun["action"]>([
+  "summarize_shorten",
+  "translate_document",
+]);
+
 function formatRunTime(value: string) {
   return new Intl.DateTimeFormat("en", {
     month: "short",
@@ -138,6 +144,7 @@ function formatRunTime(value: string) {
 }
 
 export function EditorSuggestionsPanel({
+  documentId,
   open,
   onClose,
   onReopen,
@@ -173,6 +180,77 @@ export function EditorSuggestionsPanel({
   const selectedRun =
     activeRunId === "all" ? null : runMap.get(activeRunId) ?? null;
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
+  const hasActiveFilters =
+    activeStatusFilter !== "all" || activeTypeFilter !== "all";
+  const selectedRunHasNoSuggestions =
+    Boolean(selectedRun) &&
+    !allSuggestions.some(
+      (suggestion) => suggestion.aiRequestId === selectedRun?.id,
+    );
+  const selectedRunIsResultOnly =
+    Boolean(selectedRun) && resultOnlyActions.has(selectedRun!.action);
+  const selectedRunHasResultPreview =
+    selectedRunIsResultOnly ||
+    (selectedRun?.action === "structure_flow" &&
+      selectedRun.suggestionCount === 0);
+  const emptyState = (() => {
+    if (selectedRun && selectedRunHasResultPreview) {
+      return {
+        title: "This action creates a result preview",
+        body: `${actionLabels[selectedRun.action]} uses Results when it creates a full-document output. Open the generated result to review it.`,
+        primaryLabel: "View result",
+        primaryHref: `/documents/${documentId}/preview?requestId=${selectedRun.id}`,
+        secondaryLabel: "AI Actions",
+        secondaryAction: onOpenAIActions,
+      };
+    }
+
+    if (selectedRun && selectedRunHasNoSuggestions) {
+      return {
+        title: "No issues found",
+        body: "This action did not find pending suggestions for the current document.",
+        primaryLabel: "Run another action",
+        primaryAction: onOpenAIActions,
+        secondaryLabel: allSuggestions.length > 0 ? "Show all suggestions" : null,
+        secondaryAction:
+          allSuggestions.length > 0 ? () => onRunChange("all") : undefined,
+      };
+    }
+
+    if (allSuggestions.length > 0 && hasActiveFilters) {
+      return {
+        title: "No suggestions match these filters",
+        body: "Clear filters or choose another AI action to review available suggestions.",
+        primaryLabel: "Clear filters",
+        primaryAction: () => {
+          onStatusFilterChange("all");
+          onTypeFilterChange("all");
+        },
+        secondaryLabel: "AI Actions",
+        secondaryAction: onOpenAIActions,
+      };
+    }
+
+    if (allSuggestions.length > 0) {
+      return {
+        title: "No inline suggestions for this action",
+        body: "Choose another AI action or show all available suggestions.",
+        primaryLabel: "Show all suggestions",
+        primaryAction: () => onRunChange("all"),
+        secondaryLabel: "AI Actions",
+        secondaryAction: onOpenAIActions,
+      };
+    }
+
+    return {
+      title: "No suggestions yet",
+      body: "Run an AI action to generate reviewable suggestions.",
+      primaryLabel: "Run AI Action",
+      primaryAction: onOpenAIActions,
+      secondaryLabel: null,
+      secondaryAction: undefined,
+    };
+  })();
 
   useEffect(() => {
     if (!activeSuggestionId) {
@@ -469,25 +547,40 @@ export function EditorSuggestionsPanel({
                     <FileText className="size-4" />
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-text-primary">
-                    {allSuggestions.length > 0
-                      ? "No matching suggestions"
-                      : "No suggestions yet"}
+                    {emptyState.title}
                   </h3>
                   <p className="mx-auto mt-1.5 max-w-[190px] text-xs leading-5 text-text-secondary">
-                    {allSuggestions.length > 0
-                      ? "Choose another AI action or adjust the active filters."
-                      : "Run an AI action to generate reviewable suggestions."}
+                    {emptyState.body}
                   </p>
-                  {allSuggestions.length === 0 ? (
-                    <button
-                      type="button"
-                      onClick={onOpenAIActions}
-                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                  {emptyState.primaryHref ? (
+                    <a
+                      href={emptyState.primaryHref}
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
                     >
                       <Sparkles className="size-3.5" />
-                      Choose AI Action
+                      {emptyState.primaryLabel}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={emptyState.primaryAction}
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-accent-foreground transition hover:bg-accent-dark"
+                    >
+                      <Sparkles className="size-3.5" />
+                      {emptyState.primaryLabel}
+                    </button>
+                  )}
+                  {emptyState.secondaryLabel && emptyState.secondaryAction ? (
+                    <button
+                      type="button"
+                      onClick={emptyState.secondaryAction}
+                      className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent-light"
+                    >
+                      {emptyState.secondaryLabel}
                     </button>
                   ) : null}
+                  </div>
                 </div>
               </div>
             )}
