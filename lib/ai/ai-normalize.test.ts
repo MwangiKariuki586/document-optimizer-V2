@@ -128,4 +128,66 @@ describe("normalizeProviderResponse", () => {
     expect(result.output.resultMode).toBe("optimization");
     expect(result.output.structureChangeLevel).toBe("major");
   });
+
+  it("forces summarize and shorten output into summary preview mode without suggestions", () => {
+    const result = normalizeProviderResponse({
+      input: {
+        ...input,
+        action: "summarize_shorten",
+        options: {
+          ...input.options,
+          summaryOutputType: "bullet_summary",
+          summaryLength: "brief",
+        },
+      },
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      text: JSON.stringify({
+        mode: "suggestions",
+        workflow: "inline_suggestions",
+        resultMode: "optimization",
+        summary: "Created a brief bullet summary.",
+        revisedMarkdown: "- First point\n- Second point",
+        suggestions: [
+          {
+            type: "clarity",
+            originalText: "Document content",
+            suggestedText: "Clearer document content",
+            explanation: "Provider should not return this for summary.",
+          },
+        ],
+        analysis: { notes: [] },
+        warnings: [],
+      }),
+    });
+
+    expect(result.mode).toBe("preview");
+    expect(result.output.workflow).toBe("result_preview");
+    expect(result.output.resultMode).toBe("summary");
+    expect(result.output.suggestions).toEqual([]);
+    expect(result.output.revisedMarkdown).toBe("- First point\n- Second point");
+  });
+
+  it("rejects summarize and shorten output without result content", () => {
+    expect(() =>
+      normalizeProviderResponse({
+        input: {
+          ...input,
+          action: "summarize_shorten",
+        },
+        provider: "deepseek",
+        model: "deepseek-v4-flash",
+        text: JSON.stringify({
+          mode: "preview",
+          workflow: "result_preview",
+          resultMode: "summary",
+          summary: "Created a summary.",
+          revisedMarkdown: null,
+          suggestions: [],
+          analysis: { notes: [] },
+          warnings: [],
+        }),
+      }),
+    ).toThrow(AIProviderError);
+  });
 });

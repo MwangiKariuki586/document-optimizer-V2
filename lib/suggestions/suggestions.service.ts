@@ -506,6 +506,21 @@ export async function saveSuggestionsFromAIResult(
   });
 
   if (
+    input.action === "summarize_shorten" ||
+    input.action === "translate_document"
+  ) {
+    console.log("[suggestions/save-from-ai] skipping result-only action", {
+      documentId: input.documentId,
+      aiRequestId: input.aiRequestId,
+      action: input.action,
+      workflow: input.output.workflow,
+      resultMode: input.output.resultMode,
+    });
+
+    return [];
+  }
+
+  if (
     input.action === "structure_flow" &&
     (input.output.workflow === "result_preview" ||
       input.output.structureChangeLevel === "major" ||

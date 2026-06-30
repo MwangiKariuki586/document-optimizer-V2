@@ -145,24 +145,48 @@ Return only valid JSON matching this exact shape:
 }
 Never say that changes were applied. AI output is preview-only until the user explicitly applies it.`;
 
+function buildActionSetup(input: AIActionInput, language: string): string {
+  if (input.action === "summarize_shorten") {
+    return [
+      `Summary output type: ${input.options.summaryOutputType ?? "short_summary"}`,
+      `Summary length: ${input.options.summaryLength ?? "medium"}`,
+      `Output language: ${language}`,
+      "Do not translate the document.",
+    ].join("\n");
+  }
+
+  if (input.action === "translate_document") {
+    const targetLanguage = input.options.targetLanguage
+      ? TRANSLATION_LANGUAGE_LABELS[input.options.targetLanguage]
+      : language;
+
+    return [
+      `Target language: ${targetLanguage}`,
+      `Translation style: ${input.options.translationStyle ?? "natural"}`,
+      `Terms to preserve: ${input.options.termsToPreserve ?? "none"}`,
+    ].join("\n");
+  }
+
+  if (input.action === "tone_alignment") {
+    return [
+      `Target tone: ${input.options.toneTarget ?? input.options.tone}`,
+      `Audience or purpose: ${input.options.audienceOrPurpose ?? input.options.audience}`,
+    ].join("\n");
+  }
+
+  return [
+    `Target tone: ${input.options.tone}`,
+    `Audience: ${input.options.audience}`,
+  ].join("\n");
+}
+
 export function buildAIUserPrompt(input: AIActionInput): string {
   const title = input.title ? `Title: ${input.title}` : "Title: Untitled";
   const language = LANGUAGE_LABELS[input.options.language];
-  const targetLanguage = input.options.targetLanguage
-    ? TRANSLATION_LANGUAGE_LABELS[input.options.targetLanguage]
-    : language;
   const preserveStructure = input.options.preserveStructure
     ? "Preserve document headings, lists, and markdown structure where possible."
     : "Structure may be changed if it improves the result.";
-  const setup = [
-    `Target tone: ${input.options.toneTarget ?? input.options.tone}`,
-    `Audience or purpose: ${input.options.audienceOrPurpose ?? input.options.audience}`,
-    `Summary output type: ${input.options.summaryOutputType ?? "not requested"}`,
-    `Summary length: ${input.options.summaryLength ?? "not requested"}`,
-    `Target language: ${targetLanguage}`,
-    `Translation style: ${input.options.translationStyle ?? "natural"}`,
-    `Terms to preserve: ${input.options.termsToPreserve ?? "none"}`,
-  ].join("\n");
+  const setup = buildActionSetup(input, language);
 
   return `${title}
 Action: ${input.action}

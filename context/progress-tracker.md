@@ -131,6 +131,16 @@ _Add completed work notes here after each feature._
 
 ```txt
 Date: 2026-06-30
+Feature: Summarize & Shorten language leak hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-prompts.test.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, scripts/test-ai-action-latency.ts, context/progress-tracker.md
+What was completed: Fixed the shared AI setup prompt so Summarize & Shorten no longer receives translation settings such as the default Swahili target language. Summary prompts now include only summary output type, summary length, output language, and an explicit do-not-translate instruction. Translate Document remains the only action that receives target language, translation style, and preserved terms.
+Verification: Focused tests passed: `npx.cmd vitest run lib/ai/ai-prompts.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts lib/suggestions/suggestions.service.test.ts` with 4 files / 32 tests. `npx.cmd tsc --noEmit` passed. Live backend smoke passed with `AI_ACTION=summarize_shorten`: DeepSeek returned preview/result_preview, saved 0 suggestions, total 6360 ms. Fetched ai_request `45a645b0-254e-443f-a5bc-15cc0f51b667` output and confirmed the generated summary starts in English. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-run Summarize & Shorten from `/documents/[id]` again and confirm the Results page proposed output is English unless the original document language is changed.
+```
+
+```txt
+Date: 2026-06-30
 Feature: Structure & Flow hardening
 Status: Completed
 Files changed: lib/ai/ai-prompts.ts, lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, tests/playwright/ai-actions.spec.ts, context/architecture.md, context/progress-tracker.md

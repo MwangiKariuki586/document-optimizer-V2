@@ -17,7 +17,23 @@ type NormalizeProviderResponseInput = {
   outputTokens?: number;
 };
 
+function isDedicatedResultAction(action: AIActionInput["action"]) {
+  return action === "summarize_shorten" || action === "translate_document";
+}
+
+function getNormalizedMode(input: AIActionInput, output: AIActionOutput) {
+  if (isDedicatedResultAction(input.action)) {
+    return "preview" as const;
+  }
+
+  return output.mode;
+}
+
 function getDefaultWorkflow(input: AIActionInput, output: AIActionOutput) {
+  if (isDedicatedResultAction(input.action)) {
+    return "result_preview" as const;
+  }
+
   if (output.workflow) {
     return output.workflow;
   }
@@ -26,11 +42,7 @@ function getDefaultWorkflow(input: AIActionInput, output: AIActionOutput) {
     return "inline_suggestions" as const;
   }
 
-  if (
-    input.action === "summarize_shorten" ||
-    input.action === "translate_document" ||
-    input.action === "structure_flow"
-  ) {
+  if (input.action === "structure_flow") {
     return "result_preview" as const;
   }
 
@@ -38,16 +50,16 @@ function getDefaultWorkflow(input: AIActionInput, output: AIActionOutput) {
 }
 
 function getDefaultResultMode(input: AIActionInput, output: AIActionOutput) {
-  if (output.resultMode) {
-    return output.resultMode;
-  }
-
   if (input.action === "summarize_shorten") {
     return "summary" as const;
   }
 
   if (input.action === "translate_document") {
     return "translation" as const;
+  }
+
+  if (output.resultMode) {
+    return output.resultMode;
   }
 
   if (output.mode === "preview" || output.revisedMarkdown) {
@@ -145,6 +157,10 @@ export function normalizeProviderResponse({
 
   const output: AIActionOutput = {
     ...parsedOutput.data,
+    mode: getNormalizedMode(input, parsedOutput.data),
+    suggestions: isDedicatedResultAction(input.action)
+      ? []
+      : parsedOutput.data.suggestions,
     workflow: getDefaultWorkflow(input, parsedOutput.data),
     resultMode: getDefaultResultMode(input, parsedOutput.data),
     structureChangeLevel: getDefaultStructureChangeLevel(input, parsedOutput.data),
@@ -153,6 +169,13 @@ export function normalizeProviderResponse({
         ? (parsedOutput.data.targetLanguage ?? input.options.targetLanguage)
         : parsedOutput.data.targetLanguage,
   };
+
+  if (
+    isDedicatedResultAction(input.action) &&
+    !output.revisedMarkdown?.trim()
+  ) {
+    throw new AIProviderError("AI response did not include result content");
+  }
 
   return {
     action: input.action,

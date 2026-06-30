@@ -37,6 +37,11 @@ if (action === "tone_alignment") {
   options.audienceOrPurpose = "hiring manager reviewing a technical resume";
 }
 
+if (action === "summarize_shorten") {
+  options.summaryOutputType = "executive_summary";
+  options.summaryLength = "brief";
+}
+
 function loadEnvLocal() {
   const envPath = resolve(process.cwd(), ".env.local");
   const envFile = readFileSync(envPath, "utf8");

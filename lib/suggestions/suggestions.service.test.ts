@@ -4,6 +4,7 @@ import {
   buildAppliedSuggestionSummary,
   buildAppliedSuggestionsReviewPreview,
   getAISuggestionCandidateRejectionReason,
+  saveSuggestionsFromAIResult,
 } from "@/lib/suggestions/suggestions.service";
 import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
 
@@ -103,6 +104,37 @@ describe("buildAppliedSuggestionSummary", () => {
       total: 0,
       items: [],
     });
+  });
+});
+
+describe("saveSuggestionsFromAIResult", () => {
+  it("does not persist suggestions for summarize and shorten results", async () => {
+    const result = await saveSuggestionsFromAIResult({} as never, {
+      userId: "user-1",
+      documentId: "doc-1",
+      aiRequestId: "request-1",
+      action: "summarize_shorten",
+      originalMarkdown: "Original document content.",
+      output: {
+        mode: "preview",
+        workflow: "result_preview",
+        resultMode: "summary",
+        summary: "Created a summary.",
+        revisedMarkdown: "Short summary.",
+        suggestions: [
+          {
+            type: "clarity",
+            originalText: "Original document content.",
+            suggestedText: "Short summary.",
+            explanation: "Should not be saved for summary results.",
+          },
+        ],
+        analysis: { notes: [] },
+        warnings: [],
+      },
+    });
+
+    expect(result).toEqual([]);
   });
 });
 
