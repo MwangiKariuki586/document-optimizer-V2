@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Matched homepage confidence layout to reference
-**Next:** Browser-verify `/documents/[id]/preview` Changes rail with real suggestions, then verify `/documents/[id]/preview?applied=1` warning behavior and inline suggestion highlight interactions
+**Last completed:** Refactored AI Actions into distinct inline, setup, and result workflows
+**Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
 
 ---
 
@@ -111,6 +111,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Create Blank is no longer part of the current MVP. New document creation is limited to Upload File and Paste Text entry points; legacy blank documents/versions may still display, but `POST /api/documents` no longer creates `sourceType = blank`.
 - Decision: Upload ingestion now uses an inline fast path before queue fallback. TXT, Markdown, DOCX, and PDF files up to 5 MB are parsed/finalized during upload completion with a 4 second processing budget. The Node ingestion worker remains available for larger files, timeouts, retries, and production-scale queue processing.
 - Decision: AI actions remain request-bound for the current MVP. The authenticated route runs the provider, persists the request result and suggestions, and returns them together; a separate AI worker and polling route are out of scope. DeepSeek retries one transient failure and may fall back to Gemini only for the default unpinned path.
+- Decision: Default AI actions are outcome-based: Improvement Scan, Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, and Translate Document. Inline actions return optimization highlights; summary, translation, and major structure changes route through `/documents/[id]/preview` result modes before saving or applying.
 - Decision: Rich uploaded content now treats `editor_json` as the canonical editable document model. DOCX ingestion converts mammoth HTML into TipTap JSON for new uploads, Markdown ingestion parses Markdown into structured JSON, and `current_markdown` remains the derived portable/AI fallback representation.
 - Decision: AI result preview panes render TipTap content instead of literal markdown. Preview services pass current/proposed `editor_json` when available, and preview components fall back to markdown parsing only when rich JSON is unavailable.
 
@@ -127,6 +128,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-06-29
+Feature: AI Actions Workflow Refactor
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, components/ai/AIResultPreview.tsx, components/ai/PreviewActionBar.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, lib/ai/ai.validators.ts, lib/ai/ai-prompts.ts, lib/ai/ai-normalize.ts, lib/ai/ai.service.ts, lib/suggestions/suggestions.service.ts, lib/dashboard/dashboard.service.ts, lib/usage/account-usage.service.ts, app/api/documents/[id]/ai/[requestId]/save-copy/route.ts, app/api/documents/[id]/ai/[requestId]/save-version/route.ts, supabase/migrations/20260629120000_refactor_ai_action_keys.sql, supabase/schema/phase-1-database-schema.sql, tests/playwright/ai-actions.spec.ts, lib/ai/*.test.ts, context/architecture.md, context/build-plan.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the old overlapping AI action list with seven distinct actions, added action-specific setup for tone/summary/translation, added workflow/result metadata, prevented summary/translation suggestion persistence, enhanced preview result actions for apply/save/copy flows, and added a migration that allows new action keys while retaining legacy action rows.
+Verification: npx.cmd tsc --noEmit passed; npm.cmd run test:ai-actions passed 7 Playwright provider-path tests; focused Vitest AI tests passed 5 files / 23 tests; npm.cmd test passed 26 files / 121 tests; npm.cmd run lint passed with existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace; npm.cmd run build passed.
+Follow-up: Browser-review `/documents/[id]` AI Actions panel and `/documents/[id]/preview` result modes with authenticated real document data.
+```
 
 ```txt
 Date: 2026-06-29
@@ -1680,6 +1691,66 @@ Files changed: components/marketing/OptimizationPreview.tsx, context/ui-registry
 What was completed: Updated the Document Quality card to match the landing reference with a conic score ring, Great Progress summary, overall progress bar, and score-mapped metric bars.
 Verification: npm run lint passed; npm run build passed; browser visual QA completed for the optimized card; browser console showed no warnings or errors.
 Follow-up: Continue Phase 1 / 02 Auth.
+```
+
+```txt
+Date: 2026-06-29
+Feature: Improvement Scan rerun persistence
+Status: Completed
+Files changed: lib/ai/ai.service.ts, lib/suggestions/suggestion-replace.ts, lib/suggestions/suggestion-replace.test.ts, lib/suggestions/suggestions.service.ts, context/progress-tracker.md
+What was completed: Confirmed recent Improvement Scan requests were generating 7-10 provider suggestions but saving zero rows. Added persisted document markdown as a safe anchoring fallback when editor-submitted markdown rejects all provider anchors, and centralized multi-candidate suggestion text resolution with coverage for fallback markdown.
+Verification: Supabase MCP showed latest Improvement Scan outputs had non-empty `output.suggestions` but `0` saved suggestions; `npx.cmd vitest run lib/ai/ai.service.test.ts lib/suggestions/suggestion-replace.test.ts lib/suggestions/suggestions.service.test.ts` passed with 16 tests; `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with the existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Re-run Improvement Scan in the browser and confirm generated suggestions now persist and appear in the suggestions rail.
+```
+
+```txt
+Date: 2026-06-29
+Feature: Empty AI suggestion rerun handling
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Prevented empty inline AI reruns from replacing the active suggestion scope. Inline runs only become the active run when they return pending suggestions; empty reruns switch back to `All AI actions` with status `All` when previous suggestions exist, show an informational Sonner toast, and make the AI Actions footer CTA offer to run the action again instead of opening an empty review view.
+Verification: `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with the existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace. Re-ran both commands after the `All AI actions` and status `All` fallback corrections and they passed with the same warnings.
+Follow-up: Browser-test running the same inline action twice: first with suggestions, then with an empty result, and confirm previous suggestions remain accessible.
+```
+
+```txt
+Date: 2026-06-29
+Feature: Improvement Scan suggestion anchoring
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/suggestions/suggestion-replace.ts, lib/suggestions/suggestion-replace.test.ts, lib/suggestions/suggestions.service.ts, context/progress-tracker.md
+What was completed: Tightened Improvement Scan prompt guidance to require concrete inline suggestions and no full rewrite. Added safe location-offset anchoring for provider suggestions when `originalText` is not an exact unique match, while still rejecting ambiguous offsets. Removed Improvement Scan from the full-document revisedMarkdown fallback so it remains an inline guidance action only.
+Verification: `npx.cmd vitest run lib/suggestions/suggestion-replace.test.ts lib/suggestions/suggestions.service.test.ts lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts` passed with 25 tests; `npx.cmd tsc --noEmit` passed.
+Follow-up: Run Improvement Scan in the signed-in editor and confirm it now creates persisted inline suggestions; if the provider returns zero suggestions, the next step is an action-specific empty-result UI instead of pretending suggestions are ready.
+```
+
+```txt
+Date: 2026-06-29
+Feature: AI Actions ready-state CTA polish
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Updated the AI Actions panel so completed result-preview actions use the main footer CTA as `View result`, while completed inline-suggestion actions use it as `Review suggestions`. Removed the redundant ready banner entirely because Sonner already provides completion feedback, and collapsed the action setup disclosure as soon as an action run starts so result actions keep the primary next step visible.
+Verification: `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with the existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-verify a Translate Document or Summarize & Shorten run to confirm the setup panel collapses and the footer button opens `/documents/[id]/preview?requestId=...`.
+```
+
+```txt
+Date: 2026-06-29
+Feature: AI provider output normalization
+Status: Completed
+Files changed: lib/ai/ai.validators.ts, lib/ai/ai-normalize.ts, lib/ai/ai.validators.test.ts, context/progress-tracker.md
+What was completed: Relaxed AI suggestion output parsing so providers may return the documented structured suggestion fields (`category` and `reason`) or the legacy app fields (`type` and `explanation`). Normalization now canonicalizes both shapes before suggestion persistence, drops nullable optional location metadata such as `blockId: null`, and logs safe Zod issue paths when provider output is still invalid.
+Verification: `npx.cmd vitest run lib/ai/ai.validators.test.ts lib/ai/ai-normalize.test.ts lib/ai/providers/deepseek.provider.test.ts` passed with 15 tests; `npx.cmd vitest run lib/ai/ai.validators.test.ts lib/ai/ai-normalize.test.ts` passed with 11 tests after the nullable location fix; `npx.cmd tsc --noEmit` passed; `npm.cmd run lint` passed with the existing unrelated warnings in LoginPanel, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Retry the failing AI action in the signed-in editor. If DeepSeek still returns a different invalid shape, the server log will now include the exact invalid output paths.
+```
+
+```txt
+Date: 2026-06-29
+Feature: AI action key migration
+Status: Completed
+Files changed: context/progress-tracker.md
+What was completed: Applied the Supabase migration `refactor_ai_action_keys` to the active project so `ai_requests_action_check` accepts the new AI action keys: improvement_scan, proofread_correct, improve_readability, tone_alignment, structure_flow, summarize_shorten, and translate_document while retaining legacy historical keys.
+Verification: Supabase MCP confirmed the active `ai_requests_action_check` constraint includes all new and legacy keys, and `list_migrations` shows `20260629110617_refactor_ai_action_keys`.
+Follow-up: Retry a signed-in AI action from `/documents/[id]`; the previous 500 caused by the action check constraint should be resolved.
 ```
 
 ```txt

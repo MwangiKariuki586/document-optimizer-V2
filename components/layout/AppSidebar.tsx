@@ -206,20 +206,24 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
         {collapsed ? (
           <Link
             href="/dashboard"
-            className="relative flex size-9 items-center justify-center overflow-hidden rounded-full bg-overlay"
+            className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-overlay"
             aria-label="Docufine dashboard"
             title="Docufine"
           >
-            <span className="absolute h-11 w-1 -rotate-45 rounded-full bg-surface" />
-            <span className="absolute h-11 w-1 -rotate-45 translate-x-1.5 rounded-full bg-surface/80" />
-            <span className="absolute h-11 w-1 -rotate-45 -translate-x-1.5 rounded-full bg-surface/60" />
+            <img
+              src="/logo.png"
+              alt="Docufine"
+              className="h-9 w-9 object-cover"
+            />
           </Link>
         ) : (
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-            <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-overlay">
-              <span className="absolute h-11 w-1 -rotate-45 rounded-full bg-surface" />
-              <span className="absolute h-11 w-1 -rotate-45 translate-x-1.5 rounded-full bg-surface/80" />
-              <span className="absolute h-11 w-1 -rotate-45 -translate-x-1.5 rounded-full bg-surface/60" />
+            <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-overlay">
+              <img
+                src="/logo.png"
+                alt="Docufine"
+                className="h-9 w-9 object-cover"
+              />
             </span>
             <span className="truncate text-sm font-bold leading-5 text-text-primary">
               Docufine

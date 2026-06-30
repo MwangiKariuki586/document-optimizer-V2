@@ -281,6 +281,18 @@ Usage is recorded
 Result and persisted suggestions are returned to the editor
 ```
 
+Default AI actions are outcome-based:
+
+```txt
+improvement_scan      -> inline suggestions
+proofread_correct     -> inline suggestions
+improve_readability   -> inline suggestions
+tone_alignment        -> setup + inline suggestions
+structure_flow        -> inline suggestions for minor changes, result preview for major restructuring
+summarize_shorten     -> setup + summary result preview
+translate_document    -> setup + translation result preview
+```
+
 `POST /api/documents/[id]/ai` performs authentication, validation, ownership
 checks, provider execution, persistence, and usage recording in one request.
 The completed response includes the suggestions persisted for that AI request,
@@ -291,6 +303,19 @@ Before suggestion persistence, each AI `originalText` is resolved against the
 exact document markdown. Harmless whitespace-only differences may be mapped
 back to the unique exact document slice. Missing or ambiguous anchors are
 discarded and never exposed as actionable pending suggestions.
+
+AI output records include workflow metadata:
+
+```txt
+workflow: inline_suggestions | result_preview
+resultMode: optimization | summary | translation
+structureChangeLevel: minor | major
+```
+
+Summary and translation actions return full result content in
+`ai_requests.output.revisedMarkdown` and must not create inline suggestion rows.
+Translation copies are saved as separate documents by default using the title
+format `{Original Title} - {Language} Translation`.
 
 ### Applying AI Result
 
@@ -308,7 +333,7 @@ Document current_markdown, editor_json, and word_count are updated
 Usage/activity is recorded
 ```
 
-Full AI action results are finally applied from `/documents/[id]/preview`.
+Full AI action results are finally reviewed from `/documents/[id]/preview`.
 Suggestion Apply and Apply All are explicit editor actions. Single Apply loads
 the owned pending suggestion and current document in parallel,
 validates replacement safety, snapshots the pre-change state, updates document
@@ -324,6 +349,14 @@ workspace compares current vs proposed content, supports editable proposed
 results, and supports synchronous proportional scrolling. If the user edits the
 proposed result before applying, that edited markdown is the source of truth for
 the document update.
+
+Result preview modes:
+
+```txt
+Optimization -> may apply to the original document after approval and a snapshot
+Summary      -> copy, save as new document, save as version, export after saving, or discard
+Translation  -> copy, save as translated document copy, export after saving, or discard
+```
 
 ### Export
 
@@ -654,13 +687,13 @@ Rules the AI agent must never violate:
 - Raw uploaded files are stored in private storage, not Postgres.
 - AI providers are only called through the AI router.
 - AI output never overwrites document content automatically.
-- Full AI action output can only be finally applied from AI Result Preview.
+- Full AI action output can only be reviewed, saved, or applied from AI Result Preview.
 - Single suggestion Apply is allowed from the editor after explicit user action and must snapshot first.
 - Apply All Suggestions is allowed from the editor after explicit user action,
   safe replacement validation, and one pre-change version snapshot.
-- AI Result Preview must support current vs proposed comparison before apply.
-- The proposed AI result must be editable before applying.
-- The edited proposed result is what gets applied.
+- AI Result Preview must support current vs proposed comparison before apply or save.
+- Summary and translation results must not overwrite the original document by default.
+- Translation saves should create a separate translated document copy.
 - Comparison view supports synchronous proportional scrolling.
 - Applying AI output creates a version snapshot first.
 - Applying a suggestion creates a version snapshot where needed.

@@ -17,7 +17,7 @@ import {
 import {
   applyReplacementsSafely,
   getReplacementSafety,
-  resolveSuggestionOriginalText,
+  resolveSuggestionOriginalTextFromCandidates,
   SuggestionReplacementError,
 } from "@/lib/suggestions/suggestion-replace";
 import { suggestionTypeSchema } from "@/lib/suggestions/suggestions.validators";
@@ -72,6 +72,10 @@ type SelectionRow = {
 };
 
 const SUGGESTION_FRIENDLY_ACTIONS = new Set<AIActionKey>([
+  "proofread_correct",
+  "improve_readability",
+  "tone_alignment",
+  "structure_flow",
   "optimize",
   "improve_clarity",
   "fix_grammar",
@@ -372,6 +376,7 @@ export async function saveSuggestionsFromAIResult(
     aiRequestId: string;
     action: AIActionKey;
     originalMarkdown: string;
+    fallbackMarkdown?: string;
     output: AIActionOutput;
   },
 ): Promise<DocumentSuggestion[]> {
@@ -386,6 +391,7 @@ export async function saveSuggestionsFromAIResult(
     outputSuggestionCount: suggestions.length,
     hasRevisedMarkdown: Boolean(input.output.revisedMarkdown),
     originalLength: input.originalMarkdown.length,
+    fallbackLength: input.fallbackMarkdown?.length ?? 0,
   });
 
   for (const suggestion of suggestions) {
@@ -395,9 +401,10 @@ export async function saveSuggestionsFromAIResult(
       continue;
     }
 
-    const originalText = resolveSuggestionOriginalText(
-      input.originalMarkdown,
+    const originalText = resolveSuggestionOriginalTextFromCandidates(
+      [input.originalMarkdown, input.fallbackMarkdown],
       suggestion.originalText,
+      suggestion.location,
     );
 
     if (!originalText) {
@@ -412,7 +419,7 @@ export async function saveSuggestionsFromAIResult(
       type,
       original_text: originalText,
       suggested_text: suggestion.suggestedText,
-      explanation: suggestion.explanation,
+      explanation: suggestion.reason ?? suggestion.explanation,
       status: "pending",
     });
   }

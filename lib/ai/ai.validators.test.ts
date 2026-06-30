@@ -9,7 +9,7 @@ import {
 describe("aiActionInputSchema", () => {
   it("parses action input with default options", () => {
     const result = aiActionInputSchema.safeParse({
-      action: "optimize",
+      action: "improvement_scan",
       contentMarkdown: "## Plan\n\nImprove this document.",
     });
 
@@ -59,12 +59,48 @@ describe("aiActionOutputSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("accepts structured suggestions that use category and reason", () => {
+    const result = aiActionOutputSchema.safeParse({
+      mode: "suggestions",
+      workflow: "inline_suggestions",
+      summary: "Found one readability issue.",
+      revisedMarkdown: null,
+      suggestions: [
+        {
+          id: "readability-1",
+          actionType: "improve_readability",
+          category: "clarity",
+          issueLabel: "Complex phrasing",
+          originalText: "utilize the available functionality",
+          suggestedText: "use the available feature",
+          reason: "Uses simpler wording while preserving meaning.",
+          severity: "low",
+          location: { startOffset: 12, endOffset: 47, blockId: null },
+        },
+      ],
+      analysis: null,
+      warnings: null,
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.suggestions[0]).toMatchObject({
+        type: "clarity",
+        category: "clarity",
+        explanation: "Uses simpler wording while preserving meaning.",
+        reason: "Uses simpler wording while preserving meaning.",
+        location: { startOffset: 12, endOffset: 47 },
+      });
+    }
+  });
 });
 
 describe("runAIActionRequestSchema", () => {
   it("validates route payloads with action options", () => {
     const result = runAIActionRequestSchema.safeParse({
-      action: "rewrite",
+      action: "improve_readability",
       contentMarkdown: "Rewrite this document.",
       options: {
         tone: "friendly",
@@ -77,9 +113,27 @@ describe("runAIActionRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("validates route payloads with action-specific options", () => {
+    const result = runAIActionRequestSchema.safeParse({
+      action: "translate_document",
+      contentMarkdown: "Rewrite this document.",
+      options: {
+        tone: "professional",
+        audience: "customer",
+        language: "en",
+        preserveStructure: true,
+        targetLanguage: "sw",
+        translationStyle: "natural",
+        termsToPreserve: "Docufine",
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("rejects empty document content", () => {
     const result = runAIActionRequestSchema.safeParse({
-      action: "rewrite",
+      action: "summarize_shorten",
       contentMarkdown: "",
     });
 

@@ -104,6 +104,19 @@ function normalizePreview(preview: PreviewPayload) {
   if (preview.kind === "ai_request") {
     const data = preview.data;
     const revisedMarkdown = data.output.revisedMarkdown?.trim() ?? "";
+    const resultMode = data.output.resultMode ?? "optimization";
+    const title =
+      resultMode === "summary"
+        ? "Summary Result"
+        : resultMode === "translation"
+          ? "Translation Result"
+          : "Optimization Result";
+    const description =
+      resultMode === "summary"
+        ? "Review the generated summary or shortened version before saving it."
+        : resultMode === "translation"
+          ? "Review the translated document while keeping the original unchanged."
+          : "Compare your current document with the proposed AI revision before applying it.";
 
     return {
       kind: preview.kind,
@@ -112,9 +125,8 @@ function normalizePreview(preview: PreviewPayload) {
       documentTitle: data.documentTitle,
       sourceLabel: `AI request ${data.id.slice(0, 8)}`,
       statusLabel: "Result ready",
-      title: "AI Result Preview",
-      description:
-        "Compare your current document with the proposed AI revision. Edit the proposed version before applying.",
+      title,
+      description,
       originalMarkdown: data.originalMarkdown,
       originalEditorJson: data.originalEditorJson,
       proposedMarkdown: revisedMarkdown,
@@ -124,6 +136,7 @@ function normalizePreview(preview: PreviewPayload) {
       summary: data.output.summary,
       warnings: data.output.warnings,
       suggestions: data.output.suggestions,
+      resultMode,
       usageLabel: `${data.provider ?? "AI"} ${data.model ?? "model"} - ${
         (data.inputTokens ?? 0) + (data.outputTokens ?? 0)
       } tokens`,
@@ -166,6 +179,7 @@ function normalizePreview(preview: PreviewPayload) {
     summary: data.summary,
     warnings: data.warnings,
     suggestions: data.suggestions,
+    resultMode: undefined,
     usageLabel: `${data.suggestions.length} suggestion${
       data.suggestions.length === 1 ? "" : "s"
     } ready for review`,
@@ -231,7 +245,12 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
               />
 
               <div className="mt-2 shrink-0">
-                <PreviewActionBar documentId={display.documentId} />
+                <PreviewActionBar
+                  documentId={display.documentId}
+                  requestId={display.kind === "ai_request" ? display.id : undefined}
+                  resultMode={display.resultMode}
+                  proposedMarkdown={display.proposedMarkdown}
+                />
               </div>
             </div>
 

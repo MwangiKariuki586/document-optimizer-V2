@@ -426,22 +426,47 @@ export function EditorWorkspace({
       },
       ...current.filter((run) => run.id !== data.data!.id),
     ]);
-    setActiveRunId(data.data.id);
-    setActiveTypeFilter("all");
+    const workflow = data.data.result.output.workflow ?? data.data.result.mode;
+    const hasInlineSuggestions =
+      workflow === "inline_suggestions" && nextPendingSuggestions.length > 0;
 
-    if (nextPendingSuggestions.length > 0) {
-      setRightPanel("suggestions");
-      setSuggestionsOpen(true);
-    } else {
-      setRightPanel("ai-actions");
+    if (hasInlineSuggestions || workflow !== "inline_suggestions") {
+      setActiveRunId(data.data.id);
+      setActiveTypeFilter("all");
     }
 
-    appToast.success("AI result is ready for review.");
+    if (hasInlineSuggestions) {
+      setRightPanel("suggestions");
+      setSuggestionsOpen(true);
+      appToast.success("AI suggestions are ready for review.");
+    } else if (workflow === "inline_suggestions") {
+      const hasExistingSuggestions = suggestions.length > 0;
+
+      if (hasExistingSuggestions) {
+        setActiveRunId("all");
+        setActiveTypeFilter("all");
+        setActiveStatusFilter("all");
+      }
+
+      setRightPanel(hasExistingSuggestions ? "suggestions" : "ai-actions");
+      setSuggestionsOpen(true);
+      appToast.info("No new reviewable suggestions were found.");
+    } else {
+      setRightPanel("ai-actions");
+      appToast.success("AI result is ready for review.");
+    }
 
     return {
       id: data.data.id,
       summary: data.data.result.summary,
       previewHref: `/documents/${document.id}/preview?requestId=${data.data.id}`,
+      suggestionCount: newSuggestions.length,
+      workflow:
+        data.data.result.output.workflow ??
+        (data.data.result.mode === "suggestions"
+          ? "inline_suggestions"
+          : "result_preview"),
+      resultMode: data.data.result.output.resultMode,
     };
   };
 

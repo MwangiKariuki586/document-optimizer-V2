@@ -6,6 +6,8 @@ import {
   getReplacementSafety,
   replaceOnce,
   resolveSuggestionOriginalText,
+  resolveSuggestionOriginalTextFromCandidates,
+  resolveSuggestionOriginalTextFromLocation,
   SuggestionReplacementError,
 } from "@/lib/suggestions/suggestion-replace";
 
@@ -38,6 +40,33 @@ describe("suggestion-replace", () => {
         "hello  world",
       ),
     ).toBeNull();
+  });
+
+  it("resolves a unique original text from provider location offsets", () => {
+    expect(
+      resolveSuggestionOriginalTextFromLocation("Alpha beta gamma.", {
+        startOffset: 6,
+        endOffset: 10,
+      }),
+    ).toBe("beta");
+  });
+
+  it("rejects location offsets when the resolved text is ambiguous", () => {
+    expect(
+      resolveSuggestionOriginalTextFromLocation("Alpha beta beta.", {
+        startOffset: 6,
+        endOffset: 10,
+      }),
+    ).toBeNull();
+  });
+
+  it("resolves against fallback markdown when submitted markdown differs", () => {
+    expect(
+      resolveSuggestionOriginalTextFromCandidates(
+        ["Alpha beta.", "Saved document with unique phrase."],
+        "unique phrase",
+      ),
+    ).toBe("unique phrase");
   });
 
   it("replaces a unique match once", () => {

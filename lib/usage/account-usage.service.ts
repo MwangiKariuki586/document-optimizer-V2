@@ -199,6 +199,20 @@ function progressClass(value: number, limit: number): string {
 }
 
 function formatActionLabel(value: string): string {
+  const labels: Record<string, string> = {
+    improvement_scan: "Improvement Scan",
+    proofread_correct: "Proofread & Correct",
+    improve_readability: "Improve Readability",
+    tone_alignment: "Tone Alignment",
+    structure_flow: "Structure & Flow",
+    summarize_shorten: "Summarize & Shorten",
+    translate_document: "Translate Document",
+  };
+
+  if (labels[value]) {
+    return labels[value];
+  }
+
   return value
     .split("_")
     .filter(Boolean)
@@ -241,8 +255,8 @@ function rowTokenCount(row: Pick<AIRequestRow | UsageRow, "input_tokens" | "outp
 }
 
 function categoryForAction(action: string): AccountUsageCategory["label"] {
-  if (["tone_analyze", "rewrite"].includes(action)) return "Tone";
-  if (["analyze", "optimize"].includes(action)) return "Structure";
+  if (["tone_alignment", "tone_analyze", "rewrite"].includes(action)) return "Tone";
+  if (["structure_flow", "improvement_scan", "analyze", "optimize"].includes(action)) return "Structure";
   if (action === "seo_analyze") return "SEO";
   return "Clarity";
 }

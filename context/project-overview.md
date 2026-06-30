@@ -126,19 +126,18 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 ### AI Actions
 
 - User selects an AI action:
-  - Optimize
-  - Improve Clarity
-  - Fix Grammar
-  - Rewrite
-  - Summarize
-  - Translate
-  - Tone Analyze
-  - SEO Analyze
-  - Simplify Language
+  - Improvement Scan
+  - Proofread & Correct
+  - Improve Readability
+  - Tone Alignment
+  - Structure & Flow
+  - Summarize & Shorten
+  - Translate Document
 
 - AI actions default to structure-preserving behavior where possible
 - AI does not automatically overwrite the document
 - AI output is returned as a preview, analysis, or suggestions depending on the action
+- Summary and translation generate result previews instead of inline highlights
 
 ### AI Result Preview
 

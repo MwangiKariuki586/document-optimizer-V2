@@ -79,7 +79,7 @@ function createFakeSupabase(state: FakeSupabaseState) {
 }
 
 const aiResult: AIActionResult = {
-  action: "improve_clarity",
+  action: "improve_readability",
   mode: "suggestions",
   summary: "Suggested clearer phrasing.",
   provider: "deepseek",
@@ -116,7 +116,7 @@ describe("runDocumentAIAction", () => {
     const result = await runDocumentAIAction(supabase as never, {
       userId: "user-1",
       documentId: "document-1",
-      action: "improve_clarity",
+      action: "improve_readability",
       contentMarkdown: "Document content",
       options: {
         tone: "professional",

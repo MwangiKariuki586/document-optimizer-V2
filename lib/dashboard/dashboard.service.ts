@@ -350,6 +350,20 @@ function mapDocumentTitles(documents: Pick<DocumentRow, "id" | "title">[]) {
 }
 
 function formatActionLabel(value: string): string {
+  const labels: Record<string, string> = {
+    improvement_scan: "Improvement Scan",
+    proofread_correct: "Proofread & Correct",
+    improve_readability: "Improve Readability",
+    tone_alignment: "Tone Alignment",
+    structure_flow: "Structure & Flow",
+    summarize_shorten: "Summarize & Shorten",
+    translate_document: "Translate Document",
+  };
+
+  if (labels[value]) {
+    return labels[value];
+  }
+
   return value
     .split("_")
     .filter(Boolean)
@@ -457,13 +471,29 @@ function buildUsage(
 ): DashboardUsageItem[] {
   const suggestionCount = suggestions.length;
   const structureCount = aiRequests.filter((request) =>
-    ["analyze", "optimize"].includes(request.action),
+    ["structure_flow", "improvement_scan", "analyze", "optimize"].includes(
+      request.action,
+    ),
   ).length;
   const toneCount = aiRequests.filter((request) =>
-    ["tone_analyze", "improve_clarity", "fix_grammar"].includes(request.action),
+    [
+      "tone_alignment",
+      "improve_readability",
+      "proofread_correct",
+      "tone_analyze",
+      "improve_clarity",
+      "fix_grammar",
+    ].includes(request.action),
   ).length;
   const enhancementCount = aiRequests.filter((request) =>
-    ["optimize", "rewrite", "simplify_language"].includes(request.action),
+    [
+      "improvement_scan",
+      "summarize_shorten",
+      "translate_document",
+      "optimize",
+      "rewrite",
+      "simplify_language",
+    ].includes(request.action),
   ).length;
   const denominator = Math.max(
     suggestionCount,

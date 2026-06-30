@@ -1,6 +1,20 @@
 import type { AIActionInput } from "@/lib/ai/ai.types";
 
 const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
+  improvement_scan:
+    "Run a full document review and highlight opportunities across clarity, grammar, tone, structure, and formatting. Do not change the document automatically.",
+  proofread_correct:
+    "Correct only grammar, spelling, punctuation, and typos. Avoid broad rewrites, tone changes, structural changes, or summarization.",
+  improve_readability:
+    "Make confusing sentences, phrases, or words easier to read while preserving the original meaning. Do not shorten the document into a summary.",
+  tone_alignment:
+    "Adjust writing style to match the selected tone, audience, and purpose. Suggest only tone-focused changes and explain why each improves audience fit.",
+  structure_flow:
+    "Improve document organization, headings, section order, paragraph flow, repeated ideas, and logical progression. Use minor suggestions for small fixes and a full result only for major restructuring.",
+  summarize_shorten:
+    "Create the requested concise version or summary. Preserve the original document by returning a separate result preview, not inline suggestions.",
+  translate_document:
+    "Create a full translated version in the requested language and style while preserving the original document.",
   optimize:
     "Improve the document across clarity, tone, structure, and usefulness while preserving the user's intent.",
   improve_clarity:
@@ -22,6 +36,20 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
 };
 
 const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
+  improvement_scan:
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and 5-10 concrete suggestions grouped across grammar, clarity, tone, conciseness, structure, and formatting where relevant. Do not return a full rewrite or summary. Each suggestion.originalText must be an exact substring from the original document, and include location.startOffset/location.endOffset when possible.",
+  proofread_correct:
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only grammar, spelling, punctuation, or typo suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+  improve_readability:
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and clarity or conciseness suggestions that preserve meaning. Do not summarize. Each suggestion.originalText must be an exact substring from the original document.",
+  tone_alignment:
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only tone suggestions. Include why each suggestion better fits the target audience or purpose. Each suggestion.originalText must be an exact substring from the original document.",
+  structure_flow:
+    "For minor organization fixes, return mode \"suggestions\", workflow \"inline_suggestions\", structureChangeLevel \"minor\", and section or paragraph-level structure suggestions. For major restructuring, return mode \"preview\", workflow \"result_preview\", resultMode \"optimization\", structureChangeLevel \"major\", and revisedMarkdown as the full structured result. Never silently rearrange content.",
+  summarize_shorten:
+    "Return mode \"preview\", workflow \"result_preview\", resultMode \"summary\", revisedMarkdown as the requested summary or shortened version, and suggestions as an empty array. Do not create optimization highlights.",
+  translate_document:
+    "Return mode \"preview\", workflow \"result_preview\", resultMode \"translation\", revisedMarkdown as the full translated document, and suggestions as an empty array. Do not create word-level translation suggestions.",
   optimize:
     "Return mode \"preview\" with revisedMarkdown and 3-6 targeted suggestions. Use suggestion.type from grammar, clarity, tone, conciseness, structure, or formatting. Each suggestion.originalText must be an exact substring from the original document.",
   improve_clarity:
@@ -42,25 +70,68 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
     "Return mode \"suggestions\" with 3-6 simplification suggestions and set revisedMarkdown to null. Do not rewrite the whole document. Each suggestion.originalText must be an exact substring from the original document.",
 };
 
-const LANGUAGE_LABELS: Record<AIActionInput["options"]["language"], string> = {
+const LANGUAGE_LABELS: Record<NonNullable<AIActionInput["options"]["language"]>, string> = {
   en: "English",
   es: "Spanish",
   fr: "French",
   de: "German",
 };
 
+const TRANSLATION_LANGUAGE_LABELS: Record<
+  NonNullable<AIActionInput["options"]["targetLanguage"]>,
+  string
+> = {
+  en: "English",
+  sw: "Swahili",
+  fr: "French",
+  es: "Spanish",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  nl: "Dutch",
+  ar: "Arabic",
+  hi: "Hindi",
+  "zh-CN": "Chinese Simplified",
+  ja: "Japanese",
+  ko: "Korean",
+  tr: "Turkish",
+  ru: "Russian",
+  pl: "Polish",
+  uk: "Ukrainian",
+  id: "Indonesian",
+  ms: "Malay",
+  vi: "Vietnamese",
+  th: "Thai",
+  fil: "Filipino / Tagalog",
+};
+
 export const AI_SYSTEM_PROMPT = `You are Docufine's AI document assistant.
 Return only valid JSON matching this exact shape:
 {
   "mode": "preview" | "suggestions" | "analysis",
+  "workflow": "inline_suggestions" | "result_preview",
+  "resultMode": "optimization" | "summary" | "translation",
+  "structureChangeLevel": "minor" | "major",
+  "targetLanguage": "Only for translation results, use the requested target language code",
   "summary": "Short human-readable summary",
   "revisedMarkdown": "Full revised markdown or null",
   "suggestions": [
     {
+      "id": "Stable suggestion id",
+      "actionType": "improvement_scan" | "proofread_correct" | "improve_readability" | "tone_alignment" | "structure_flow",
       "type": "grammar" | "clarity" | "tone" | "conciseness" | "structure" | "formatting",
+      "category": "grammar" | "clarity" | "tone" | "conciseness" | "structure" | "formatting",
+      "issueLabel": "Brief issue label",
       "originalText": "Text being improved",
       "suggestedText": "Suggested replacement",
-      "explanation": "Why this helps"
+      "explanation": "Why this helps",
+      "reason": "Why this helps",
+      "severity": "low" | "medium" | "high",
+      "location": {
+        "startOffset": 0,
+        "endOffset": 10,
+        "blockId": "optional-block-id"
+      }
     }
   ],
   "analysis": {
@@ -77,9 +148,21 @@ Never say that changes were applied. AI output is preview-only until the user ex
 export function buildAIUserPrompt(input: AIActionInput): string {
   const title = input.title ? `Title: ${input.title}` : "Title: Untitled";
   const language = LANGUAGE_LABELS[input.options.language];
+  const targetLanguage = input.options.targetLanguage
+    ? TRANSLATION_LANGUAGE_LABELS[input.options.targetLanguage]
+    : language;
   const preserveStructure = input.options.preserveStructure
     ? "Preserve document headings, lists, and markdown structure where possible."
     : "Structure may be changed if it improves the result.";
+  const setup = [
+    `Target tone: ${input.options.toneTarget ?? input.options.tone}`,
+    `Audience or purpose: ${input.options.audienceOrPurpose ?? input.options.audience}`,
+    `Summary output type: ${input.options.summaryOutputType ?? "not requested"}`,
+    `Summary length: ${input.options.summaryLength ?? "not requested"}`,
+    `Target language: ${targetLanguage}`,
+    `Translation style: ${input.options.translationStyle ?? "natural"}`,
+    `Terms to preserve: ${input.options.termsToPreserve ?? "none"}`,
+  ].join("\n");
 
   return `${title}
 Action: ${input.action}
@@ -87,6 +170,7 @@ Instruction: ${ACTION_INSTRUCTIONS[input.action]}
 Tone: ${input.options.tone}
 Audience: ${input.options.audience}
 Language: ${language}
+${setup}
 Structure: ${preserveStructure}
 Output guidance: ${ACTION_OUTPUT_GUIDANCE[input.action]}
 Suggestion anchoring rule: copy every suggestion.originalText verbatim from Document Markdown, including punctuation, capitalization, and spacing. Never paraphrase originalText. If a passage cannot be copied exactly and uniquely, omit that suggestion.

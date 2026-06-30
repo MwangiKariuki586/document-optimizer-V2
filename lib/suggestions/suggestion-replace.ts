@@ -116,6 +116,62 @@ export function resolveSuggestionOriginalText(
   return getReplacementSafety(markdown, resolved) === "safe" ? resolved : null;
 }
 
+export function resolveSuggestionOriginalTextFromLocation(
+  markdown: string,
+  location?: {
+    startOffset?: number;
+    endOffset?: number;
+  },
+): string | null {
+  if (
+    !location ||
+    location.startOffset === undefined ||
+    location.endOffset === undefined ||
+    !Number.isInteger(location.startOffset) ||
+    !Number.isInteger(location.endOffset) ||
+    location.startOffset < 0 ||
+    location.endOffset <= location.startOffset ||
+    location.endOffset > markdown.length
+  ) {
+    return null;
+  }
+
+  const resolved = markdown.slice(location.startOffset, location.endOffset);
+
+  if (!resolved.trim()) {
+    return null;
+  }
+
+  return getReplacementSafety(markdown, resolved) === "safe" ? resolved : null;
+}
+
+export function resolveSuggestionOriginalTextFromCandidates(
+  markdownCandidates: Array<string | null | undefined>,
+  originalText: string,
+  location?: {
+    startOffset?: number;
+    endOffset?: number;
+  },
+): string | null {
+  const uniqueCandidates = Array.from(
+    new Set(
+      markdownCandidates
+        .map((markdown) => markdown?.trim())
+        .filter((markdown): markdown is string => Boolean(markdown)),
+    ),
+  );
+
+  return (
+    uniqueCandidates
+      .map(
+        (markdown) =>
+          resolveSuggestionOriginalText(markdown, originalText) ??
+          resolveSuggestionOriginalTextFromLocation(markdown, location),
+      )
+      .find((resolved): resolved is string => Boolean(resolved)) ?? null
+  );
+}
+
 export function replaceOnce(
   markdown: string,
   originalText: string,

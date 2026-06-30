@@ -4,7 +4,7 @@ import { runAIAction, selectAIProvider } from "@/lib/ai/ai-router";
 import type { AIActionInput } from "@/lib/ai/ai.types";
 
 const baseInput: AIActionInput = {
-  action: "optimize",
+  action: "improvement_scan",
   contentMarkdown: "Document content",
   options: {
     tone: "professional",

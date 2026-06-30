@@ -417,15 +417,13 @@ const response = await fetch("https://api.deepseek.com/chat/completions", {
 
 Use DeepSeek for:
 
-- document optimization
-- clarity improvement
-- grammar fixes
-- rewriting
-- summarization
-- translation
-- tone analysis
-- SEO analysis
-- simplifying language
+- improvement scans
+- proofreading and correctness suggestions
+- readability suggestions
+- tone alignment suggestions
+- structure and flow suggestions or result previews
+- summary and shortening result previews
+- translation result previews
 - suggestion generation
 
 ### Rules
@@ -503,15 +501,13 @@ export async function runGeminiAction(
 
 Gemini may be explicitly selected for:
 
-- document optimization
-- clarity improvement
-- grammar fixes
-- rewriting
-- summarization
-- translation
-- tone analysis
-- SEO analysis
-- simplifying language
+- improvement scans
+- proofreading and correctness suggestions
+- readability suggestions
+- tone alignment suggestions
+- structure and flow suggestions or result previews
+- summary and shortening result previews
+- translation result previews
 - suggestion generation
 
 ### Rules
@@ -721,6 +717,9 @@ type AIActionResult = {
   mode: "preview" | "suggestions" | "analysis";
   output: {
     mode: "preview" | "suggestions" | "analysis";
+    workflow?: "inline_suggestions" | "result_preview";
+    resultMode?: "optimization" | "summary" | "translation";
+    structureChangeLevel?: "minor" | "major";
     summary: string;
     revisedMarkdown: string | null;
     suggestions: Array<{

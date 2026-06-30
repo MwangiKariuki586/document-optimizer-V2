@@ -1268,7 +1268,7 @@ className="inline-flex min-w-0 items-center gap-2 rounded-full border border-bor
 
 **Purpose:**
 
-Right-rail AI action picker for the document editor. Shows nine compact AI action rows, collapsed optional settings (tone, audience, language, preserve-structure), processing/ready/error states, and preview-first reassurance. Wired in Phase 5 / 18 to run the selected action through `POST /api/documents/[id]/ai`.
+Right-rail AI action picker for the document editor. Shows seven outcome-based AI action rows, action-specific setup panels, processing/ready/error states, and workflow-specific reassurance. Wired in Phase 5 / 18 to run the selected action through `POST /api/documents/[id]/ai`.
 
 **Used on:**
 
@@ -1279,13 +1279,14 @@ Right-rail AI action picker for the document editor. Shows nine compact AI actio
 ```txt
 className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1"
 className="rounded-xl border p-3 ... border-ai bg-ai-muted" (selected action card)
-className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2" (collapsed settings disclosure)
+className="rounded-lg border border-border-light bg-surface-secondary p-2.5" (action setup panel)
 ```
 
 **Variants:**
 
-- Action cards with category-tinted icon tiles (ai, info, success, warning, accent).
-- Status: idle, processing (`LoadingButton` + CometSpinner), ready (success strip + saved request id), error (`InlineAlert` with an in-alert retry button).
+- Action cards: Improvement Scan, Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, Translate Document.
+- Setup variants: Tone Alignment target tone and audience/purpose, Summarize & Shorten output type and length, Translate Document searchable supported-language select, style, and terms to preserve.
+- Status: idle, processing (`LoadingButton` + CometSpinner), ready (adaptive footer CTA only; success feedback comes from Sonner), error (`InlineAlert` with an in-alert retry button).
 
 **Rules:**
 
@@ -1293,12 +1294,15 @@ className="rounded-lg border border-border-light bg-surface-secondary px-3 py-2"
 - Props: `onShowSuggestions`, `suggestionCount`, optional `onClose`, and
   `onRunAction` (provided by `EditorWorkspace`).
 - `EditorWorkspace` sends the current `editor.getMarkdown()` and selected options to `POST /api/documents/[id]/ai`. The panel stays in its compact processing state until the direct request returns a completed or failed result.
+- Inline suggestion actions switch users to the suggestions rail only when fresh pending suggestions are returned. Summary, translation, and major structure results stay in the panel; the footer CTA changes to `View result` and links to `/documents/[id]/preview?requestId=...`.
+- Empty inline reruns do not become the active suggestion scope. When prior suggestions exist, the editor switches the suggestion scope back to `All AI actions` with status `All`, Sonner shows an informational message, and the AI Actions footer CTA changes to run the action again instead of sending users to an empty suggestions view.
+- Do not reintroduce legacy default action names such as Optimize, Rewrite, Improve Clarity, Fix Grammar, Tone Analyze, SEO Analyze, or Simplify Language.
 - While the request is pending, the Run button advances through timed progress
   copy for preparation, content processing, suggestion checking, and result
   finalization. The copy does not claim a percentage or authoritative backend
   stage; it provides visible progress during the request-bound operation.
 - Completed responses include only the suggestions persisted for that AI request. `EditorWorkspace` de-duplicates and merges them locally, avoiding a follow-up full suggestions request.
-- Action settings are collapsed by default behind a settings disclosure with a one-line summary. Expanding exposes tone, audience, language, and preserve-structure controls; select controls use explicit right-side chevrons because native select appearance is suppressed.
+- Action settings use a compact disclosure with a one-line summary. Setup controls are available for Tone Alignment, Summarize & Shorten, and Translate Document; the disclosure collapses when an action run starts so completed results keep the footer CTA visible. Select controls use explicit right-side chevrons because native select appearance is suppressed.
 - AI output remains preview-first. View preview links to `/documents/[id]/preview?requestId=...`; no document mutation happens from this panel.
 - The error-state Try again control lives inside the `InlineAlert` body and re-runs the selected action with the current settings rather than only resetting the panel to idle.
 
@@ -1448,8 +1452,8 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 - `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
 - `SyncScrollToggle` displays `Sync scrolling: On / Off`.
-- `PreviewActionBar` renders the compact bottom action bar with Return to Editor and Export only. Do not show Apply to Document, Regenerate, or Safety checks in this bar.
-- Export links to `/documents/[id]/export`; the export workspace loads the current saved document by route id.
+- `PreviewActionBar` renders mode-specific result controls. Optimization results can Apply to Document after approval; summary results can Copy, Save as New Document, Save as Version, Export after saving, or Discard; translation results can Copy Translation, Save Translated Copy, Export after saving, or Discard.
+- Export links to `/documents/[id]/export`; users should save a summary or translation result first when they want to export that generated output.
 
 ### SuggestionHighlight
 

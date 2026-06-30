@@ -4,15 +4,13 @@ import { runAIAction } from "../../lib/ai/ai-router";
 import type { AIActionKey, AIActionOptions } from "../../lib/ai/ai.types";
 
 const AI_ACTIONS: AIActionKey[] = [
-  "optimize",
-  "improve_clarity",
-  "fix_grammar",
-  "rewrite",
-  "summarize",
-  "translate",
-  "tone_analyze",
-  "seo_analyze",
-  "simplify_language",
+  "improvement_scan",
+  "proofread_correct",
+  "improve_readability",
+  "tone_alignment",
+  "structure_flow",
+  "summarize_shorten",
+  "translate_document",
 ];
 
 const CONTENT_MARKDOWN =
@@ -23,40 +21,54 @@ const OPTIONS: AIActionOptions = {
   audience: "general",
   language: "en",
   preserveStructure: true,
+  toneTarget: "professional",
+  summaryOutputType: "short_summary",
+  summaryLength: "medium",
+  targetLanguage: "sw",
+  translationStyle: "natural",
+  termsToPreserve: "Docufine",
 };
 
-const PREVIEW_ACTIONS = new Set<AIActionKey>([
-  "optimize",
-  "rewrite",
-  "summarize",
-  "translate",
+const RESULT_ACTIONS = new Set<AIActionKey>([
+  "summarize_shorten",
+  "translate_document",
 ]);
 
 function buildProviderOutput(action: AIActionKey) {
-  const mode = PREVIEW_ACTIONS.has(action) ? "preview" : "suggestions";
+  const isResultAction = RESULT_ACTIONS.has(action);
+  const isTranslation = action === "translate_document";
+  const isSummary = action === "summarize_shorten";
 
   return {
-    mode,
+    mode: isResultAction ? "preview" : "suggestions",
+    workflow: isResultAction ? "result_preview" : "inline_suggestions",
+    resultMode: isTranslation ? "translation" : isSummary ? "summary" : undefined,
+    structureChangeLevel: action === "structure_flow" ? "minor" : undefined,
+    targetLanguage: isTranslation ? "sw" : undefined,
     summary: `${action} completed.`,
-    revisedMarkdown:
-      mode === "preview"
-        ? `${CONTENT_MARKDOWN}\n\nImproved for ${action}.`
-        : null,
-    suggestions:
-      mode === "suggestions"
-        ? [
-            {
-              type: action === "fix_grammar" ? "grammar" : "clarity",
-              originalText: "improve user-facing workflows",
-              suggestedText: "improve workflows for users",
-              explanation: "Makes the wording more direct.",
-            },
-          ]
-        : [],
-    analysis:
-      action === "tone_analyze" || action === "seo_analyze"
-        ? { clarity: 80, tone: 82, structure: 78, seo: 75, notes: ["Looks consistent."] }
-        : null,
+    revisedMarkdown: isResultAction
+      ? `${CONTENT_MARKDOWN}\n\nGenerated result for ${action}.`
+      : null,
+    suggestions: isResultAction
+      ? []
+      : [
+          {
+            id: `${action}-suggestion-1`,
+            actionType: action === "summarize_shorten" || action === "translate_document"
+              ? undefined
+              : action,
+            type: action === "proofread_correct" ? "grammar" : "clarity",
+            category: action === "proofread_correct" ? "grammar" : "clarity",
+            issueLabel: "Direct wording",
+            originalText: "improve user-facing workflows",
+            suggestedText: "improve workflows for users",
+            explanation: "Makes the wording more direct.",
+            reason: "Makes the wording more direct.",
+            severity: "medium",
+            location: { startOffset: 41, endOffset: 70 },
+          },
+        ],
+    analysis: { clarity: 80, tone: 82, structure: 78, notes: ["Looks consistent."] },
     warnings: null,
   };
 }
@@ -119,7 +131,7 @@ test.describe("AI actions", () => {
   });
 
   for (const action of AI_ACTIONS) {
-    test(`${action} returns a normalized result`, async () => {
+    test(`${action} returns the correct workflow`, async () => {
       const result = await runAIAction({
         action,
         title: "Portfolio Resume",
@@ -136,12 +148,30 @@ test.describe("AI actions", () => {
       expect(result.output.analysis.notes).toBeDefined();
       expect(result.output.warnings).toEqual([]);
 
-      if (PREVIEW_ACTIONS.has(action)) {
+      if (RESULT_ACTIONS.has(action)) {
         expect(result.mode).toBe("preview");
-        expect(result.output.revisedMarkdown).toContain(`Improved for ${action}.`);
+        expect(result.output.workflow).toBe("result_preview");
+        expect(result.output.suggestions).toHaveLength(0);
+        expect(result.output.revisedMarkdown).toContain(
+          `Generated result for ${action}.`,
+        );
       } else {
         expect(result.mode).toBe("suggestions");
+        expect(result.output.workflow).toBe("inline_suggestions");
         expect(result.output.suggestions).toHaveLength(1);
+      }
+
+      if (action === "summarize_shorten") {
+        expect(result.output.resultMode).toBe("summary");
+      }
+
+      if (action === "translate_document") {
+        expect(result.output.resultMode).toBe("translation");
+        expect(result.output.targetLanguage).toBe("sw");
+      }
+
+      if (action === "structure_flow") {
+        expect(result.output.structureChangeLevel).toBe("minor");
       }
     });
   }

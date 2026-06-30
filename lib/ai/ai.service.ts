@@ -18,7 +18,10 @@ import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
 import { saveSuggestionsFromAIResult } from "@/lib/suggestions/suggestions.service";
 import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
-import { snapshotDocumentVersion } from "@/lib/versions/versions.service";
+import {
+  createDocumentVersion,
+  snapshotDocumentVersion,
+} from "@/lib/versions/versions.service";
 
 type RunDocumentAIActionInput = {
   userId: string;
@@ -44,10 +47,21 @@ export type ApplyAIRequestResult = {
   versionNumber: number;
 };
 
+export type SaveAIRequestVersionResult = {
+  documentId: string;
+  versionNumber: number;
+};
+
+export type SaveAIRequestCopyResult = {
+  documentId: string;
+  title: string;
+};
+
 type OwnedDocument = {
   id: string;
   title: string;
   word_count: number;
+  current_markdown: string | null;
 };
 
 function toAIActionKey(action: string): AIActionKey {
@@ -109,7 +123,7 @@ async function getOwnedDocument(
 ): Promise<OwnedDocument | null> {
   const { data, error } = await supabase
     .from("documents")
-    .select("id,title,word_count")
+    .select("id,title,word_count,current_markdown")
     .eq("id", documentId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -262,6 +276,7 @@ export async function runDocumentAIAction(
         aiRequestId: requestId,
         action: input.action,
         originalMarkdown: input.contentMarkdown,
+        fallbackMarkdown: document.current_markdown ?? undefined,
         output: result.output,
       });
     } catch (error) {
@@ -457,5 +472,191 @@ export async function applyAIRequestResult(
   return {
     documentId: data.id,
     versionNumber: snapshot.versionNumber,
+  };
+}
+
+function getAIResultMarkdown(preview: AIRequestPreview): string {
+  const revisedMarkdown = preview.output.revisedMarkdown?.trim();
+
+  if (!revisedMarkdown) {
+    throw new Error("AI result has no document content to save");
+  }
+
+  return revisedMarkdown;
+}
+
+const TRANSLATION_TITLE_LABELS: Record<string, string> = {
+  en: "English",
+  sw: "Swahili",
+  fr: "French",
+  es: "Spanish",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  nl: "Dutch",
+  ar: "Arabic",
+  hi: "Hindi",
+  "zh-CN": "Chinese Simplified",
+  ja: "Japanese",
+  ko: "Korean",
+  tr: "Turkish",
+  ru: "Russian",
+  pl: "Polish",
+  uk: "Ukrainian",
+  id: "Indonesian",
+  ms: "Malay",
+  vi: "Vietnamese",
+  th: "Thai",
+  fil: "Filipino / Tagalog",
+};
+
+function buildAIResultCopyTitle(preview: AIRequestPreview): string {
+  if (preview.output.resultMode === "translation") {
+    const output = preview.output as AIActionOutput & {
+      targetLanguage?: string;
+    };
+    const language =
+      (output.targetLanguage && TRANSLATION_TITLE_LABELS[output.targetLanguage]) ||
+      "Translated";
+
+    return `${preview.documentTitle} - ${language} Translation`;
+  }
+
+  if (preview.output.resultMode === "summary") {
+    return `${preview.documentTitle} - Summary`;
+  }
+
+  return `${preview.documentTitle} - AI Result`;
+}
+
+export async function saveAIRequestResultAsVersion(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+    requestId: string;
+  },
+): Promise<SaveAIRequestVersionResult | null> {
+  const preview = await getAIRequestPreview(supabase, input);
+
+  if (!preview) {
+    return null;
+  }
+
+  const revisedMarkdown = getAIResultMarkdown(preview);
+  const version = await createDocumentVersion(supabase, {
+    documentId: input.documentId,
+    userId: input.userId,
+    title: preview.documentTitle,
+    source: "ai_apply",
+    contentMarkdown: revisedMarkdown,
+    editorJson: markdownToEditorJson(revisedMarkdown),
+    formattingMetadata: {
+      aiRequestId: input.requestId,
+      resultMode: preview.output.resultMode ?? null,
+      savedWithoutReplacingOriginal: true,
+    },
+    notes: `Saved AI ${preview.output.resultMode ?? "result"} as a version`,
+  });
+
+  await recordUsageEvent(supabase, {
+    userId: input.userId,
+    eventType: "ai_action",
+    documentId: input.documentId,
+    provider: preview.provider ?? undefined,
+    model: preview.model ?? undefined,
+    metadata: {
+      aiRequestId: input.requestId,
+      action: preview.action,
+      savedAsVersion: true,
+      versionNumber: version.versionNumber,
+    },
+  });
+
+  return {
+    documentId: input.documentId,
+    versionNumber: version.versionNumber,
+  };
+}
+
+export async function saveAIRequestResultAsDocumentCopy(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+    requestId: string;
+  },
+): Promise<SaveAIRequestCopyResult | null> {
+  const preview = await getAIRequestPreview(supabase, input);
+
+  if (!preview) {
+    return null;
+  }
+
+  const revisedMarkdown = getAIResultMarkdown(preview);
+  const title = buildAIResultCopyTitle(preview);
+  const editorJson = markdownToEditorJson(revisedMarkdown);
+  const wordCount = countWords(revisedMarkdown);
+
+  const { data: document, error } = await supabase
+    .from("documents")
+    .insert({
+      user_id: input.userId,
+      title,
+      status: "ready",
+      source_type: "paste",
+      file_type: "none",
+      extracted_text: revisedMarkdown,
+      editor_json: editorJson,
+      current_markdown: revisedMarkdown,
+      formatting_metadata: {
+        aiRequestId: input.requestId,
+        sourceDocumentId: input.documentId,
+        resultMode: preview.output.resultMode ?? null,
+      },
+      fidelity_status: "Structure Preserved",
+      word_count: wordCount,
+    })
+    .select("id,title")
+    .single();
+
+  if (error || !document) {
+    console.error("[ai/save-copy]", error?.message);
+    throw new Error("Failed to save AI result as a new document");
+  }
+
+  await createDocumentVersion(supabase, {
+    documentId: document.id,
+    userId: input.userId,
+    title: document.title,
+    source: "ai_apply",
+    contentMarkdown: revisedMarkdown,
+    editorJson,
+    formattingMetadata: {
+      aiRequestId: input.requestId,
+      sourceDocumentId: input.documentId,
+      resultMode: preview.output.resultMode ?? null,
+    },
+    notes: "AI result saved as a separate document",
+  });
+
+  await recordUsageEvent(supabase, {
+    userId: input.userId,
+    eventType: "ai_action",
+    documentId: document.id,
+    provider: preview.provider ?? undefined,
+    model: preview.model ?? undefined,
+    metadata: {
+      aiRequestId: input.requestId,
+      sourceDocumentId: input.documentId,
+      action: preview.action,
+      savedAsDocumentCopy: true,
+      resultMode: preview.output.resultMode ?? null,
+    },
+  });
+
+  return {
+    documentId: document.id,
+    title: document.title,
   };
 }

@@ -110,6 +110,13 @@ const cardStateClasses: Record<SuggestionStatus, string> = {
 };
 
 const actionLabels: Record<AIActionRun["action"], string> = {
+  improvement_scan: "Improvement Scan",
+  proofread_correct: "Proofread & Correct",
+  improve_readability: "Improve Readability",
+  tone_alignment: "Tone Alignment",
+  structure_flow: "Structure & Flow",
+  summarize_shorten: "Summarize & Shorten",
+  translate_document: "Translate Document",
   optimize: "Optimize",
   improve_clarity: "Improve Clarity",
   fix_grammar: "Fix Grammar",

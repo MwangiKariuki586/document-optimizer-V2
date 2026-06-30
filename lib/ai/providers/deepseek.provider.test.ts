@@ -63,7 +63,7 @@ describe("DeepSeek provider configuration", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await deepSeekProvider.run({
-      action: "fix_grammar",
+      action: "proofread_correct",
       contentMarkdown: "Test content.",
       options: {
         tone: "professional",

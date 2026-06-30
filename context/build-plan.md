@@ -368,21 +368,18 @@ Build the AI actions panel with mock data,referencing context/designs/results pr
 **UI:**
 
 - AI action cards/buttons:
-  - Optimize
-  - Improve Clarity
-  - Fix Grammar
-  - Rewrite
-  - Summarize
-  - Translate
-  - Tone Analyze
-  - SEO Analyze
-  - Simplify Language
+  - Improvement Scan
+  - Proofread & Correct
+  - Improve Readability
+  - Tone Alignment
+  - Structure & Flow
+  - Summarize & Shorten
+  - Translate Document
 
-- Optional action settings:
-  - tone
-  - audience
-  - language
-  - preserve structure toggle
+- Action-specific setup panels:
+  - Tone Alignment: target tone and optional audience or purpose
+  - Summarize & Shorten: output type and target length
+  - Translate Document: supported target language, translation style, and optional preserved terms
 
 - Loading state using CometSpinner
 - Disabled state while processing
@@ -421,13 +418,15 @@ Wire AI actions to real backend execution.
 - Run AI action through AI router
 - Save normalized result
 - Record usage
-- Return the saved AI request id and preview route:
+- Return the saved AI request id, persisted suggestions, workflow metadata, and preview route:
 
 ```txt
 /documents/[id]/preview?requestId={aiRequestId}
 ```
 
 - Redirect or link users to the preview page before any document mutation
+- Inline suggestion workflows can move the user directly to the suggestions rail.
+- Result-preview workflows route through `/documents/[id]/preview?requestId={aiRequestId}`.
 - Do not expose a final Apply to Document action from the editor or AI actions panel
 - Show success/error toast
 
@@ -443,7 +442,7 @@ Required route:
 app/(app)/documents/[id]/preview/page.tsx
 ```
 
-Purpose: `/documents/[id]/preview` is the required approval checkpoint for full AI action output and explicit batch suggestion reviews before they can be applied to the document. Direct single-suggestion Apply remains an editor action because the user has already chosen one concrete replacement.
+Purpose: `/documents/[id]/preview` is the required Results page and approval checkpoint for full AI action output and explicit batch suggestion reviews before they can be applied or saved. Direct single-suggestion Apply remains an editor action because the user has already chosen one concrete replacement.
 
 **Implementation rules:**
 
@@ -471,6 +470,8 @@ Purpose: `/documents/[id]/preview` is the required approval checkpoint for full 
 - Formatting/fidelity warnings where needed
 - Apply to Document action
 - Copy result button
+- Save as new document / translated copy action
+- Save summary as version action
 - Regenerate action where applicable
 - Discard / Return to Editor action
 - Loading and error states
@@ -533,6 +534,7 @@ Wire suggestions to real data.
 **Logic:**
 
 - Generate suggestions from AI result where applicable
+- Do not generate or persist inline suggestions for Summarize & Shorten or Translate Document
 - Save suggestions to `suggestions`
 - Fetch suggestions for document
 - Render pending suggestions as a temporary TipTap/ProseMirror decoration layer

@@ -4,7 +4,7 @@ import { normalizeProviderResponse } from "@/lib/ai/ai-normalize";
 import { AIProviderError, type AIActionInput } from "@/lib/ai/ai.types";
 
 const input: AIActionInput = {
-  action: "improve_clarity",
+  action: "improve_readability",
   contentMarkdown: "Document content",
   options: {
     tone: "professional",
@@ -32,9 +32,10 @@ describe("normalizeProviderResponse", () => {
       }),
     });
 
-    expect(result.action).toBe("improve_clarity");
+    expect(result.action).toBe("improve_readability");
     expect(result.provider).toBe("openai");
     expect(result.mode).toBe("preview");
+    expect(result.output.workflow).toBe("result_preview");
     expect(result.estimatedCost).toBeGreaterThan(0);
   });
 
@@ -67,5 +68,6 @@ describe("normalizeProviderResponse", () => {
     expect(result.output.analysis).toEqual({ notes: [] });
     expect(result.output.suggestions).toEqual([]);
     expect(result.output.warnings).toEqual([]);
+    expect(result.output.workflow).toBe("inline_suggestions");
   });
 });
