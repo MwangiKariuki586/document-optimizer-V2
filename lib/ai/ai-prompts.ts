@@ -4,7 +4,7 @@ const ACTION_INSTRUCTIONS: Record<AIActionInput["action"], string> = {
   improvement_scan:
     "Run a full document review and highlight opportunities across clarity, grammar, tone, structure, and formatting. Do not change the document automatically.",
   proofread_correct:
-    "Correct only grammar, spelling, punctuation, and typos. Avoid broad rewrites, tone changes, structural changes, or summarization.",
+    "Correct only grammar, spelling, punctuation, capitalization, and typos. Avoid broad rewrites, readability edits, tone changes, structural changes, formatting changes, or summarization.",
   improve_readability:
     "Make confusing sentences, phrases, or words easier to read while preserving the original meaning. Do not shorten the document into a summary.",
   tone_alignment:
@@ -39,7 +39,7 @@ const ACTION_OUTPUT_GUIDANCE: Record<AIActionInput["action"], string> = {
   improvement_scan:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 6 high-confidence suggestions grouped across grammar, clarity, tone, conciseness, structure, and formatting where relevant. Only include a suggestion if the replacement is meaningfully better than the original. Never include identical originalText and suggestedText. Prefer no suggestion over a weak suggestion. Do not return a full rewrite or summary. Each suggestion.originalText must be an exact substring from the original document, and include location.startOffset/location.endOffset when possible.",
   proofread_correct:
-    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and only grammar, spelling, punctuation, or typo suggestions. Each suggestion.originalText must be an exact substring from the original document.",
+    "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and up to 8 high-confidence grammar, spelling, punctuation, capitalization, or typo suggestions. Use category/type \"grammar\" for every suggestion. If more than 8 issues exist, choose the most clear and important corrections. Do not suggest style, tone, clarity, conciseness, formatting, or structure changes. Each suggestion.originalText must be an exact substring from the original document.",
   improve_readability:
     "Return mode \"suggestions\", workflow \"inline_suggestions\", revisedMarkdown null, and clarity or conciseness suggestions that preserve meaning. Do not summarize. Each suggestion.originalText must be an exact substring from the original document.",
   tone_alignment:

@@ -70,4 +70,39 @@ describe("normalizeProviderResponse", () => {
     expect(result.output.warnings).toEqual([]);
     expect(result.output.workflow).toBe("inline_suggestions");
   });
+
+  it("ignores irrelevant result metadata for inline actions", () => {
+    const result = normalizeProviderResponse({
+      input: {
+        ...input,
+        action: "proofread_correct",
+      },
+      provider: "deepseek",
+      model: "deepseek-v4-flash",
+      text: JSON.stringify({
+        mode: "suggestions",
+        workflow: "inline_suggestions",
+        resultMode: "not-applicable",
+        structureChangeLevel: "not-applicable",
+        targetLanguage: "not-a-supported-language",
+        summary: "Found one correction.",
+        revisedMarkdown: null,
+        suggestions: [
+          {
+            type: "grammar",
+            originalText: "PostgresSQL",
+            suggestedText: "PostgreSQL",
+            explanation: "Corrects the product name.",
+          },
+        ],
+        analysis: { notes: [] },
+        warnings: [],
+      }),
+    });
+
+    expect(result.output.targetLanguage).toBeUndefined();
+    expect(result.output.resultMode).toBeUndefined();
+    expect(result.output.structureChangeLevel).toBeUndefined();
+    expect(result.output.suggestions).toHaveLength(1);
+  });
 });

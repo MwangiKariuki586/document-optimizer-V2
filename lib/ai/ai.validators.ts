@@ -270,7 +270,29 @@ export const aiActionOutputSchema = z.preprocess((value) => {
     return value;
   }
 
-  return nullishOptionalFieldsToUndefined(value as Record<string, unknown>, [
+  const output = value as Record<string, unknown>;
+  const suggestions = Array.isArray(output.suggestions)
+    ? output.suggestions.filter((suggestion) => {
+        if (!suggestion || typeof suggestion !== "object" || Array.isArray(suggestion)) {
+          return false;
+        }
+
+        const candidate = suggestion as Record<string, unknown>;
+        return (
+          typeof candidate.originalText === "string" &&
+          candidate.originalText.trim().length > 0 &&
+          typeof candidate.suggestedText === "string" &&
+          candidate.suggestedText.trim().length > 0
+        );
+      })
+    : output.suggestions;
+
+  const normalizedOutput: Record<string, unknown> = {
+    ...output,
+    suggestions,
+  };
+
+  return nullishOptionalFieldsToUndefined(normalizedOutput, [
     "workflow",
     "resultMode",
     "structureChangeLevel",

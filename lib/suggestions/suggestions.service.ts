@@ -75,6 +75,7 @@ type AISuggestionCandidate = NonNullable<AIActionOutput["suggestions"]>[number];
 
 type AISuggestionRejectionReason =
   | "invalid_type"
+  | "wrong_action_category"
   | "empty_replacement"
   | "no_op"
   | "cosmetic_whitespace"
@@ -94,6 +95,21 @@ const SUGGESTION_FRIENDLY_ACTIONS = new Set<AIActionKey>([
   "seo_analyze",
   "simplify_language",
 ]);
+
+const ACTION_ALLOWED_SUGGESTION_TYPES: Partial<
+  Record<AIActionKey, ReadonlySet<SuggestionType>>
+> = {
+  proofread_correct: new Set(["grammar"]),
+  fix_grammar: new Set(["grammar"]),
+  tone_alignment: new Set(["tone"]),
+  tone_analyze: new Set(["tone"]),
+};
+
+const ACTION_MAX_SAVED_SUGGESTIONS: Partial<Record<AIActionKey, number>> = {
+  improvement_scan: 6,
+  proofread_correct: 8,
+  fix_grammar: 8,
+};
 
 function toSuggestionType(value: string): SuggestionType | null {
   if (value === "seo") {
@@ -160,6 +176,7 @@ function getAISuggestionValueRejectionReason(
 }
 
 export function getAISuggestionCandidateRejectionReason(input: {
+  action?: AIActionKey;
   suggestion: AISuggestionCandidate;
   type: SuggestionType | null;
   originalText: string | null;
@@ -167,6 +184,14 @@ export function getAISuggestionCandidateRejectionReason(input: {
 }): AISuggestionRejectionReason | null {
   if (!input.type) {
     return "invalid_type";
+  }
+
+  const allowedTypes = input.action
+    ? ACTION_ALLOWED_SUGGESTION_TYPES[input.action]
+    : undefined;
+
+  if (allowedTypes && !allowedTypes.has(input.type)) {
+    return "wrong_action_category";
   }
 
   const valueRejection = getAISuggestionValueRejectionReason(
@@ -478,6 +503,7 @@ export async function saveSuggestionsFromAIResult(
       suggestion.location,
     );
     const rejectionReason = getAISuggestionCandidateRejectionReason({
+      action: input.action,
       suggestion,
       type,
       originalText,
@@ -505,6 +531,12 @@ export async function saveSuggestionsFromAIResult(
       explanation: suggestion.reason ?? suggestion.explanation,
       status: "pending",
     });
+
+    const maxSavedSuggestions = ACTION_MAX_SAVED_SUGGESTIONS[input.action];
+
+    if (maxSavedSuggestions && rows.length >= maxSavedSuggestions) {
+      break;
+    }
   }
 
   const revisedMarkdown = input.output.revisedMarkdown?.trim();

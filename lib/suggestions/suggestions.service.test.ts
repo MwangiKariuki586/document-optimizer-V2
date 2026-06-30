@@ -174,4 +174,30 @@ describe("getAISuggestionCandidateRejectionReason", () => {
       }),
     ).toBe("duplicate_target");
   });
+
+  it("rejects non-grammar suggestions for proofread actions", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "proofread_correct",
+        suggestion: {
+          ...baseSuggestion,
+          type: "clarity",
+        },
+        type: "clarity",
+        originalText: "Original wording",
+      }),
+    ).toBe("wrong_action_category");
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        action: "proofread_correct",
+        suggestion: {
+          ...baseSuggestion,
+          type: "grammar",
+        },
+        type: "grammar",
+        originalText: "Original wording",
+      }),
+    ).toBeNull();
+  });
 });

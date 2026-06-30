@@ -1695,6 +1695,26 @@ Follow-up: Continue Phase 1 / 02 Auth.
 
 ```txt
 Date: 2026-06-30
+Feature: Proofread rerun metadata tolerance
+Status: Completed
+Files changed: lib/ai/ai-normalize.ts, lib/ai/ai-normalize.test.ts, context/progress-tracker.md
+What was completed: Fixed repeated Proofread & Correct failures caused by DeepSeek returning irrelevant translation/result metadata on inline actions. Normalization now strips `targetLanguage` for non-translation actions, `structureChangeLevel` for non-structure actions, and `resultMode` when output mode is not preview before schema validation.
+Verification: Logs showed the failing path was `targetLanguage` invalid on `proofread_correct`. Focused tests passed: `npx.cmd vitest run lib/ai/ai-normalize.test.ts lib/ai/ai.validators.test.ts lib/suggestions/suggestions.service.test.ts` with 23 tests. `npx.cmd tsc --noEmit` passed. Two repeated full backend Proofread runs completed: one safely saved 0 after rejecting a no-op, one saved 8 corrections. `npm.cmd run lint` passed with existing unrelated warnings.
+Follow-up: If proofread returns only no-op candidates, the UI should treat it as no new reviewable suggestions rather than a failure.
+```
+
+```txt
+Date: 2026-06-30
+Feature: Proofread & Correct hardening
+Status: Completed
+Files changed: lib/ai/ai-prompts.ts, lib/ai/ai.validators.ts, lib/ai/ai.validators.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, context/architecture.md, context/progress-tracker.md
+What was completed: Tightened Proofread & Correct prompt guidance to only allow grammar, spelling, punctuation, capitalization, and typo corrections with category/type `grammar`. Added provider-output preprocessing that drops empty suggestion candidates before schema validation. Added action-specific persistence boundaries so Proofread only saves grammar-category suggestions, rejects drift into other categories, and caps saved suggestions to 8 high-confidence corrections.
+Verification: Focused tests passed: `npx.cmd vitest run lib/ai/ai.validators.test.ts lib/ai/ai-normalize.test.ts lib/suggestions/suggestions.service.test.ts` with 22 tests. `npx.cmd tsc --noEmit` passed. Full backend smoke for `AI_ACTION=proofread_correct` generated 8 suggestions, saved 8, rejected none, and reduced total latency from 32.529s to 11.706s after the cap/prompt change. `npm.cmd run lint` passed with existing unrelated warnings.
+Follow-up: Browser-run Proofread & Correct and inspect whether all 8 suggestions are true correctness fixes rather than style edits.
+```
+
+```txt
+Date: 2026-06-30
 Feature: AI output schema hardening
 Status: Completed
 Files changed: lib/ai/ai.validators.ts, lib/ai/ai-normalize.ts, lib/ai/ai.validators.test.ts, context/progress-tracker.md

@@ -57,6 +57,31 @@ function getDefaultResultMode(input: AIActionInput, output: AIActionOutput) {
   return undefined;
 }
 
+function stripIrrelevantOutputMetadata(
+  input: AIActionInput,
+  parsedJson: unknown,
+): unknown {
+  if (!parsedJson || typeof parsedJson !== "object" || Array.isArray(parsedJson)) {
+    return parsedJson;
+  }
+
+  const output = { ...(parsedJson as Record<string, unknown>) };
+
+  if (input.action !== "translate_document") {
+    delete output.targetLanguage;
+  }
+
+  if (input.action !== "structure_flow") {
+    delete output.structureChangeLevel;
+  }
+
+  if (output.mode !== "preview") {
+    delete output.resultMode;
+  }
+
+  return output;
+}
+
 export function normalizeProviderResponse({
   input,
   provider,
@@ -77,7 +102,9 @@ export function normalizeProviderResponse({
     throw new AIProviderError("AI response was not valid JSON");
   }
 
-  const parsedOutput = parseAIActionOutput(parsedJson);
+  const parsedOutput = parseAIActionOutput(
+    stripIrrelevantOutputMetadata(input, parsedJson),
+  );
 
   if (!parsedOutput.success) {
     console.error(

@@ -143,6 +143,37 @@ describe("aiActionOutputSchema", () => {
       expect(result.data.analysis).toEqual({ notes: [] });
     }
   });
+
+  it("drops empty suggestion candidates before output validation", () => {
+    const result = aiActionOutputSchema.safeParse({
+      mode: "suggestions",
+      summary: "Checked proofreading issues.",
+      revisedMarkdown: null,
+      suggestions: [
+        {
+          type: "grammar",
+          originalText: "PostgresSQL",
+          suggestedText: "PostgreSQL",
+          explanation: "Corrects the product name.",
+        },
+        {
+          type: "grammar",
+          originalText: "Valid source",
+          suggestedText: "",
+          explanation: "Invalid empty replacement.",
+        },
+      ],
+      analysis: null,
+      warnings: null,
+    });
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.data.suggestions).toHaveLength(1);
+      expect(result.data.suggestions[0].suggestedText).toBe("PostgreSQL");
+    }
+  });
 });
 
 describe("runAIActionRequestSchema", () => {

@@ -307,6 +307,11 @@ markdown, with harmless whitespace-only differences mapped back to the unique
 exact document slice. Missing or ambiguous anchors are discarded and never
 exposed as actionable pending suggestions.
 
+Suggestion persistence also enforces action-specific boundaries where the
+workflow requires it. Proofread & Correct only saves grammar-category
+corrections and is capped to a small high-confidence set so it cannot drift
+into readability, tone, structure, or broad style edits.
+
 AI output records include workflow metadata:
 
 ```txt
