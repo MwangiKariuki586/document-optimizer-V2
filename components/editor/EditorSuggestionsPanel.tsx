@@ -182,11 +182,17 @@ export function EditorSuggestionsPanel({
   const cardRefs = useRef<Record<string, HTMLElement | null>>({});
   const hasActiveFilters =
     activeStatusFilter !== "all" || activeTypeFilter !== "all";
+  const scopedAllSuggestions =
+    activeRunId === "all"
+      ? allSuggestions
+      : allSuggestions.filter(
+          (suggestion) => suggestion.aiRequestId === activeRunId,
+        );
   const selectedRunHasNoSuggestions =
-    Boolean(selectedRun) &&
-    !allSuggestions.some(
-      (suggestion) => suggestion.aiRequestId === selectedRun?.id,
-    );
+    Boolean(selectedRun) && scopedAllSuggestions.length === 0;
+  const hasUnavailablePendingSuggestions = scopedAllSuggestions.some(
+    (suggestion) => suggestion.status === "pending",
+  );
   const selectedRunIsResultOnly =
     Boolean(selectedRun) && resultOnlyActions.has(selectedRun!.action);
   const selectedRunHasResultPreview =
@@ -214,6 +220,24 @@ export function EditorSuggestionsPanel({
         secondaryLabel: allSuggestions.length > 0 ? "Show all suggestions" : null,
         secondaryAction:
           allSuggestions.length > 0 ? () => onRunChange("all") : undefined,
+      };
+    }
+
+    if (
+      activeStatusFilter === "pending" &&
+      activeTypeFilter === "all" &&
+      hasUnavailablePendingSuggestions
+    ) {
+      return {
+        title: "No applyable suggestions remain",
+        body: "The remaining pending suggestions no longer match one unique editor range.",
+        primaryLabel: "Show all suggestions",
+        primaryAction: () => {
+          onStatusFilterChange("all");
+          onTypeFilterChange("all");
+        },
+        secondaryLabel: "AI Actions",
+        secondaryAction: onOpenAIActions,
       };
     }
 
@@ -417,6 +441,8 @@ export function EditorSuggestionsPanel({
                 const isApplyingThis = applyingSuggestionId === suggestion.id;
                 const isIgnoringThis = ignoringSuggestionId === suggestion.id;
                 const isActive = activeSuggestionId === suggestion.id;
+                const canApplyThis =
+                  !isReviewed && Boolean(suggestion.hasInlineHighlight);
                 const isBusy =
                   isReviewingAll ||
                   isReviewingSelected ||
@@ -509,8 +535,8 @@ export function EditorSuggestionsPanel({
                         {suggestion.status === "pending" &&
                         !suggestion.hasInlineHighlight ? (
                           <p className="mt-2 rounded-md bg-warning-muted px-2 py-1.5 text-[11px] leading-4 text-warning-foreground">
-                            This suggestion no longer matches a unique range in
-                            the editor. Review the text before applying it.
+                            This suggestion no longer matches one unique range
+                            in the editor. Regenerate suggestions or ignore it.
                           </p>
                         ) : null}
                       </div>
@@ -519,9 +545,14 @@ export function EditorSuggestionsPanel({
                     <div className="mt-3 flex items-center gap-2">
                       <LoadingButton
                         onClick={() => onApplySuggestion(suggestion.id)}
-                        disabled={isReviewed || isBusy}
+                        disabled={!canApplyThis || isBusy}
                         isLoading={isApplyingThis}
                         loadingText="Applying..."
+                        title={
+                          canApplyThis
+                            ? undefined
+                            : "Apply is available only when this suggestion matches one unique editor range."
+                        }
                         className="h-8 px-3 py-1.5 text-xs"
                       >
                         {suggestion.status === "applied" ? "Applied" : "Apply"}

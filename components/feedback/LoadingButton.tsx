@@ -8,6 +8,7 @@ type LoadingButtonProps = {
   disabled?: boolean;
   isLoading?: boolean;
   loadingText?: string;
+  title?: string;
   type?: "button" | "submit" | "reset";
   onClick?: () => void;
 };
@@ -18,6 +19,7 @@ export function LoadingButton({
   disabled = false,
   isLoading = false,
   loadingText,
+  title,
   type = "button",
   onClick,
 }: LoadingButtonProps) {
@@ -28,6 +30,7 @@ export function LoadingButton({
       disabled={disabled || isLoading}
       onClick={onClick}
       aria-busy={isLoading}
+      title={title}
     >
       {isLoading ? <CometSpinner className="size-4" /> : null}
       {isLoading && loadingText ? loadingText : children}

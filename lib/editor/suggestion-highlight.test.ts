@@ -53,6 +53,23 @@ describe("suggestion highlights", () => {
     editor.destroy();
   });
 
+  it("omits suggestions that match multiple ranges", () => {
+    const editor = makeEditor("<p>Repeat this. Repeat this.</p>");
+
+    const ranges = findSuggestionHighlightRanges(editor.state.doc, [
+      {
+        id: "ambiguous-suggestion",
+        originalText: "Repeat this.",
+        category: "clarity",
+        issueLabel: "Clarify phrasing",
+      },
+    ]);
+
+    expect(ranges).toHaveLength(0);
+
+    editor.destroy();
+  });
+
   it("matches suggestion anchors split across formatted text nodes", () => {
     const editor = makeEditor(
       "<p>This <strong>sentence</strong> is too long.</p>",

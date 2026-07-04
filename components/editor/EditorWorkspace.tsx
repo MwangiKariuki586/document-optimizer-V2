@@ -244,19 +244,7 @@ export function EditorWorkspace({
     }
 
     const pendingSuggestions = suggestions
-      .filter((suggestion) => {
-        if (suggestion.status !== "pending") {
-          return false;
-        }
-
-        if (activeTypeFilter === "all") {
-          return true;
-        }
-
-        return (
-          SUGGESTION_CATEGORY_BY_LABEL[suggestion.type] === activeTypeFilter
-        );
-      })
+      .filter((suggestion) => suggestion.status === "pending")
       .map((suggestion) => ({
         id: suggestion.id,
         originalText: suggestion.originalText,
@@ -265,11 +253,17 @@ export function EditorWorkspace({
       }));
 
     return findSuggestionHighlightRanges(editorDoc, pendingSuggestions);
-  }, [activeTypeFilter, editorDoc, suggestions]);
+  }, [editorDoc, suggestions]);
 
   const highlightedSuggestionIds = useMemo(
     () => new Set(suggestionHighlightRanges.map((range) => range.id)),
     [suggestionHighlightRanges],
+  );
+
+  const isLiveApplyableSuggestion = useCallback(
+    (suggestion: EditorSuggestion) =>
+      suggestion.status === "pending" && highlightedSuggestionIds.has(suggestion.id),
+    [highlightedSuggestionIds],
   );
 
   useEffect(() => {
@@ -484,6 +478,14 @@ export function EditorWorkspace({
   const statusFilters = useMemo<SuggestionFilter[]>(() => {
     const counts = runScopedSuggestions.reduce<Record<string, number>>(
       (result, suggestion) => {
+        if (suggestion.status === "pending") {
+          if (isLiveApplyableSuggestion(suggestion)) {
+            result.pending = (result.pending ?? 0) + 1;
+          }
+
+          return result;
+        }
+
         result[suggestion.status] = (result[suggestion.status] ?? 0) + 1;
         return result;
       },
@@ -499,7 +501,7 @@ export function EditorWorkspace({
       (filter) =>
         filter.key === "all" || filter.key === "pending" || filter.count > 0,
     );
-  }, [runScopedSuggestions]);
+  }, [isLiveApplyableSuggestion, runScopedSuggestions]);
 
   const effectiveStatusFilter = statusFilters.some(
     (filter) => filter.key === activeStatusFilter,
@@ -508,13 +510,18 @@ export function EditorWorkspace({
     : "all";
 
   const statusScopedSuggestions = useMemo(
-    () =>
-      effectiveStatusFilter === "all"
+    () => {
+      if (effectiveStatusFilter === "pending") {
+        return runScopedSuggestions.filter(isLiveApplyableSuggestion);
+      }
+
+      return effectiveStatusFilter === "all"
         ? runScopedSuggestions
         : runScopedSuggestions.filter(
             (suggestion) => suggestion.status === effectiveStatusFilter,
-          ),
-    [effectiveStatusFilter, runScopedSuggestions],
+          );
+    },
+    [effectiveStatusFilter, isLiveApplyableSuggestion, runScopedSuggestions],
   );
 
   const typeFilters = useMemo<SuggestionFilter[]>(() => {
@@ -587,7 +594,7 @@ export function EditorWorkspace({
     (suggestion) => suggestion.status === "applied",
   ).length;
   const scopedPendingSuggestions = runScopedSuggestions.filter(
-    (suggestion) => suggestion.status === "pending",
+    isLiveApplyableSuggestion,
   );
   const scopedAppliedSuggestionCount = runScopedSuggestions.filter(
     (suggestion) => suggestion.status === "applied",
@@ -598,7 +605,6 @@ export function EditorWorkspace({
       return;
     }
 
-    setApplyingSuggestionId(id);
     const targetSuggestion = suggestions.find((suggestion) => suggestion.id === id);
     const beforeApplyContent = editor.getJSON();
     const beforeApplyCounts = { ...counts };
@@ -606,6 +612,15 @@ export function EditorWorkspace({
     const highlightState = suggestionHighlightPluginKey.getState(editor.state);
     const range = highlightState?.ranges.find((item) => item.id === id);
     let appliedOptimistically = false;
+
+    if (!targetSuggestion || targetSuggestion.status !== "pending" || !range) {
+      appToast.warning(
+        "This suggestion no longer matches one unique editor range. Regenerate suggestions or ignore it.",
+      );
+      return;
+    }
+
+    setApplyingSuggestionId(id);
 
     try {
       if (targetSuggestion && range) {

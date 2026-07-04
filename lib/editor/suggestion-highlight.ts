@@ -175,6 +175,12 @@ export function findSuggestionHighlightRanges(
       continue;
     }
 
+    if (
+      documentIndex.text.indexOf(snippet, snippetIndex + snippet.length) !== -1
+    ) {
+      continue;
+    }
+
     const from = documentIndex.positionMap[snippetIndex];
     const lastPosition =
       documentIndex.positionMap[snippetIndex + snippet.length - 1];

@@ -485,6 +485,28 @@ describe("getAISuggestionCandidateRejectionReason", () => {
     ).toBe("duplicate_target");
   });
 
+  it("rejects overlapping suggestion targets", () => {
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: baseSuggestion,
+        type: "clarity",
+        originalText: "Original wording",
+        markdown: "Original wording needs polish.",
+        seenTargetRanges: [{ start: 0, end: 24 }],
+      }),
+    ).toBe("overlapping_target");
+
+    expect(
+      getAISuggestionCandidateRejectionReason({
+        suggestion: baseSuggestion,
+        type: "clarity",
+        originalText: "Original wording",
+        markdown: "Intro. Original wording needs polish.",
+        seenTargetRanges: [{ start: 0, end: 6 }],
+      }),
+    ).toBeNull();
+  });
+
   it("rejects non-grammar suggestions for proofread actions", () => {
     expect(
       getAISuggestionCandidateRejectionReason({

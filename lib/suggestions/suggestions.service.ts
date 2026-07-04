@@ -86,7 +86,8 @@ type AISuggestionRejectionReason =
   | "no_op"
   | "cosmetic_whitespace"
   | "unanchored"
-  | "duplicate_target";
+  | "duplicate_target"
+  | "overlapping_target";
 
 const SUGGESTION_FRIENDLY_ACTIONS = new Set<AIActionKey>([
   "proofread_correct",
@@ -197,6 +198,8 @@ export function getAISuggestionCandidateRejectionReason(input: {
   type: SuggestionType | null;
   originalText: string | null;
   seenOriginalTexts?: Set<string>;
+  seenTargetRanges?: Array<{ start: number; end: number }>;
+  markdown?: string;
 }): AISuggestionRejectionReason | null {
   if (!input.type) {
     return "invalid_type";
@@ -225,6 +228,21 @@ export function getAISuggestionCandidateRejectionReason(input: {
 
   if (input.seenOriginalTexts?.has(input.originalText)) {
     return "duplicate_target";
+  }
+
+  if (input.markdown && input.seenTargetRanges && input.originalText) {
+    const start = input.markdown.indexOf(input.originalText);
+
+    if (start >= 0) {
+      const end = start + input.originalText.length;
+      const overlapsSeenRange = input.seenTargetRanges.some(
+        (range) => start < range.end && end > range.start,
+      );
+
+      if (overlapsSeenRange) {
+        return "overlapping_target";
+      }
+    }
   }
 
   return null;
@@ -496,6 +514,7 @@ export async function saveSuggestionsFromAIResult(
   const rejectedSuggestions: Partial<Record<AISuggestionRejectionReason, number>> =
     {};
   const seenOriginalTexts = new Set<string>();
+  const seenTargetRanges: Array<{ start: number; end: number }> = [];
 
   const rejectSuggestion = (reason: AISuggestionRejectionReason) => {
     rejectedSuggestions[reason] = (rejectedSuggestions[reason] ?? 0) + 1;
@@ -556,6 +575,8 @@ export async function saveSuggestionsFromAIResult(
       type,
       originalText,
       seenOriginalTexts,
+      seenTargetRanges,
+      markdown: input.originalMarkdown,
     });
 
     if (rejectionReason) {
@@ -569,6 +590,15 @@ export async function saveSuggestionsFromAIResult(
     }
 
     seenOriginalTexts.add(originalText);
+    const targetStart = input.originalMarkdown.indexOf(originalText);
+
+    if (targetStart >= 0) {
+      seenTargetRanges.push({
+        start: targetStart,
+        end: targetStart + originalText.length,
+      });
+    }
+
     rows.push({
       user_id: input.userId,
       document_id: input.documentId,

@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Made optimistic single-suggestion apply stop showing a loading state immediately
+**Last completed:** Removed unapplyable suggestions from the default Pending workflow
 **Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
 
 ---
@@ -128,6 +128,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-04
+Feature: Hide unapplyable suggestions from Pending workflow
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Changed the editor rail so Pending counts, the default Pending queue, and Apply All use only suggestions with one unique live editor anchor. Stale or ambiguous pending rows remain reviewable under All with disabled Apply, but they no longer present as pending work. Added a generation-time overlap rejection so new AI runs do not persist overlapping targets that would invalidate each other after one apply.
+Verification: `npx.cmd vitest run lib/editor/suggestion-highlight.test.ts lib/suggestions/suggestions.service.test.ts` passed 22 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check a run that previously produced unapplyable suggestions; default Pending should show only applyable cards, Apply All should only include those cards, and stale rows should only appear under All.
+```
+
+```txt
+Date: 2026-07-04
+Feature: Unique-anchor enforcement for visible suggestions
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorSuggestionsPanel.tsx, components/feedback/LoadingButton.tsx, lib/editor/suggestion-highlight.ts, lib/editor/suggestion-highlight.test.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Tightened inline suggestion highlighting so duplicate normalized anchors are not treated as safe matches. Visible pending cards now keep Apply disabled when the current editor no longer has one unique live highlight, while still allowing review or Ignore. The single-suggestion apply handler now refuses stale or ambiguous applies before starting loading or sending the server request.
+Verification: `npx.cmd vitest run lib/editor/suggestion-highlight.test.ts` passed 5 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check a repeated-text suggestion and a stale suggestion from `/documents/[id]`; both should remain visible with warning copy but disabled Apply.
+```
 
 ```txt
 Date: 2026-07-04
