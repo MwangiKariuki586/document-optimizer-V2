@@ -1,4 +1,7 @@
 import { renderExport } from "@/lib/export/export-renderers";
+import { getAIRequestPreview } from "@/lib/ai/ai.service";
+import { markdownToEditorJson } from "@/lib/documents/markdown-to-editor";
+import { countWords } from "@/lib/documents/text-to-editor";
 import type {
   CreateExportOptions,
   ExportFormat,
@@ -35,6 +38,14 @@ type DownloadDocumentExportInput = {
   userId: string;
   documentId: string;
   exportId: string;
+};
+
+type GenerateAIRequestExportInput = {
+  userId: string;
+  documentId: string;
+  requestId: string;
+  format: ExportFormat;
+  options: CreateExportOptions;
 };
 
 export type DownloadedDocumentExport = {
@@ -90,6 +101,82 @@ function getFormattingWarning(format: ExportFormat, fidelityStatus: string) {
   return null;
 }
 
+async function persistRenderedExport(input: {
+  supabase: ReturnType<typeof createSupabaseServerClient>;
+  userId: string;
+  documentId: string;
+  exportId: string;
+  format: ExportFormat;
+  fileName: string;
+  warning: string | null;
+  contentType: string;
+  data: Buffer;
+  metadata: Record<string, unknown>;
+}): Promise<GeneratedDocumentExport> {
+  const fileKey = await uploadExportFile(input.supabase, {
+    userId: input.userId,
+    documentId: input.documentId,
+    exportId: input.exportId,
+    fileName: input.fileName,
+    contentType: input.contentType,
+    data: input.data,
+  });
+
+  const payload: TablesInsert<"exports"> = {
+    id: input.exportId,
+    user_id: input.userId,
+    document_id: input.documentId,
+    format: input.format,
+    file_key: fileKey,
+    status: "completed",
+    warning: input.warning,
+  };
+
+  const { data: exportRecord, error: exportError } = await input.supabase
+    .from("exports")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (exportError || !exportRecord) {
+    await removeExportFile(input.supabase, fileKey);
+    console.error("[export/create-record]", exportError?.message);
+    throw new Error("Failed to create export record");
+  }
+
+  await recordUsageEvent(input.supabase, {
+    userId: input.userId,
+    documentId: input.documentId,
+    eventType: "export",
+    metadata: {
+      format: input.format,
+      fileKey,
+      options: input.metadata.options,
+      warning: input.warning,
+      ...input.metadata,
+    },
+  });
+
+  const signedUrl = await createSignedExportUrl(
+    input.supabase,
+    fileKey,
+    input.fileName,
+  );
+  const downloadUrl = `/api/documents/${input.documentId}/export/${exportRecord.id}/download`;
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  return {
+    id: exportRecord.id,
+    format: input.format,
+    fileName: input.fileName,
+    fileKey,
+    signedUrl,
+    downloadUrl,
+    expiresAt,
+    warning: input.warning,
+  };
+}
+
 export async function generateDocumentExport(
   input: GenerateDocumentExportInput,
 ): Promise<GeneratedDocumentExport | null> {
@@ -127,63 +214,80 @@ export async function generateDocumentExport(
   const extension = EXTENSIONS[input.format];
   const fileName = `${sanitizeBaseFileName(document.title)}.${extension}`;
   const warning = getFormattingWarning(input.format, document.fidelity_status);
-  const fileKey = await uploadExportFile(supabase, {
+
+  return persistRenderedExport({
+    supabase,
     userId: input.userId,
     documentId: document.id,
     exportId,
     fileName,
+    format: input.format,
+    warning,
     contentType: rendered.contentType,
     data: rendered.data,
-  });
-
-  const payload: TablesInsert<"exports"> = {
-    id: exportId,
-    user_id: input.userId,
-    document_id: document.id,
-    format: input.format,
-    file_key: fileKey,
-    status: "completed",
-    warning,
-  };
-
-  const { data: exportRecord, error: exportError } = await supabase
-    .from("exports")
-    .insert(payload)
-    .select("id")
-    .single();
-
-  if (exportError || !exportRecord) {
-    await removeExportFile(supabase, fileKey);
-    console.error("[export/create-record]", exportError?.message);
-    throw new Error("Failed to create export record");
-  }
-
-  await recordUsageEvent(supabase, {
-    userId: input.userId,
-    documentId: document.id,
-    eventType: "export",
     metadata: {
-      format: input.format,
-      fileKey,
       options: input.options,
-      warning,
     },
   });
+}
 
-  const signedUrl = await createSignedExportUrl(supabase, fileKey, fileName);
-  const downloadUrl = `/api/documents/${document.id}/export/${exportRecord.id}/download`;
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+export async function generateAIRequestExport(
+  input: GenerateAIRequestExportInput,
+): Promise<GeneratedDocumentExport | null> {
+  const supabase = createSupabaseServerClient();
+  const preview = await getAIRequestPreview(supabase, input);
 
-  return {
-    id: exportRecord.id,
+  if (!preview) {
+    return null;
+  }
+
+  const markdown = preview.output.revisedMarkdown?.trim();
+
+  if (!markdown) {
+    throw new Error("AI result has no document content to export");
+  }
+
+  const resultMode = preview.output.resultMode ?? "optimization";
+  const titleSuffix =
+    resultMode === "translation"
+      ? "Translation"
+      : resultMode === "summary"
+        ? "Summary"
+        : "AI Result";
+  const title = `${preview.documentTitle} - ${titleSuffix}`;
+  const editorJson = markdownToEditorJson(markdown);
+  const wordCount = countWords(markdown);
+  const rendered = renderExport({
+    title,
+    markdown,
+    editorJson,
     format: input.format,
+    options: input.options,
+    fidelityStatus: "Structure Preserved",
+    wordCount,
+  });
+  const exportId = crypto.randomUUID();
+  const extension = EXTENSIONS[input.format];
+  const fileName = `${sanitizeBaseFileName(title)}.${extension}`;
+  const warning = getFormattingWarning(input.format, "Structure Preserved");
+
+  return persistRenderedExport({
+    supabase,
+    userId: input.userId,
+    documentId: input.documentId,
+    exportId,
     fileName,
-    fileKey,
-    signedUrl,
-    downloadUrl,
-    expiresAt,
+    format: input.format,
     warning,
-  };
+    contentType: rendered.contentType,
+    data: rendered.data,
+    metadata: {
+      options: input.options,
+      aiRequestId: input.requestId,
+      resultMode,
+      source: "ai_preview",
+    },
+  });
 }
 
 export async function downloadDocumentExport(

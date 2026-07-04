@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Made editor metric pills dynamic
+**Last completed:** Routed AI preview export through export workspace
 **Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
 
 ---
@@ -128,6 +128,46 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-05
+Feature: Route AI preview export through export workspace
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, app/(app)/documents/[id]/export/page.tsx, components/export/ExportWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Changed preview Export from an immediate download into a navigation link to `/documents/[id]/export?requestId=...`. The export page now validates that AI request, displays the proposed AI result as the export source, and the export workspace submits to the AI-result export endpoint only after the user chooses format/options.
+Verification: `npx.cmd vitest run lib/export/export.service.test.ts` passed 5 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check a translation preview: Export should open the export workspace first, and exporting from there should download the translated result rather than the original saved document.
+```
+
+```txt
+Date: 2026-07-05
+Feature: One-click AI preview export
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, app/api/documents/[id]/ai/[requestId]/export/route.ts, lib/export/export.service.ts, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added Export back to AI request previews as a direct proposed-result export instead of linking to the saved document export workspace. Translation and summary previews now show Return to Editor, Copy, and Export; optimization previews keep Apply to Document and can also copy/export the proposed output. The export route renders the AI result as a Word document, stores it through the existing private export flow, and starts the download from the preview footer.
+Verification: `npx.cmd vitest run lib/export/export.service.test.ts` passed 5 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check a translation preview and confirm Export downloads the translated result rather than the original saved document.
+```
+
+```txt
+Date: 2026-07-05
+Feature: Remove preview Save and Discard actions
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed Save as New Document, Save as Version, Save Translated Copy, and Discard from the AI preview footer. The preview page now keeps only Return to Editor, Apply to Document for optimization results, Copy for summary/translation results, and Export only for already-saved document previews.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check optimization, summary, and translation previews to confirm the footer no longer presents Save or Discard choices.
+```
+
+```txt
+Date: 2026-07-04
+Feature: Prevent exporting unsaved AI preview results
+Status: Completed
+Files changed: components/ai/PreviewActionBar.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Removed the Export action from unsaved AI request previews so users cannot export the currently saved original document while viewing an unsaved translation, summary, or optimization preview. Users now save/apply the preview first, then export from the saved document workspace.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check translation and summary preview footers; Export should be absent until the generated output has been saved as a document.
+```
 
 ```txt
 Date: 2026-07-04

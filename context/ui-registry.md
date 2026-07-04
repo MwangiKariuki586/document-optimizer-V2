@@ -1457,8 +1457,8 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 - `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
 - `SyncScrollToggle` displays `Sync scrolling: On / Off`.
-- `PreviewActionBar` renders mode-specific result controls. Optimization results can Apply to Document after approval; summary results can Copy, Save as New Document, Save as Version, Export after saving, or Discard; translation results can Copy Translation, Save Translated Copy, Export after saving, or Discard.
-- Export links to `/documents/[id]/export`; users should save a summary or translation result first when they want to export that generated output.
+- `PreviewActionBar` renders mode-specific result controls. AI request previews expose Return to Editor, Copy Result or Copy Translation when proposed output exists, and Export. Optimization results also include Apply to Document after approval. The preview footer does not expose separate Save or Discard actions because returning to the editor leaves the saved document unchanged, and applying an optimization result is the explicit document-changing action.
+- For AI request previews, Export links to `/documents/[id]/export?requestId=[requestId]` so users choose format/options in the dedicated export workspace. That workspace submits to `/api/documents/[id]/ai/[requestId]/export` and exports the proposed AI result. For already-saved document previews, Export links to `/documents/[id]/export`.
 
 ### SuggestionHighlight
 

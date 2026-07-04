@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   downloadDocumentExport,
+  generateAIRequestExport,
   generateDocumentExport,
 } from "@/lib/export/export.service";
 import type { CreateExportOptions } from "@/lib/export/export.validators";
@@ -225,6 +226,93 @@ describe("generateDocumentExport", () => {
     expect(removeExportFileMock).toHaveBeenCalledWith(
       supabase,
       "user-id/document-id/exports/export-id/document.txt",
+    );
+  });
+});
+
+describe("generateAIRequestExport", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    uploadExportFileMock.mockResolvedValue(
+      "user-id/document-id/exports/export-id/translated-plan.docx",
+    );
+    createSignedExportUrlMock.mockResolvedValue("https://signed.example/export");
+  });
+
+  it("exports the AI request revised markdown instead of the saved document", async () => {
+    const aiRequests = createBuilder("ai_requests", {
+      maybeSingle: {
+        id: "request-id",
+        document_id: "document-id",
+        action: "translate_document",
+        status: "completed",
+        output: {
+          mode: "preview",
+          summary: "Translated.",
+          revisedMarkdown: "# Translated Plan\n\nBonjour.",
+          suggestions: [],
+          warnings: [],
+          resultMode: "translation",
+        },
+        provider: "deepseek",
+        model: "deepseek-chat",
+        input_tokens: 100,
+        output_tokens: 50,
+        estimated_cost: 0.01,
+        completed_at: "2026-07-05T00:00:00.000Z",
+        documents: {
+          id: "document-id",
+          title: "Quarterly Plan",
+          current_markdown: "# Original Plan\n\nHello.",
+          editor_json: null,
+          user_id: "user-id",
+        },
+      },
+    });
+    const exports = createBuilder("exports", {
+      single: { id: "export-id" },
+    });
+    const { supabase } = createSupabaseMock([aiRequests, exports]);
+    createSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const result = await generateAIRequestExport({
+      userId: "user-id",
+      documentId: "document-id",
+      requestId: "request-id",
+      format: "markdown",
+      options,
+    });
+
+    const uploadedData = uploadExportFileMock.mock.calls[0]?.[1].data;
+    expect(uploadedData?.toString("utf8")).toContain("Translated Plan");
+    expect(uploadedData?.toString("utf8")).not.toContain("Original Plan");
+    expect(exports.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "user-id",
+        document_id: "document-id",
+        format: "markdown",
+        status: "completed",
+      }),
+    );
+    expect(recordUsageEventMock).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        userId: "user-id",
+        documentId: "document-id",
+        eventType: "export",
+        metadata: expect.objectContaining({
+          aiRequestId: "request-id",
+          resultMode: "translation",
+          source: "ai_preview",
+        }),
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: "export-id",
+        fileName: "quarterly-plan-translation.md",
+        downloadUrl: "/api/documents/document-id/export/export-id/download",
+      }),
     );
   });
 });

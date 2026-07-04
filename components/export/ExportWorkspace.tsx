@@ -29,6 +29,7 @@ import type { AppliedSuggestionSummary } from "@/lib/suggestions/suggestions.typ
 type ExportWorkspaceProps = {
   document: EditorDocument;
   improvementSummary: AppliedSuggestionSummary;
+  aiRequestId?: string;
 };
 
 const exportFormats: ExportFormatOption[] = [
@@ -110,6 +111,7 @@ function downloadExport(result: ExportResult) {
 export function ExportWorkspace({
   document,
   improvementSummary,
+  aiRequestId,
 }: ExportWorkspaceProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("docx");
   const [options, setOptions] = useState<ExportOptionsState>(defaultOptions);
@@ -124,6 +126,10 @@ export function ExportWorkspace({
     [document.wordCount, selectedFormat],
   );
   const isExportReady = status === "ready" && result !== null;
+  const isAIResultExport = Boolean(aiRequestId);
+  const exportEndpoint = aiRequestId
+    ? `/api/documents/${document.id}/ai/${aiRequestId}/export`
+    : `/api/documents/${document.id}/export`;
 
   const toggleOption = (key: ExportOptionKey) => {
     setOptions((current) => ({ ...current, [key]: !current[key] }));
@@ -169,7 +175,7 @@ export function ExportWorkspace({
     setResult(null);
 
     try {
-      const response = await fetch(`/api/documents/${document.id}/export`, {
+      const response = await fetch(exportEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format: selectedFormat, options }),
@@ -214,7 +220,9 @@ export function ExportWorkspace({
             description={
               isExportReady
                 ? "Your document has been exported and is ready to download."
-                : "Choose how you want to export your optimized document."
+                : isAIResultExport
+                  ? "Choose how you want to export this AI result."
+                  : "Choose how you want to export your optimized document."
             }
           />
         </div>
