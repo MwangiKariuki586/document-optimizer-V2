@@ -1,12 +1,87 @@
-import { describe, expect, it } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  applySuggestion,
   buildAppliedSuggestionSummary,
   buildAppliedSuggestionsReviewPreview,
   getAISuggestionCandidateRejectionReason,
   saveSuggestionsFromAIResult,
 } from "@/lib/suggestions/suggestions.service";
 import type { DocumentSuggestion } from "@/lib/suggestions/suggestions.types";
+import type { Database } from "@/lib/supabase/types";
+import { recordUsageEvent } from "@/lib/usage/usage.service";
+import {
+  getOrCreateMutationSnapshot,
+  updateMutationSnapshotSessionHash,
+} from "@/lib/versions/versions.service";
+
+vi.mock("@/lib/usage/usage.service", () => ({
+  recordUsageEvent: vi.fn(),
+}));
+
+vi.mock("@/lib/versions/versions.service", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/versions/versions.service")>();
+
+  return {
+    ...actual,
+    getOrCreateMutationSnapshot: vi.fn(),
+    updateMutationSnapshotSessionHash: vi.fn(),
+  };
+});
+
+type QueryResult = {
+  maybeSingle?: unknown;
+};
+
+type QueryBuilder = {
+  table: string;
+  payloads: unknown[];
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
+};
+
+function createBuilder(table: string, result: QueryResult): QueryBuilder {
+  const payloads: unknown[] = [];
+  const builder: QueryBuilder = {
+    table,
+    payloads,
+    select: vi.fn(() => builder),
+    eq: vi.fn(() => builder),
+    update: vi.fn((payload: unknown) => {
+      builder.payloads.push(payload);
+      return builder;
+    }),
+    maybeSingle: vi.fn(async () => ({
+      data: result.maybeSingle ?? null,
+      error: null,
+    })),
+  };
+
+  return builder;
+}
+
+function createSupabaseMock(builders: QueryBuilder[]) {
+  const queue = [...builders];
+  const from = vi.fn((table: string) => {
+    const builder = queue.shift();
+
+    if (!builder) {
+      throw new Error(`Unexpected table query: ${table}`);
+    }
+
+    expect(table).toBe(builder.table);
+    return builder;
+  });
+
+  return {
+    supabase: { from } as unknown as SupabaseClient<Database>,
+    from,
+  };
+}
 
 function suggestion(
   input: Partial<DocumentSuggestion> &
@@ -23,6 +98,179 @@ function suggestion(
     ...input,
   };
 }
+
+describe("applySuggestion", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("uses a grouped AI-run snapshot and records reuse metadata", async () => {
+    vi.mocked(getOrCreateMutationSnapshot).mockResolvedValue({
+      id: "version-id",
+      versionNumber: 7,
+      sessionId: "session-id",
+      reused: true,
+    });
+    vi.mocked(updateMutationSnapshotSessionHash).mockResolvedValue(undefined);
+    vi.mocked(recordUsageEvent).mockResolvedValue(undefined);
+
+    const suggestionLookup = createBuilder("suggestions", {
+      maybeSingle: {
+        id: "suggestion-id",
+        document_id: "doc-1",
+        ai_request_id: "request-1",
+        type: "clarity",
+        original_text: "world",
+        suggested_text: "there",
+        explanation: "Clearer wording.",
+        status: "pending",
+        created_at: "2026-07-04T00:00:00.000Z",
+        updated_at: "2026-07-04T00:00:00.000Z",
+      },
+    });
+    const documentLookup = createBuilder("documents", {
+      maybeSingle: {
+        title: "Document",
+        current_markdown: "Hello world.",
+        editor_json: null,
+        formatting_metadata: { fidelity: "plain" },
+      },
+    });
+    const documentUpdate = createBuilder("documents", {
+      maybeSingle: { id: "doc-1" },
+    });
+    const suggestionStatus = createBuilder("suggestions", {
+      maybeSingle: { id: "suggestion-id" },
+    });
+    const { supabase } = createSupabaseMock([
+      suggestionLookup,
+      documentLookup,
+      documentUpdate,
+      suggestionStatus,
+    ]);
+
+    const result = await applySuggestion(supabase, {
+      userId: "user-1",
+      documentId: "doc-1",
+      suggestionId: "suggestion-id",
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        documentId: "doc-1",
+        suggestionId: "suggestion-id",
+        versionNumber: 7,
+        currentMarkdown: "Hello there.",
+        wordCount: 2,
+      }),
+    );
+    expect(getOrCreateMutationSnapshot).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        userId: "user-1",
+        documentId: "doc-1",
+        title: "Document",
+        source: "suggestion_apply",
+        contentMarkdown: "Hello world.",
+        scope: "ai_request",
+        scopeId: "request-1",
+      }),
+    );
+    expect(documentUpdate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        current_markdown: "Hello there.",
+        word_count: 2,
+      }),
+    );
+    expect(suggestionStatus.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "applied" }),
+    );
+    expect(updateMutationSnapshotSessionHash).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        sessionId: "session-id",
+        userId: "user-1",
+        contentMarkdown: "Hello there.",
+      }),
+    );
+    expect(recordUsageEvent).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        userId: "user-1",
+        eventType: "suggestion_apply",
+        documentId: "doc-1",
+        metadata: expect.objectContaining({
+          suggestionId: "suggestion-id",
+          versionNumber: 7,
+          snapshotSessionId: "session-id",
+          snapshotReused: true,
+          appliedCount: 1,
+        }),
+      }),
+    );
+  });
+
+  it("falls back to an ungrouped snapshot for legacy suggestions without an AI request", async () => {
+    vi.mocked(getOrCreateMutationSnapshot).mockResolvedValue({
+      id: "version-id",
+      versionNumber: 8,
+      sessionId: null,
+      reused: false,
+    });
+    vi.mocked(updateMutationSnapshotSessionHash).mockResolvedValue(undefined);
+    vi.mocked(recordUsageEvent).mockResolvedValue(undefined);
+
+    const suggestionLookup = createBuilder("suggestions", {
+      maybeSingle: {
+        id: "suggestion-id",
+        document_id: "doc-1",
+        ai_request_id: null,
+        type: "clarity",
+        original_text: "world",
+        suggested_text: "there",
+        explanation: "Clearer wording.",
+        status: "pending",
+        created_at: "2026-07-04T00:00:00.000Z",
+        updated_at: "2026-07-04T00:00:00.000Z",
+      },
+    });
+    const documentLookup = createBuilder("documents", {
+      maybeSingle: {
+        title: "Document",
+        current_markdown: "Hello world.",
+        editor_json: null,
+        formatting_metadata: {},
+      },
+    });
+    const documentUpdate = createBuilder("documents", {
+      maybeSingle: { id: "doc-1" },
+    });
+    const suggestionStatus = createBuilder("suggestions", {
+      maybeSingle: { id: "suggestion-id" },
+    });
+    const { supabase } = createSupabaseMock([
+      suggestionLookup,
+      documentLookup,
+      documentUpdate,
+      suggestionStatus,
+    ]);
+
+    await applySuggestion(supabase, {
+      userId: "user-1",
+      documentId: "doc-1",
+      suggestionId: "suggestion-id",
+    });
+
+    expect(getOrCreateMutationSnapshot).toHaveBeenCalledWith(
+      supabase,
+      expect.objectContaining({
+        scope: undefined,
+        scopeId: null,
+        notes: "Before applying suggestion suggestion-id",
+      }),
+    );
+  });
+});
 
 describe("buildAppliedSuggestionsReviewPreview", () => {
   it("reconstructs matched applied suggestions without showing a global stale warning", () => {

@@ -353,8 +353,11 @@ Usage/activity is recorded
 Full AI action results are finally reviewed from `/documents/[id]/preview`.
 Suggestion Apply and Apply All are explicit editor actions. Single Apply loads
 the owned pending suggestion and current document in parallel,
-validates replacement safety, snapshots the pre-change state, updates document
-content, marks the suggestion applied, and records usage. The returned
+validates replacement safety, creates or reuses a grouped pre-change snapshot
+for that AI request, updates document content, marks the suggestion applied,
+and records usage. The grouped snapshot is reused only while the stored
+document content hash still matches the snapshot session; stale or expired
+sessions are closed and a fresh rollback point is created. The returned
 editor/version state updates the client locally without a second suggestions
 fetch or full route refresh. Apply All receives the selected AI action's owned
 pending suggestion ids, validates every replacement, creates one pre-change
@@ -446,6 +449,33 @@ Signed download URL is returned
 `version_number` is assigned automatically by the `set_document_version_number()` trigger (max+1 per `document_id`) and is unique per `(document_id, version_number)`. Application code never sets it. See `supabase/schema/phase-4-version-number.sql`.
 
 Versioning model: versions are created (1) automatically at document creation (`upload` / `paste`; `blank` remains legacy-display only), (2) automatically as pre-destructive safety snapshots before AI apply or suggestion apply via `snapshotDocumentVersion()` in `lib/versions/versions.service.ts`, and (3) on demand via the editor's "Save current version" dropdown action (`manual_save`, `createManualVersion()` + `POST /api/documents/[id]/versions`). Restore/switch updates the live document row to an existing saved version and does not create a new `document_versions` row. The editor resolves the current version label by preferring the latest validated `version_restore` usage metadata when the selected version content still matches the live document, then falling back to saved-version content matching. The plain Save only overwrites the live document row (no snapshot).
+
+Single suggestion Apply uses `document_snapshot_sessions` to group repeated
+card-level applies from the same AI request behind one visible rollback version.
+If a later apply sees a different stored content hash, an expired session, or no
+AI request scope, it creates a new version instead of reusing the old session.
+
+### `document_snapshot_sessions`
+
+Short-lived optimization records that allow repeated single suggestion applies
+from the same AI request to reuse one pre-change version row without weakening
+rollback safety.
+
+| Column            | Type        | Notes                                                     |
+| ----------------- | ----------- | --------------------------------------------------------- |
+| id                | uuid        | Primary key                                               |
+| user_id           | text        | Clerk user ID                                             |
+| document_id       | uuid        | References documents                                      |
+| source            | text        | suggestion_apply / ai_apply / restore                     |
+| scope             | text        | Grouping scope; currently `ai_request`                    |
+| scope_id          | text        | Scope identifier; currently the AI request id             |
+| version_id        | uuid        | References the rollback row in `document_versions`        |
+| base_content_hash | text        | Hash of the document state captured by the rollback row   |
+| last_content_hash | text        | Hash after the latest successful mutation in this session |
+| expires_at        | timestamptz | Session expiry                                            |
+| closed_at         | timestamptz | Set when the session is stale or no longer reusable       |
+| created_at        | timestamptz | Created timestamp                                         |
+| updated_at        | timestamptz | Updated timestamp                                         |
 
 ### `ai_requests`
 
@@ -705,7 +735,7 @@ Rules the AI agent must never violate:
 - AI providers are only called through the AI router.
 - AI output never overwrites document content automatically.
 - Full AI action output can only be reviewed, saved, or applied from AI Result Preview.
-- Single suggestion Apply is allowed from the editor after explicit user action and must snapshot first.
+- Single suggestion Apply is allowed from the editor after explicit user action and must preserve a rollback point first.
 - Apply All Suggestions is allowed from the editor after explicit user action,
   safe replacement validation, and one pre-change version snapshot.
 - AI Result Preview must support current vs proposed comparison before apply or save.
@@ -713,7 +743,7 @@ Rules the AI agent must never violate:
 - Translation saves should create a separate translated document copy.
 - Comparison view supports synchronous proportional scrolling.
 - Applying AI output creates a version snapshot first.
-- Applying a suggestion creates a version snapshot where needed.
+- Applying a suggestion preserves a rollback point where needed; repeated single applies from the same AI request may reuse a safe grouped snapshot.
 - Restoring a version preserves the current state first.
 - Exports are generated server-side.
 - Export downloads use signed URLs.

@@ -164,7 +164,7 @@ There is no standalone `/documents` list page in the current MVP flow; document 
 
 - User can apply or ignore each suggestion directly from the editor
 - Suggestion cards visually connect to matching document text where possible
-- Applying a single suggestion creates a version snapshot first and updates the editor immediately
+- Applying a single suggestion preserves a rollback point first and updates the editor immediately
 - Review Applied Suggestions opens AI Result Preview as a read-only before/current comparison
 - Apply All validates and applies the selected AI action's pending suggestions
   directly from the editor after creating one recoverable version snapshot

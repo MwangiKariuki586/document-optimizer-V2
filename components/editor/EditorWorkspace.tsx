@@ -76,6 +76,7 @@ type ApplySuggestionResponse = {
     currentMarkdown: string;
     editorJson: JSONContent;
     wordCount: number;
+    serverTimings?: Record<string, number>;
   };
 };
 
@@ -632,6 +633,9 @@ export function EditorWorkspace({
                 : suggestion,
             ),
           );
+          setApplyingSuggestionId((currentId) =>
+            currentId === id ? null : currentId,
+          );
         }
       }
 
@@ -662,7 +666,9 @@ export function EditorWorkspace({
         return;
       }
 
-      editor.commands.setContent(data.data.editorJson);
+      if (!appliedOptimistically) {
+        editor.commands.setContent(data.data.editorJson);
+      }
       setCounts({
         words: data.data.wordCount,
         characters: data.data.currentMarkdown.length,
@@ -679,7 +685,7 @@ export function EditorWorkspace({
           ),
         );
       }
-      appToast.success("Suggestion applied. A version snapshot was created first.");
+      appToast.success("Suggestion applied. Your rollback point is preserved.");
     } catch {
       if (appliedOptimistically) {
         editor.commands.setContent(beforeApplyContent);
@@ -695,7 +701,9 @@ export function EditorWorkspace({
       }
       appToast.error("Could not apply suggestion. Please try again.");
     } finally {
-      setApplyingSuggestionId(null);
+      setApplyingSuggestionId((currentId) =>
+        currentId === id ? null : currentId,
+      );
     }
   };
 

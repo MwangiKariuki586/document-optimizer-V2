@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import { countWords, plainTextToEditorJson } from "@/lib/documents/text-to-editor";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, Json, TablesInsert } from "@/lib/supabase/types";
@@ -193,6 +194,49 @@ type SnapshotVersionInput = {
   notes?: string | null;
 };
 
+type SnapshotScope = "ai_request";
+
+type MutationSnapshotInput = {
+  documentId: string;
+  userId: string;
+  title: string;
+  source: VersionSource;
+  contentMarkdown: string | null;
+  editorJson: Json | null;
+  formattingMetadata: Json;
+  notes?: string | null;
+  scope?: SnapshotScope;
+  scopeId?: string | null;
+};
+
+export type MutationSnapshotResult = {
+  id: string;
+  versionNumber: number;
+  sessionId: string | null;
+  reused: boolean;
+};
+
+type SnapshotSessionRow = {
+  id: string;
+  version_id: string;
+  last_content_hash: string;
+  expires_at: string;
+};
+
+export function getDocumentContentHash(input: {
+  contentMarkdown: string | null;
+  editorJson: Json | null;
+}): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        contentMarkdown: input.contentMarkdown ?? "",
+        editorJson: input.editorJson ?? null,
+      }),
+    )
+    .digest("hex");
+}
+
 // Single entry point for "version safety": snapshots a document's CURRENT stored
 // state into document_versions before a destructive operation overwrites it (AI
 // apply, suggestion apply, etc.). Ownership is enforced by scoping the
@@ -231,4 +275,190 @@ export async function snapshotDocumentVersion(
     formattingMetadata: document.formatting_metadata,
     notes: input.notes ?? null,
   });
+}
+
+async function closeSnapshotSession(
+  supabase: SupabaseClient<Database>,
+  input: {
+    sessionId: string;
+    userId: string;
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("document_snapshot_sessions")
+    .update({
+      closed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.sessionId)
+    .eq("user_id", input.userId);
+
+  if (error) {
+    console.error("[versions/snapshot-session/close]", error.message);
+  }
+}
+
+async function getSessionVersion(
+  supabase: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    documentId: string;
+    versionId: string;
+  },
+): Promise<{ id: string; versionNumber: number } | null> {
+  const { data, error } = await supabase
+    .from("document_versions")
+    .select("id,version_number")
+    .eq("id", input.versionId)
+    .eq("document_id", input.documentId)
+    .eq("user_id", input.userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[versions/snapshot-session/version]", error.message);
+    throw new Error("Failed to load snapshot version");
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    versionNumber: data.version_number,
+  };
+}
+
+export async function updateMutationSnapshotSessionHash(
+  supabase: SupabaseClient<Database>,
+  input: {
+    sessionId: string | null;
+    userId: string;
+    contentMarkdown: string | null;
+    editorJson: Json | null;
+  },
+): Promise<void> {
+  if (!input.sessionId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("document_snapshot_sessions")
+    .update({
+      last_content_hash: getDocumentContentHash(input),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.sessionId)
+    .eq("user_id", input.userId)
+    .is("closed_at", null);
+
+  if (error) {
+    console.error("[versions/snapshot-session/hash]", error.message);
+  }
+}
+
+export async function getOrCreateMutationSnapshot(
+  supabase: SupabaseClient<Database>,
+  input: MutationSnapshotInput,
+): Promise<MutationSnapshotResult | null> {
+  if (!input.scope || !input.scopeId) {
+    const version = await createDocumentVersion(supabase, {
+      documentId: input.documentId,
+      userId: input.userId,
+      title: input.title,
+      source: input.source,
+      contentMarkdown: input.contentMarkdown,
+      editorJson: input.editorJson,
+      formattingMetadata: input.formattingMetadata,
+      notes: input.notes ?? null,
+    });
+
+    return { ...version, sessionId: null, reused: false };
+  }
+
+  const currentHash = getDocumentContentHash(input);
+  const { data: existingSession, error: sessionError } = await supabase
+    .from("document_snapshot_sessions")
+    .select("id,version_id,last_content_hash,expires_at")
+    .eq("document_id", input.documentId)
+    .eq("user_id", input.userId)
+    .eq("source", input.source)
+    .eq("scope", input.scope)
+    .eq("scope_id", input.scopeId)
+    .is("closed_at", null)
+    .maybeSingle();
+
+  if (sessionError) {
+    console.error("[versions/snapshot-session/get]", sessionError.message);
+    throw new Error("Failed to load snapshot session");
+  }
+
+  if (existingSession) {
+    const session = existingSession as SnapshotSessionRow;
+    const isFresh = new Date(session.expires_at).getTime() > Date.now();
+
+    if (isFresh && session.last_content_hash === currentHash) {
+      const version = await getSessionVersion(supabase, {
+        userId: input.userId,
+        documentId: input.documentId,
+        versionId: session.version_id,
+      });
+
+      if (version) {
+        return {
+          id: version.id,
+          versionNumber: version.versionNumber,
+          sessionId: session.id,
+          reused: true,
+        };
+      }
+    }
+
+    await closeSnapshotSession(supabase, {
+      sessionId: session.id,
+      userId: input.userId,
+    });
+  }
+
+  const version = await createDocumentVersion(supabase, {
+    documentId: input.documentId,
+    userId: input.userId,
+    title: input.title,
+    source: input.source,
+    contentMarkdown: input.contentMarkdown,
+    editorJson: input.editorJson,
+    formattingMetadata: input.formattingMetadata,
+    notes: input.notes ?? null,
+  });
+
+  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const { data: createdSession, error: createSessionError } = await supabase
+    .from("document_snapshot_sessions")
+    .insert({
+      user_id: input.userId,
+      document_id: input.documentId,
+      source: input.source,
+      scope: input.scope,
+      scope_id: input.scopeId,
+      version_id: version.id,
+      base_content_hash: currentHash,
+      last_content_hash: currentHash,
+      expires_at: expiresAt,
+    })
+    .select("id")
+    .maybeSingle();
+
+  if (createSessionError) {
+    console.error(
+      "[versions/snapshot-session/create]",
+      createSessionError.message,
+    );
+    return { ...version, sessionId: null, reused: false };
+  }
+
+  return {
+    ...version,
+    sessionId: createdSession?.id ?? null,
+    reused: false,
+  };
 }

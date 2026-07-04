@@ -492,8 +492,8 @@ Purpose: `/documents/[id]/preview` is the required Results page and approval che
 - For multi-suggestion preview, use a safe server-backed selection instead of storing large payloads in the URL.
 - Ensure the AI request, suggestion, or server-backed selection belongs to the authenticated user and document.
 - AI actions and batch suggestion reviews must redirect to this page before document mutation.
-- Single suggestion Apply may mutate directly from the editor after ownership verification, safe replacement validation, and a version snapshot.
-- Applying a result or suggestion creates a version snapshot first.
+- Single suggestion Apply may mutate directly from the editor after ownership verification, safe replacement validation, and a preserved rollback point.
+- Applying a result or suggestion preserves a rollback point first.
 - Applying uses the edited proposed result from the preview page, not necessarily the raw AI response.
 - Update document content
 - Record usage/activity
@@ -545,7 +545,7 @@ Wire suggestions to real data.
   - apply only after an explicit card-level Apply click
   - optimistically replace the matched editor range locally and roll back if persistence fails
   - fail safely when the source text is missing or ambiguous
-  - create version snapshot where needed
+  - preserve a rollback point where needed
   - update document content
   - mark suggestion as applied
 - Review/apply all pending suggestions:
@@ -567,7 +567,7 @@ Wire suggestions to real data.
 
 Update the completed suggestions flow so batch review fully obeys the preview checkpoint rule before continuing to Version History.
 
-Single suggestion Apply is intentionally immediate from the editor after explicit user action and a server-side version snapshot. Review Applied Suggestions opens a read-only preview comparison, and Review All is the batch review path that must route through `/documents/[id]/preview`.
+Single suggestion Apply is intentionally immediate from the editor after explicit user action and a server-side rollback point. Review Applied Suggestions opens a read-only preview comparison, and Review All is the batch review path that must route through `/documents/[id]/preview`.
 
 **UI:**
 
@@ -607,7 +607,7 @@ Single suggestion Apply is intentionally immediate from the editor after explici
 - Ensure the suggestion or selection belongs to the authenticated Clerk user and document.
 - Single-card Apply from the editor must:
   - verify ownership
-  - snapshot the current document first
+  - create or reuse a safe AI-run rollback snapshot before mutation
   - apply exactly one safe replacement
   - mark the suggestion as applied
   - record `suggestion_apply` usage
@@ -624,7 +624,7 @@ Single suggestion Apply is intentionally immediate from the editor after explici
 
 - Run typecheck, lint, and focused tests for suggestion replacement/apply behavior.
 - Manually verify:
-- single suggestion Apply updates the editor immediately after the server snapshots first
+- single suggestion Apply updates the editor immediately after the server preserves a rollback point
 - Review All opens preview through server-backed selection
 - editor rail only routes to preview when the user chooses Review Applied Suggestions or Review All
   - AI action previews still work with `requestId`

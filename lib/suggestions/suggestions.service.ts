@@ -33,7 +33,11 @@ import type {
 } from "@/lib/suggestions/suggestions.types";
 import type { Database, Json, TablesInsert } from "@/lib/supabase/types";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
-import { snapshotDocumentVersion } from "@/lib/versions/versions.service";
+import {
+  getOrCreateMutationSnapshot,
+  snapshotDocumentVersion,
+  updateMutationSnapshotSessionHash,
+} from "@/lib/versions/versions.service";
 
 type SuggestionRow = {
   id: string;
@@ -60,8 +64,10 @@ type DocumentPreviewRow = {
 };
 
 type DocumentContentRow = {
+  title: string;
   current_markdown: string | null;
   editor_json: Json | null;
+  formatting_metadata: Json;
 };
 
 type SelectionRow = {
@@ -293,7 +299,7 @@ async function getOwnedDocumentContent(
 ): Promise<DocumentContentRow | null> {
   const { data, error } = await supabase
     .from("documents")
-    .select("current_markdown,editor_json")
+    .select("title,current_markdown,editor_json,formatting_metadata")
     .eq("id", documentId)
     .eq("user_id", userId)
     .maybeSingle();
@@ -1078,10 +1084,19 @@ export async function applySuggestion(
     editedMarkdown?: string;
   },
 ): Promise<ApplySuggestionResult | null> {
+  const serverTimings: Record<string, number> = {};
+  let timingMark = performance.now();
+  const markTiming = (label: string) => {
+    const now = performance.now();
+    serverTimings[label] = Math.round(now - timingMark);
+    timingMark = now;
+  };
+
   const [suggestion, document] = await Promise.all([
     getOwnedPendingSuggestion(supabase, input),
     getOwnedDocumentContent(supabase, input.userId, input.documentId),
   ]);
+  markTiming("load");
 
   if (!suggestion || !document) {
     return null;
@@ -1130,15 +1145,25 @@ export async function applySuggestion(
     nextEditorJson,
     fallbackMarkdown,
   );
+  markTiming("replacement");
 
-  const snapshot = await snapshotDocumentVersion(supabase, {
+  const snapshot = await getOrCreateMutationSnapshot(supabase, {
     userId: input.userId,
     documentId: input.documentId,
+    title: document.title,
     source: "suggestion_apply",
+    contentMarkdown: currentMarkdown,
+    editorJson: document.editor_json,
+    formattingMetadata: document.formatting_metadata,
+    scope: suggestion.ai_request_id ? "ai_request" : undefined,
+    scopeId: suggestion.ai_request_id,
     notes: editedBeforeApply
       ? "AI suggestion result edited before apply"
-      : `Before applying suggestion ${input.suggestionId}`,
+      : suggestion.ai_request_id
+        ? "Before applying AI suggestions from this run"
+        : `Before applying suggestion ${input.suggestionId}`,
   });
+  markTiming("snapshot");
 
   if (!snapshot) {
     return null;
@@ -1154,6 +1179,7 @@ export async function applySuggestion(
   if (!updated) {
     return null;
   }
+  markTiming("document-update");
 
   const marked = await markSuggestionStatus(supabase, {
     userId: input.userId,
@@ -1164,6 +1190,15 @@ export async function applySuggestion(
   if (!marked) {
     throw new Error("Failed to mark suggestion as applied");
   }
+  markTiming("suggestion-status");
+
+  await updateMutationSnapshotSessionHash(supabase, {
+    sessionId: snapshot.sessionId,
+    userId: input.userId,
+    contentMarkdown: nextMarkdown,
+    editorJson: updated.editorJson,
+  });
+  markTiming("session-hash");
 
   await recordUsageEvent(supabase, {
     userId: input.userId,
@@ -1172,10 +1207,13 @@ export async function applySuggestion(
     metadata: {
       suggestionId: input.suggestionId,
       versionNumber: snapshot.versionNumber,
+      snapshotSessionId: snapshot.sessionId,
+      snapshotReused: snapshot.reused,
       appliedCount: 1,
       editedBeforeApply,
     },
   });
+  markTiming("usage");
 
   return {
     documentId: input.documentId,
@@ -1184,6 +1222,7 @@ export async function applySuggestion(
     currentMarkdown: nextMarkdown,
     editorJson: updated.editorJson,
     wordCount: updated.wordCount,
+    serverTimings,
   };
 }
 

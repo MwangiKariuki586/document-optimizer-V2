@@ -674,7 +674,7 @@ POST /api/documents/[id]/suggestions/[suggestionId]/apply
   → applySuggestion()
   → verify owned pending suggestion
   → fail safely if original text is missing or ambiguous
-  → snapshotDocumentVersion(source=suggestion_apply)
+  → create or reuse a grouped suggestion_apply rollback snapshot for the AI request
   → replace original_text with suggested_text in current_markdown
   → update documents.current_markdown/editor_json/word_count
   → mark suggestion applied

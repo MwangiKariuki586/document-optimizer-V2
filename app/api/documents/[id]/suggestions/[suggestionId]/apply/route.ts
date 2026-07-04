@@ -17,6 +17,7 @@ type RouteContext = {
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
   const requestStartedAt = performance.now();
+  let validationFinishedAt = requestStartedAt;
 
   try {
     const userId = await getAuthenticatedUserId();
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         { status: 400 },
       );
     }
+    validationFinishedAt = performance.now();
 
     const supabase = createSupabaseServerClient();
     const result = await applySuggestion(supabase, {
@@ -83,9 +85,16 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const response = NextResponse.json({ success: true, data: result });
+    const timingEntries = Object.entries(result.serverTimings ?? {}).map(
+      ([label, duration]) => `${label};dur=${duration}`,
+    );
     response.headers.set(
       "Server-Timing",
-      `suggestion-apply;dur=${Math.round(performance.now() - requestStartedAt)}`,
+      [
+        `auth-validation;dur=${Math.round(validationFinishedAt - requestStartedAt)}`,
+        ...timingEntries,
+        `suggestion-apply;dur=${Math.round(performance.now() - requestStartedAt)}`,
+      ].join(", "),
     );
 
     return response;

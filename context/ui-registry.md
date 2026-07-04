@@ -1056,7 +1056,7 @@ className="hidden items-center gap-2 rounded-lg bg-warning-muted px-3 py-1.5 tex
 - The editor does not render its own persistent navigation rail; document navigation comes from `AppSidebar`.
 - On mobile the canvas column comes first, then suggestions.
 - Right rail mode: `rightPanel: "suggestions" | "ai-actions"`. Both panels expose a persistent Actions/Suggestions switch so users can move between them at any time. Documents that load with no server-side suggestions default to `AIActionsPanel`; documents with existing suggestions default to the suggestions rail.
-- Single-card Apply mutates one owned suggestion immediately after the server snapshots first. Apply All sends only the selected AI action's pending suggestion ids, validates and applies that batch with one version snapshot, then updates editor state locally. The footer action then becomes Review Applied Suggestions and routes to `/documents/[id]/preview?applied=1` only when clicked. Ignore still calls the owned API route because it does not change document content. Initial AI action history and suggestions load together on the server page; completed action results merge into local state.
+- Single-card Apply mutates one owned suggestion optimistically in TipTap when the highlighted source text still matches, updates local counts/status immediately, and clears the visible button loading state before the server confirmation returns. Repeated applies from the same AI request reuse a grouped snapshot while the stored document hash still matches the snapshot session. Apply All sends only the selected AI action's pending suggestion ids, validates and applies that batch with one version snapshot, then updates editor state locally. The footer action then becomes Review Applied Suggestions and routes to `/documents/[id]/preview?applied=1` only when clicked. Ignore still calls the owned API route because it does not change document content. Initial AI action history and suggestions load together on the server page; completed action results merge into local state.
 - Inline AI suggestion highlighting is owned here by composing `SuggestionHighlight` with the base editor extensions. Pending suggestion `originalText` snippets become subtle ProseMirror decorations; card clicks focus the matching text, and highlight clicks focus the matching suggestion card.
 
 ### EditorSidebar
@@ -1211,7 +1211,7 @@ Suggestions, Apply All, and compact empty states.
 
 - Exports `EditorSuggestion`, `SuggestionType`, `SuggestionStatus`, `SuggestionFilter`.
 - At `xl` the panel fills the column (`xl:h-full xl:min-h-0`); the header, filters, and Apply-All footer are `shrink-0` and the card list scrolls internally (`xl:flex-1 xl:min-h-0 overflow-y-auto`).
-- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply`. Apply All posts to `POST /api/documents/[id]/suggestions/apply-all`. Both update editor content, counts, version, save state, active highlight, and suggestion state locally after the server creates a version snapshot. The rail must not show checkboxes or selection mode. Review Applied Suggestions opens `/documents/[id]/preview?applied=1` as a read-only before/current comparison. Ignore still calls the owned route because it only changes suggestion status.
+- Single-card Apply posts to `POST /api/documents/[id]/suggestions/[suggestionId]/apply`. When the inline highlight still matches the original text, the rail should reflect the optimistic local apply immediately and should not keep the clicked card in a visible loading state while persistence finishes. Apply All posts to `POST /api/documents/[id]/suggestions/apply-all`. Both update editor content, counts, version, save state, active highlight, and suggestion state locally while preserving rollback safety. The rail must not show checkboxes or selection mode. Review Applied Suggestions opens `/documents/[id]/preview?applied=1` as a read-only before/current comparison. Ignore still calls the owned route because it only changes suggestion status.
 - Export is not rendered in this rail; export belongs to the later preview/export flow.
 - The footer is shown when the selected AI action has pending or applied
   suggestions. It shows Apply All while that action has pending suggestions and
@@ -1493,7 +1493,7 @@ ambiguous anchors before cards are created.
 
 **Rules:**
 
-- Single-card Apply mutates the document through the owned server apply route, then refreshes editor content and suggestion state in place.
+- Single-card Apply uses the owned server apply route for persistence, but when the current inline highlight matches it applies locally first, marks the card applied, and clears the button loading state immediately; the server response only confirms counts/version or rolls the local change back on failure.
 - Single suggestion preview remains supported by `/documents/[id]/preview?suggestionId=...`, but the editor rail no longer uses it for the default card action.
 - Review Applied Suggestions navigates to `/documents/[id]/preview?applied=1` for read-only comparison.
 - Apply All sends an explicit owned batch request, validates every pending

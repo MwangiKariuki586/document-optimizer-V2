@@ -30,6 +30,7 @@ export type ApplySuggestionResult = {
   currentMarkdown: string;
   editorJson: Json;
   wordCount: number;
+  serverTimings?: Record<string, number>;
 };
 
 export type ApplyAllSuggestionsResult = {

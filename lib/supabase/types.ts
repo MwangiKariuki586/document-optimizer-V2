@@ -129,6 +129,69 @@ export type Database = {
           },
         ]
       }
+      document_snapshot_sessions: {
+        Row: {
+          base_content_hash: string
+          closed_at: string | null
+          created_at: string
+          document_id: string
+          expires_at: string
+          id: string
+          last_content_hash: string
+          scope: string
+          scope_id: string
+          source: string
+          updated_at: string
+          user_id: string
+          version_id: string
+        }
+        Insert: {
+          base_content_hash: string
+          closed_at?: string | null
+          created_at?: string
+          document_id: string
+          expires_at?: string
+          id?: string
+          last_content_hash: string
+          scope: string
+          scope_id: string
+          source: string
+          updated_at?: string
+          user_id: string
+          version_id: string
+        }
+        Update: {
+          base_content_hash?: string
+          closed_at?: string | null
+          created_at?: string
+          document_id?: string
+          expires_at?: string
+          id?: string
+          last_content_hash?: string
+          scope?: string
+          scope_id?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_snapshot_sessions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_snapshot_sessions_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string

@@ -86,6 +86,28 @@ create table if not exists public.document_versions (
   )
 );
 
+create table if not exists public.document_snapshot_sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  document_id uuid not null references public.documents(id) on delete cascade,
+  source text not null,
+  scope text not null,
+  scope_id text not null,
+  version_id uuid not null references public.document_versions(id) on delete cascade,
+  base_content_hash text not null,
+  last_content_hash text not null,
+  expires_at timestamptz not null default (now() + interval '2 hours'),
+  closed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint document_snapshot_sessions_source_check check (
+    source in ('ai_apply', 'suggestion_apply', 'restore')
+  ),
+  constraint document_snapshot_sessions_scope_check check (
+    scope in ('ai_request')
+  )
+);
+
 create table if not exists public.ai_requests (
   id uuid primary key default gen_random_uuid(),
   document_id uuid not null references public.documents(id) on delete cascade,
@@ -226,6 +248,10 @@ create index if not exists profiles_clerk_id_idx on public.profiles(clerk_id);
 create index if not exists documents_user_updated_idx on public.documents(user_id, updated_at desc);
 create index if not exists document_versions_document_created_idx on public.document_versions(document_id, created_at desc);
 create index if not exists document_versions_user_created_idx on public.document_versions(user_id, created_at desc);
+create unique index if not exists document_snapshot_sessions_active_unique
+  on public.document_snapshot_sessions(user_id, document_id, source, scope, scope_id)
+  where closed_at is null;
+create index if not exists document_snapshot_sessions_document_created_idx on public.document_snapshot_sessions(document_id, created_at desc);
 create index if not exists ai_requests_document_created_idx on public.ai_requests(document_id, created_at desc);
 create index if not exists ai_requests_user_created_idx on public.ai_requests(user_id, created_at desc);
 create index if not exists suggestions_ai_request_idx on public.suggestions(ai_request_id);
@@ -254,6 +280,7 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 alter table public.documents enable row level security;
 alter table public.document_versions enable row level security;
+alter table public.document_snapshot_sessions enable row level security;
 alter table public.ai_requests enable row level security;
 alter table public.suggestions enable row level security;
 alter table public.exports enable row level security;
@@ -270,6 +297,10 @@ drop policy if exists "document_versions_select_own" on public.document_versions
 drop policy if exists "document_versions_insert_own" on public.document_versions;
 drop policy if exists "document_versions_update_own" on public.document_versions;
 drop policy if exists "document_versions_delete_own" on public.document_versions;
+drop policy if exists "document_snapshot_sessions_select_own" on public.document_snapshot_sessions;
+drop policy if exists "document_snapshot_sessions_insert_own" on public.document_snapshot_sessions;
+drop policy if exists "document_snapshot_sessions_update_own" on public.document_snapshot_sessions;
+drop policy if exists "document_snapshot_sessions_delete_own" on public.document_snapshot_sessions;
 drop policy if exists "ai_requests_select_own" on public.ai_requests;
 drop policy if exists "ai_requests_insert_own" on public.ai_requests;
 drop policy if exists "ai_requests_update_own" on public.ai_requests;
@@ -349,6 +380,31 @@ with check (((select auth.jwt()) ->> 'sub') = user_id);
 
 create policy "document_versions_delete_own"
 on public.document_versions
+for delete
+to authenticated
+using (((select auth.jwt()) ->> 'sub') = user_id);
+
+create policy "document_snapshot_sessions_select_own"
+on public.document_snapshot_sessions
+for select
+to authenticated
+using (((select auth.jwt()) ->> 'sub') = user_id);
+
+create policy "document_snapshot_sessions_insert_own"
+on public.document_snapshot_sessions
+for insert
+to authenticated
+with check (((select auth.jwt()) ->> 'sub') = user_id);
+
+create policy "document_snapshot_sessions_update_own"
+on public.document_snapshot_sessions
+for update
+to authenticated
+using (((select auth.jwt()) ->> 'sub') = user_id)
+with check (((select auth.jwt()) ->> 'sub') = user_id);
+
+create policy "document_snapshot_sessions_delete_own"
+on public.document_snapshot_sessions
 for delete
 to authenticated
 using (((select auth.jwt()) ->> 'sub') = user_id);

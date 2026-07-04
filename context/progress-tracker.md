@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Refactored AI Actions into distinct inline, setup, and result workflows
+**Last completed:** Made optimistic single-suggestion apply stop showing a loading state immediately
 **Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
 
 ---
@@ -128,6 +128,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-04
+Feature: Instant-feel single suggestion apply
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Updated the optimistic single-suggestion apply path so once the editor replacement succeeds locally, the clicked card no longer remains in a visible Applying state while server persistence finishes. The final server response still confirms counts/version/save state, and failures still roll back the local editor and suggestion status.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-apply highlighted suggestions from `/documents/[id]` and confirm the text, card status, and button state update immediately instead of waiting for the network round trip.
+```
+
+```txt
+Date: 2026-07-04
+Feature: Grouped suggestion snapshots and faster single apply
+Status: Completed
+Files changed: app/api/documents/[id]/suggestions/[suggestionId]/apply/route.ts, components/editor/EditorWorkspace.tsx, lib/versions/versions.service.ts, lib/versions/versions.service.test.ts, lib/suggestions/suggestions.service.ts, lib/suggestions/suggestions.service.test.ts, lib/suggestions/suggestions.types.ts, lib/supabase/types.ts, supabase/migrations/20260704120000_grouped_suggestion_snapshots.sql, supabase/schema/phase-1-database-schema.sql, context/architecture.md, context/build-plan.md, context/code-standards.md, context/library-docs.md, context/project-overview.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Added document_snapshot_sessions as the explicit state for grouped single-suggestion rollback snapshots. Single suggestion Apply now creates or reuses one AI-request-scoped rollback version while the stored document hash matches, closes stale sessions, updates the session hash after successful mutation, and records snapshot reuse metadata in usage. The apply route now emits detailed Server-Timing labels, and the editor no longer resets the whole TipTap document after a confirmed optimistic apply.
+Verification: `npx.cmd vitest run lib/versions/versions.service.test.ts lib/suggestions/suggestions.service.test.ts` passed 22 tests. `npm.cmd test` passed 27 files / 150 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace. `git diff --check` passed with line-ending warnings only.
+Follow-up: Apply migration `20260704120000_grouped_suggestion_snapshots.sql` to the active Supabase project before relying on grouped snapshots in a deployed environment. Browser-apply multiple suggestions from the same AI run and confirm only one rollback version appears while subsequent applies feel immediate.
+```
 
 ```txt
 Date: 2026-06-30

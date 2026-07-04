@@ -176,7 +176,7 @@ Toast examples:
 ```txt
 Document uploaded successfully.
 AI result is ready for review.
-Suggestion applied. A version snapshot was created first.
+Suggestion applied. Your rollback point is preserved.
 Formatting may be limited for this PDF. Your original file is preserved.
 Export generated successfully.
 ```
@@ -403,13 +403,13 @@ Rules:
 - Never overwrite document content without explicit user action
 - Full-document AI output must be previewed before applying
 - Full AI action results and batch suggestion reviews must only be finally applied from `/documents/[id]/preview`
-- Single suggestion Apply is allowed directly from the editor after explicit user action, ownership verification, safe replacement validation, and a version snapshot
+- Single suggestion Apply is allowed directly from the editor after explicit user action, ownership verification, safe replacement validation, and a preserved rollback point
 - AI Result Preview must compare current vs proposed content before full-result or batch mutation
 - The proposed result must be editable before applying
 - Apply must persist the edited proposed result, not necessarily the raw AI output
 - Comparison view should support synchronous proportional scrolling
 - Applying AI output must create a version snapshot first
-- Applying a suggestion must create a version snapshot where needed
+- Applying a suggestion must preserve a rollback point where needed; repeated single applies from the same AI request may reuse a safe grouped snapshot
 - Restoring a version must preserve the current state first
 - Original uploaded files must remain privately stored
 - Do not treat extracted plain text as the only source of truth

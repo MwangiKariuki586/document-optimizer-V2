@@ -332,7 +332,7 @@ Rules:
 - Suggestion cards and highlighted document text should focus each other
 - The editor may apply one concrete suggestion or all pending suggestions after
   an explicit Apply click, server ownership checks, safe replacement validation,
-  and a version snapshot. Do not show suggestion checkboxes or manual selection
+  and a preserved rollback point. Do not show suggestion checkboxes or manual selection
   mode. Review Applied Suggestions routes to the preview workspace.
 
 Editor canvas:
@@ -517,7 +517,7 @@ Examples:
 ```txt
 Document uploaded successfully.
 AI result is ready for review.
-Suggestion applied. A version snapshot was created first.
+Suggestion applied. Your rollback point is preserved.
 Formatting may be limited for this PDF. Your original file is preserved.
 Export generated successfully.
 ```
