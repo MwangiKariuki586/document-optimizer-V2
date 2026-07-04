@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Removed unapplyable suggestions from the default Pending workflow
+**Last completed:** Made editor metric pills dynamic
 **Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
 
 ---
@@ -128,6 +128,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-04
+Feature: Dynamic editor metric pills
+Status: Completed
+Files changed: components/editor/EditorStatusBar.tsx, components/editor/EditorStatusBar.test.ts, components/editor/EditorWorkspace.tsx, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced fixed Readability and SEO placeholder values with deterministic live estimates from current editor text. Health now blends formatting fidelity, live readability, live SEO, live-applyable pending suggestions, and applied suggestions. The editor workspace passes live text, word count, pending count, and applied count into the metric strip.
+Verification: `npx.cmd vitest run components/editor/EditorStatusBar.test.ts` passed 3 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-edit document content and apply or ignore suggestions from `/documents/[id]`; Health, Readability, and SEO should update with the editor state while preserving the same pill layout.
+```
 
 ```txt
 Date: 2026-07-04

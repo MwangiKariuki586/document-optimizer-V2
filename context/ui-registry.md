@@ -1238,7 +1238,7 @@ Suggestions, Apply All, and compact empty states.
 
 **Purpose:**
 
-Compact center-column editor metric strip: Health, Readability, and SEO as small name + percentage pills.
+Compact center-column editor metric strip: Health, Readability, and SEO as small name + percentage pills calculated from live editor content and suggestion state.
 
 **Used on:**
 
@@ -1257,7 +1257,9 @@ className="inline-flex min-w-0 items-center gap-2 rounded-full border border-bor
 - Render inside the center editor column only, not across the full workspace width, so the sidebar and suggestions rail keep their own vertical space.
 - Each pill shows only name + percentage.
 - Percentage color threshold: red below 65, yellow from 65 to 79, green from 80 and above.
-- Health derives its fallback score from `fidelityStatus`; readability and SEO remain estimated placeholders until real scoring exists.
+- Readability is estimated from current word count, sentence length, long-word ratio, and paragraph length.
+- SEO is estimated from current word count, heading-like lines, bullet structure, links, and unique word ratio.
+- Health blends formatting fidelity, live readability, live SEO, live-applyable pending suggestion count, and applied suggestion count. Do not hardcode fixed metric percentages.
 
 ---
 

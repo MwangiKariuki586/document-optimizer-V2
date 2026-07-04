@@ -599,6 +599,7 @@ export function EditorWorkspace({
   const scopedAppliedSuggestionCount = runScopedSuggestions.filter(
     (suggestion) => suggestion.status === "applied",
   ).length;
+  const currentEditorText = editor?.getText() ?? document.currentMarkdown;
   const handleApplySuggestion = async (id: string) => {
     if (!editor) {
       appToast.error("The editor is still loading. Please try again.");
@@ -922,7 +923,13 @@ export function EditorWorkspace({
               wordCount={counts.words}
               characterCount={counts.characters}
             />
-            <EditorStatusBar fidelityStatus={fidelityStatus} />
+            <EditorStatusBar
+              fidelityStatus={fidelityStatus}
+              text={currentEditorText}
+              wordCount={counts.words}
+              pendingSuggestionCount={scopedPendingSuggestions.length}
+              appliedSuggestionCount={scopedAppliedSuggestionCount}
+            />
           </div>
 
           <div className="order-2 min-h-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
