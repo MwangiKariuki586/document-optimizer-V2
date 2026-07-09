@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, FileSearch, FileText, FolderOpen, RefreshCw, Trash2, Upload, X } from "lucide-react";
+import { AlertTriangle, FileSearch, FileText, FolderOpen, RefreshCw, Trash2, Upload } from "lucide-react";
 import * as tus from "tus-js-client";
 import { CometSpinner } from "@/components/loading-ui/CometSpinner";
-import { InlineAlert } from "@/components/feedback/InlineAlert";
 import {
   ACCEPTED_EXTENSIONS,
   MAX_UPLOAD_LABEL,
@@ -83,7 +82,6 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
   const [phase, setPhase] = useState<"idle" | "hashing" | "uploading" | "paused" | "queuing">("idle");
   const [fileName, setFileName] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<DuplicatePrompt | null>(null);
   const [processing, setProcessing] = useState<IngestionState | null>(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
@@ -123,7 +121,7 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
     if (!initialDocumentId || processing?.documentId === initialDocumentId) return;
     const timeout = window.setTimeout(() => {
       void loadProcessingState(initialDocumentId).catch((loadError) => {
-        setError(
+        appToast.error(
           loadError instanceof Error
             ? loadError.message
             : "Could not load document processing.",
@@ -168,11 +166,9 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
   }, [monitorDocument]);
 
   const uploadFile = useCallback(async (file: File) => {
-    setError(null);
     setDuplicate(null);
     const validation = validateUpload({ name: file.name, size: file.size });
     if (!validation.ok) {
-      setError(validation.error);
       appToast.error(validation.error);
       return;
     }
@@ -216,7 +212,6 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
     } catch (uploadError) {
       console.error("[upload/create]", uploadError);
       const message = uploadError instanceof Error ? uploadError.message : "Something went wrong. Please try again.";
-      setError(message);
       appToast.error(message);
       setPhase("idle");
     }
@@ -249,7 +244,7 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
       if (result.data.documentId) router.push(`/documents/${result.data.documentId}`);
     } catch (resolutionError) {
       const message = resolutionError instanceof Error ? resolutionError.message : "Could not resolve duplicate.";
-      setError(message);
+      appToast.error(message);
       setPhase("idle");
     }
   }
@@ -528,7 +523,6 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
         )}
         <input ref={inputRef} type="file" accept={ACCEPTED_EXTENSIONS.join(",")} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadFile(file); event.target.value = ""; }} />
       </div>
-      {error ? <InlineAlert title="Upload failed" variant="error"><span className="flex items-center justify-between gap-3">{error}<button type="button" onClick={() => setError(null)} aria-label="Dismiss error" className="text-text-muted hover:text-text-primary"><X className="size-4" /></button></span></InlineAlert> : null}
     </div>
   );
 }

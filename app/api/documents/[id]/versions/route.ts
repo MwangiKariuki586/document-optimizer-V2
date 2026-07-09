@@ -5,6 +5,11 @@ import {
   createVersionSchema,
   documentIdParamSchema,
 } from "@/lib/documents/document.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/types";
 import { listDocumentVersions } from "@/lib/versions/versions.service";
@@ -100,6 +105,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "versionMutation", {
+      userId,
+      documentId: id,
+    });
+
     const result = await createManualVersion({
       userId,
       documentId: id,
@@ -119,6 +130,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/versions]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },

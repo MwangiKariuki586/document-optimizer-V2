@@ -9,6 +9,11 @@ import {
   applyEditedResultSchema,
   selectionRouteParamsSchema,
 } from "@/lib/suggestions/suggestions.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -64,6 +69,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "suggestionMutation", {
+      userId,
+      documentId: parsed.data.id,
+    });
+
     const result = await applySelectedSuggestions(supabase, {
       userId,
       documentId: parsed.data.id,
@@ -90,6 +100,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
         { success: false, error: error.message },
         { status: 400 },
       );
+    }
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
     }
 
     return NextResponse.json(

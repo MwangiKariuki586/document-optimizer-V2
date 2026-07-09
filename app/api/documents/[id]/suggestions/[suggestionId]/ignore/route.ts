@@ -3,6 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { ignoreSuggestion } from "@/lib/suggestions/suggestions.service";
 import { suggestionRouteParamsSchema } from "@/lib/suggestions/suggestions.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -35,6 +40,11 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
 
     const { id, suggestionId } = parsedParams.data;
     const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "suggestionMutation", {
+      userId,
+      documentId: id,
+    });
+
     const result = await ignoreSuggestion(supabase, {
       userId,
       documentId: id,
@@ -51,6 +61,10 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/suggestions/[suggestionId]/ignore]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Could not ignore suggestion." },

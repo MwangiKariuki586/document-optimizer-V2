@@ -192,6 +192,7 @@
 | `lib/versions/`    | Version creation, restoration, and version safety.                          |
 | `lib/suggestions/` | Suggestion generation, apply, and ignore logic.                             |
 | `lib/export/`      | Export generation logic.                                                    |
+| `lib/rate-limit/`  | Authenticated mutation rate-limit rules, enforcement, and 429 responses.    |
 | `lib/usage/`       | Usage ledger writes and usage summaries.                                    |
 | `lib/errors/`      | Shared error handling utilities.                                            |
 | `types/`           | Global shared TypeScript types.                                             |
@@ -199,6 +200,33 @@
 ---
 
 ## Data Flow
+
+### Protected Mutation Rate Limiting
+
+Expensive authenticated mutations enforce rolling-window rate limits after auth
+and route parameter/body validation, before provider calls, uploads, export
+generation, version creation/restoration, suggestion mutation, or document
+creation services run.
+
+```txt
+Route validates auth and input
+        ↓
+Route calls lib/rate-limit enforceRateLimitPreset()
+        ↓
+Supabase RPC atomically consumes the configured rule counters
+        ↓
+Allowed requests continue to domain service execution
+        ↓
+Exceeded requests return 429 with Retry-After and X-RateLimit headers
+```
+
+The limiter is server-only. `rate_limit_events` and legacy
+`rate_limit_counters` have RLS enabled and no browser/client policies; routes
+access them through the service-role Supabase server client and the
+`consume_rate_limit()` RPC. Upload active-ingestion limits remain a separate
+concurrency guard and are not replaced by request rate limits. Ingestion status
+polling is intentionally not rate-limited in the first release so processing UI
+refreshes keep working.
 
 ### Document Creation
 
@@ -564,6 +592,24 @@ RLS is enabled. Owner-scoped select/insert/update/delete policies require Clerk 
 | metadata       | jsonb       | Extra usage metadata                                             |
 | created_at     | timestamptz | Created timestamp                                                |
 
+### `rate_limit_events`
+
+Server-only rolling-window event log for expensive authenticated mutations.
+
+| Column        | Type        | Notes                                                   |
+| ------------- | ----------- | ------------------------------------------------------- |
+| id            | bigint      | Primary key                                             |
+| rule_key      | text        | Logical rule, such as `ai_action:user:minute`           |
+| subject_key   | text        | User or user/document scoped subject                    |
+| created_at    | timestamptz | Created timestamp                                       |
+
+RLS is enabled with no anon/authenticated direct policies. The
+`consume_rate_limit(rule_key, subject_key, max_count, window_seconds)` RPC uses
+a transaction-scoped advisory lock per rule/subject, removes expired rows for
+that subject, counts events in the trailing window, inserts one event when
+allowed, and returns `allowed`, `remaining`, `reset_at`, and `limit_count`.
+`rate_limit_counters` remains as legacy migration/backfill state only.
+
 ---
 
 ## Storage
@@ -745,6 +791,7 @@ Rules the AI agent must never violate:
 - Applying AI output creates a version snapshot first.
 - Applying a suggestion preserves a rollback point where needed; repeated single applies from the same AI request may reuse a safe grouped snapshot.
 - Restoring a version preserves the current state first.
+- Expensive authenticated mutations must consume the configured server-side rate limit before running domain services.
 - Exports are generated server-side.
 - Export downloads use signed URLs.
 - Usage is recorded for AI actions, exports, and important document mutations.

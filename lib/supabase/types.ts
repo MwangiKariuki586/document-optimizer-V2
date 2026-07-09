@@ -433,6 +433,54 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_counters: {
+        Row: {
+          created_at: string
+          request_count: number
+          rule_key: string
+          subject_key: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          request_count?: number
+          rule_key: string
+          subject_key: string
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          request_count?: number
+          rule_key?: string
+          subject_key?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_events: {
+        Row: {
+          created_at: string
+          id: number
+          rule_key: string
+          subject_key: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          rule_key: string
+          subject_key: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          rule_key?: string
+          subject_key?: string
+        }
+        Relationships: []
+      }
       suggestion_preview_selections: {
         Row: {
           consumed_at: string | null
@@ -599,6 +647,20 @@ export type Database = {
           p_word_count: number
         }
         Returns: { document_id: string; document_title: string }[]
+      }
+      consume_rate_limit: {
+        Args: {
+          p_max_count: number
+          p_rule_key: string
+          p_subject_key: string
+          p_window_seconds: number
+        }
+        Returns: {
+          allowed: boolean
+          limit_count: number
+          remaining: number
+          reset_at: string
+        }[]
       }
       enqueue_document_ingestion: {
         Args: { p_delay_seconds?: number; p_ingestion_id: string }

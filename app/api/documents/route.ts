@@ -2,6 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { createPasteDocument } from "@/lib/documents/document.service";
 import { createPasteDocumentSchema } from "@/lib/documents/document.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreatedDocument } from "@/lib/documents/document.types";
 
 function getSourceType(body: unknown): string {
@@ -56,6 +62,11 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const supabase = createSupabaseServerClient();
+      await enforceRateLimitPreset(supabase, "pasteDocumentCreate", {
+        userId,
+      });
+
       document = await createPasteDocument({
         userId,
         title: parsed.data.title,
@@ -71,6 +82,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: document }, { status: 201 });
   } catch (error) {
     console.error("[api/documents]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },

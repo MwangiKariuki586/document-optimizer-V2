@@ -271,6 +271,32 @@ if (error) {
 - Browser client must not perform sensitive writes
 - Use Supabase MCP for schema inspection, migrations, RLS, and verification
 
+### Rate Limit RPC Pattern
+
+Authenticated mutation rate limiting uses a server-only Postgres RPC:
+`consume_rate_limit(p_rule_key, p_subject_key, p_max_count,
+p_window_seconds)`. Application code calls it only through
+`lib/rate-limit/rate-limit.service.ts` with the service-role Supabase server
+client.
+
+The backing `rate_limit_events` table must keep RLS enabled and expose no
+anon/authenticated browser policies. The RPC grants execute only to
+`service_role`, uses a transaction-scoped advisory lock per rule/subject,
+counts events in the trailing window, and returns:
+
+```typescript
+{
+  allowed: boolean;
+  remaining: number;
+  reset_at: string;
+  limit_count: number;
+}
+```
+
+Treat RPC failures as fail-closed server errors. Do not fall back to an
+in-memory limiter for protected production routes because serverless/runtime
+instances do not share memory.
+
 ---
 
 ## Supabase MCP

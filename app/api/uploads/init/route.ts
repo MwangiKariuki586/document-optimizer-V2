@@ -2,6 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { initializeDocumentUpload } from "@/lib/ingestion/ingestion.service";
 import { initializeUploadSchema } from "@/lib/ingestion/ingestion.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +26,9 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "uploadInit", { userId });
+
     const result = await initializeDocumentUpload({
       userId,
       fileName: parsed.data.name,
@@ -32,9 +41,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {
     console.error("[api/uploads/init]", error);
+    if (error instanceof RateLimitExceededError) return rateLimitResponse(error);
     const message = error instanceof Error ? error.message : "Failed to initialize upload.";
     const status = /active upload|Invalid|large|Unsupported/.test(message) ? 400 : 500;
     return NextResponse.json({ success: false, error: message }, { status });
   }
 }
-

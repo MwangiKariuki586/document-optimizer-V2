@@ -4,6 +4,12 @@ import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { aiRequestRouteParamsSchema } from "@/lib/ai/ai.validators";
 import { generateAIRequestExport } from "@/lib/export/export.service";
 import { createExportSchema } from "@/lib/export/export.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string; requestId: string }>;
@@ -56,6 +62,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const { id, requestId } = parsedParams.data;
+    const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "exportGenerate", {
+      userId,
+      documentId: id,
+    });
+
     const result = await generateAIRequestExport({
       userId,
       documentId: id,
@@ -74,6 +86,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/ai/[requestId]/export]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Could not export AI result." },

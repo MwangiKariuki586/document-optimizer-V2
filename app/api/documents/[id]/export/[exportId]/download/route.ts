@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { downloadDocumentExport } from "@/lib/export/export.service";
 import { exportDownloadParamsSchema } from "@/lib/export/export.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{ id: string; exportId: string }>;
@@ -37,6 +43,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     }
 
     const { id, exportId } = parsedParams.data;
+    const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "exportDownload", { userId });
+
     const exportFile = await downloadDocumentExport({
       userId,
       documentId: id,
@@ -63,6 +72,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     });
   } catch (error) {
     console.error("[api/documents/[id]/export/[exportId]/download]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },

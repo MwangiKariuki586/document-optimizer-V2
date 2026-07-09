@@ -4,6 +4,11 @@ import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { runDocumentAIAction } from "@/lib/ai/ai.service";
 import { runAIActionRequestSchema } from "@/lib/ai/ai.validators";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -61,6 +66,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "aiAction", {
+      userId,
+      documentId: id,
+    });
+
     console.log("[api/documents/[id]/ai] request", {
       documentId: id,
       action: parsed.data.action,
@@ -125,6 +135,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return response;
   } catch (error) {
     console.error("[api/documents/[id]/ai]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },

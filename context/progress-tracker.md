@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Routed AI preview export through export workspace
-**Next:** Browser-verify `/documents/[id]` AI Actions setup panels, inline suggestion highlighting, and `/documents/[id]/preview` result modes for optimization, summary, and translation
+**Last completed:** Rolling-window rate limiting
+**Next:** Browser-verify upload and paste 429 toasts after the trailing-window limiter change
 
 ---
 
@@ -85,6 +85,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 33 Low-Latency AI Actions and Capacity Fallback
 - [x] 34 Low-Latency Direct Suggestion Apply
 - [x] 35 Rich DOCX Editor Fidelity
+- [x] 36 Authenticated API Rate Limiting
 
 ---
 
@@ -114,6 +115,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - Decision: Default AI actions are outcome-based: Proofread & Correct, Improve Readability, Tone Alignment, Structure & Flow, Summarize & Shorten, and Translate Document. Inline actions return optimization highlights; summary, translation, and major structure changes route through `/documents/[id]/preview` result modes before saving or applying. Improvement Scan remains readable for historical rows but is no longer exposed as a default runnable action.
 - Decision: Rich uploaded content now treats `editor_json` as the canonical editable document model. DOCX ingestion converts mammoth HTML into TipTap JSON for new uploads, Markdown ingestion parses Markdown into structured JSON, and `current_markdown` remains the derived portable/AI fallback representation.
 - Decision: AI result preview panes render TipTap content instead of literal markdown. Preview services pass current/proposed `editor_json` when available, and preview components fall back to markdown parsing only when rich JSON is unavailable.
+- Decision: Expensive authenticated mutations use the balanced first-release server-side rate limiter backed by the Supabase `consume_rate_limit` RPC. The limiter now uses rolling-window `rate_limit_events` so limits apply to the trailing minute/hour/day instead of fixed UTC buckets. Upload active-ingestion caps remain a separate concurrency guard, and ingestion status polling is not rate-limited in the first pass.
 
 ---
 
@@ -128,6 +130,56 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-09
+Feature: Rolling-window rate limiting
+Status: Completed
+Files changed: supabase/migrations/20260709110401_use_rolling_rate_limit_events.sql, lib/supabase/types.ts, context/architecture.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Replaced fixed UTC-window rate limiting with a rolling event-backed limiter so "10 per hour" means the trailing 60 minutes. Added rate_limit_events with RLS enabled and no browser policies, backfilled recent events from existing counters so active limits were preserved, replaced consume_rate_limit to count trailing-window events, and repaired Supabase migration history for the three rate-limit migrations.
+Verification: Applied `20260709110401_use_rolling_rate_limit_events.sql` to the linked Supabase project. Fresh upload_init smoke test returned allowed=true for calls 1-10 and allowed=false for call 11. The active user upload subject returned allowed=false with 16 rolling events in the trailing hour. RLS verification showed rowsecurity=true for rate_limit_events and rate_limit_counters, and pg_policies returned no direct policies for either table.
+Follow-up: Browser-check `/documents/new` upload and paste attempts; upload should now be denied based on the trailing hour even across UTC hour boundaries.
+```
+
+```txt
+Date: 2026-07-09
+Feature: Rate-limit toast message clarity
+Status: Completed
+Files changed: lib/rate-limit/rate-limit.service.ts, lib/rate-limit/rate-limit.service.test.ts, lib/rate-limit/rate-limit.routes.test.ts, context/code-standards.md, context/progress-tracker.md
+What was completed: Changed rate-limit errors from generic copy to action-agnostic limit details that existing upload and paste toasts can display directly, for example: "Limit reached: 20 requests per hour. Try again in about 42 minutes." The shared 429 response still includes retryAfterSeconds and resetAt metadata.
+Verification: `npx.cmd vitest run lib/rate-limit/rate-limit.service.test.ts lib/rate-limit/rate-limit.routes.test.ts` passed 8 tests. `npx.cmd tsc --noEmit` passed.
+Follow-up: Browser-check upload and paste 429 toasts to confirm the clearer limit copy is readable in the toast width.
+```
+
+```txt
+Date: 2026-07-09
+Feature: Upload rate-limit error display cleanup
+Status: Completed
+Files changed: components/upload/UploadDropzone.tsx, context/progress-tracker.md
+What was completed: Removed the inline Upload failed alert below the upload dropzone so rate-limit and upload errors rely on the existing Sonner toast message only. Kept duplicate-processing and processing-failed dedicated states unchanged.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-check `/documents/new` after an upload-init 429 and confirm only the top toast appears.
+```
+
+```txt
+Date: 2026-07-09
+Feature: Rate limit boundary fix
+Status: Completed
+Files changed: supabase/migrations/20260709092418_add_rate_limit_counters.sql, supabase/migrations/20260709095130_fix_rate_limit_boundary.sql, context/progress-tracker.md
+What was completed: Directly tested the active Supabase consume_rate_limit RPC with the upload_init:user:hour rule and found the 11th request still returned allowed=true at remaining=0. Fixed the original migration for fresh setups and added/applied a follow-up migration that replaces the RPC with explicit exceeded-state handling so calls at the cap return allowed=false without continuing to increment counters.
+Verification: Active database RPC test reproduced the boundary bug before the fix. Applied `20260709095130_fix_rate_limit_boundary.sql` to the linked Supabase project with `npx.cmd supabase db query --linked --file supabase\migrations\20260709095130_fix_rate_limit_boundary.sql`. Re-ran the 11-call upload_init RPC smoke test against the active database: calls 1-10 returned allowed=true with remaining 9..0, and call 11 returned allowed=false with remaining=0.
+Follow-up: Browser-test signed-in upload init after 10 uploads in the same hour and confirm the UI shows the shared 429 message.
+```
+
+```txt
+Date: 2026-07-09
+Feature: Authenticated API rate limiting
+Status: Completed
+Files changed: app/api/documents/* protected mutation routes, app/api/uploads/init/route.ts, lib/rate-limit/*, lib/supabase/types.ts, supabase/migrations/20260709092418_add_rate_limit_counters.sql, context/architecture.md, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Added a Supabase-backed fixed-window rate limiter for expensive authenticated mutations. The migration adds rate_limit_counters and the consume_rate_limit RPC with RLS enabled and no browser policies. Added a typed rate-limit service, shared 429 response helper, Supabase type coverage, service tests, and route tests. Wired limits before AI provider execution, upload init, paste document creation, export generation, AI-preview export, export download URL generation, suggestion apply/ignore/apply-all/selection apply, version create/restore, and AI apply/save-copy/save-version. Kept active-ingestion upload caps separate and left ingestion status polling unrestricted.
+Verification: `npx.cmd vitest run lib/rate-limit/rate-limit.service.test.ts lib/rate-limit/rate-limit.routes.test.ts` passed 8 tests. `npx.cmd tsc --noEmit` passed. SQL migration is created locally but still needs to be applied to the active Supabase project and verified there before deployed use.
+Follow-up: Apply `20260709092418_add_rate_limit_counters.sql` to the active Supabase project, regenerate types from the live database if needed, verify RPC atomic increments/window reset/RLS policy posture, then browser-check 429 messaging on AI, upload init, export, suggestions, and version actions.
+```
 
 ```txt
 Date: 2026-07-05

@@ -224,6 +224,7 @@ Rules:
 - Every route handler must validate input before processing
 - Every private route must resolve the current user from Clerk
 - Every document route must verify ownership
+- Expensive authenticated mutations must enforce rate limits after auth/input validation and before service execution
 - Do not trust `user_id` from the request body
 - Always return a success wrapper
 - Never return raw provider errors
@@ -247,6 +248,46 @@ Standard error response:
   error: "Readable error message";
 }
 ```
+
+### Rate-Limited Mutations
+
+Use `lib/rate-limit/rate-limit.service.ts` for request limits. Route handlers
+must call `enforceRateLimitPreset()` after authentication and request/param
+validation, before calling expensive services. If it throws
+`RateLimitExceededError`, return `rateLimitResponse(error)` from
+`lib/rate-limit/route-response.ts`.
+
+429 responses must use this shape:
+
+```typescript
+{
+  success: false,
+  error: "Limit reached: 10 requests per hour. Try again in about 42 minutes.",
+  data: {
+    retryAfterSeconds,
+    resetAt,
+  },
+}
+```
+
+429 responses must include `Retry-After`, `X-RateLimit-Limit`,
+`X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers.
+
+Current balanced MVP limits:
+
+```txt
+AI actions: 5/user/minute, 50/user/day, 3/document/minute
+Upload init: 10/user/hour
+Paste document create: 20/user/hour
+Export generation and AI-preview export: 10/user/hour, 3/document/minute
+Signed export download URL generation: 30/user/hour
+Suggestion apply/ignore/apply-all/selection apply: 60/user/minute, 20/document/minute
+Version create/restore and AI apply/save-copy/save-version: 20/user/hour, 5/document/minute
+```
+
+Do not rate-limit ingestion status polling routes unless the product explicitly
+accepts the processing UI refresh tradeoff. Keep the existing max 3 active
+ingestions guard separate from upload-init rate limiting.
 
 ---
 

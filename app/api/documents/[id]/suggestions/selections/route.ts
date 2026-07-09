@@ -4,6 +4,11 @@ import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
 import { createSuggestionSelectionSchema } from "@/lib/suggestions/suggestions.validators";
 import { createSuggestionPreviewSelection } from "@/lib/suggestions/suggestions.service";
+import {
+  enforceRateLimitPreset,
+  RateLimitExceededError,
+} from "@/lib/rate-limit/rate-limit.service";
+import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -55,6 +60,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     const { id } = parsedParams.data;
     const supabase = createSupabaseServerClient();
+    await enforceRateLimitPreset(supabase, "suggestionMutation", {
+      userId,
+      documentId: id,
+    });
+
     const result = await createSuggestionPreviewSelection(supabase, {
       userId,
       documentId: id,
@@ -71,6 +81,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/suggestions/selections]", error);
+
+    if (error instanceof RateLimitExceededError) {
+      return rateLimitResponse(error);
+    }
 
     return NextResponse.json(
       { success: false, error: "Could not create suggestion review." },
