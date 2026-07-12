@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Browser console error cleanup
-**Next:** Browser-verify cached table pagination/filter navigation and mutation refresh behavior
+**Phase:** Phase 13 - Progressive Onboarding
+**Last completed:** Persistent onboarding toast Sonner action fix with regression coverage
+**Next:** Browser-verify the progressive onboarding first-user, route-guide, dismissal, and replay journeys
 
 ---
 
@@ -93,6 +93,11 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 41 Development-only Diagnostic Logging Cleanup
 - [x] 42 Browser Console Error Cleanup
 
+### Phase 13 - Progressive Onboarding
+
+- [x] 43 Progressive Onboarding Application Layer
+- [ ] 44 Apply Onboarding Migration and Browser Verification (migration and route-guide coverage complete; browser verification pending)
+
 ---
 
 ## Decisions Made During Build
@@ -136,6 +141,77 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-12
+Feature: Sonner onboarding action correction
+Status: Completed locally; browser verification pending
+Files changed: lib/feedback/toast.ts, lib/feedback/toast.test.ts, context/library-docs.md, context/progress-tracker.md
+What was completed: Inspected Sonner 2.0.7 runtime behavior and confirmed cancel callbacks are intentionally disabled when `dismissible` is false. Moved `Got it` from the cancel slot to the primary action slot, retained `duration: Infinity`, explicitly dismisses by stable ID before persisting, and uses the secondary slot only for optional contextual navigation. Added a regression test that invokes the real configured action callback and verifies both toast dismissal and persistence callback execution.
+Verification: Focused toast and onboarding tests passed 2 files / 4 tests. `npx.cmd tsc --noEmit` passed. Focused ESLint passed.
+Follow-up: Click `Got it`, confirm immediate closure, then reload and confirm the persisted dismissal remains effective.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Onboarding toast recreation fix
+Status: Completed locally; browser verification pending
+Files changed: components/onboarding/ContextualTip.tsx, context/progress-tracker.md
+What was completed: Added component-local dismissal state before issuing the onboarding PATCH. Clicking `Got it` now stops the mounted guide component from republishing the same stable toast while the dismissal mutation is pending, eliminating the close-then-immediate-reopen race.
+Verification: `npx.cmd tsc --noEmit` passed. Focused ESLint passed. Onboarding stage tests passed 3 tests.
+Follow-up: Click `Got it`, confirm immediate closure with no reappearance, then reload and confirm the persisted dismissal remains effective.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Persistent onboarding toast close behavior
+Status: Completed locally; browser verification pending
+Files changed: lib/feedback/toast.ts, context/library-docs.md, context/progress-tracker.md
+What was completed: Updated the persistent informational toast's `Got it` handler to dismiss the Sonner toast synchronously by stable ID before persisting the onboarding dismissal. This avoids relying on Sonner cancel-button auto-close behavior while `dismissible` is disabled.
+Verification: `npx.cmd tsc --noEmit` passed. Focused ESLint passed.
+Follow-up: Click `Got it`, confirm the toast closes immediately, then reload and confirm it remains dismissed.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Persistent onboarding toast visibility fix
+Status: Completed locally; browser verification pending
+Files changed: components/onboarding/ContextualTip.tsx, lib/onboarding/onboarding.constants.ts, lib/onboarding/onboarding.service.ts, context/architecture.md, context/code-standards.md, context/progress-tracker.md
+What was completed: Confirmed callback-based Sonner dismissal was immediately persisting guide dismissal during development remounts. Advanced onboarding to version 3, removed callback/swipe/close persistence, and added an explicit `Got it` action as the only dismissal path. Route cleanup remains non-persistent. Creation guidance is now route-specific, so returning users see it on `/documents/new` even after their milestone stage has advanced. Live database verification confirmed version 3 rows with zero dismissed tips after the fix.
+Verification: `npx.cmd tsc --noEmit` passed. Focused ESLint passed. Onboarding stage tests passed 3 tests.
+Follow-up: Reload a protected route, confirm its persistent informational toast appears, then close it and confirm it stays dismissed after another reload.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Contextual onboarding guide positioning
+Status: Completed locally; browser verification pending
+Files changed: components/onboarding/ContextualTip.tsx, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Replaced the custom positioned onboarding panel with the existing global Sonner informational toast UI. Guidance uses `duration: Infinity`, includes an explicit close control and optional contextual action, persists a dismissal only when the user closes or swipes it, and cleans up without persisting dismissal when its route unmounts.
+Verification: `npx.cmd tsc --noEmit` passed. Focused ESLint passed for both onboarding components.
+Follow-up: Browser-check export, preview, versions, account, creation, and editor; confirm each guide uses the top-right toast stack, never times out, contextual actions work, and explicit dismissal persists.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Progressive onboarding route-guide coverage
+Status: Completed locally; browser verification pending
+Files changed: lib/onboarding/onboarding.constants.ts, components/onboarding/ProgressiveOnboarding.tsx, context/architecture.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added independent first-visit contextual guides for AI preview, version history, export, and account workspaces. Preview and versions use dedicated dismissal keys so earlier editor-stage guidance cannot suppress their workspace explanations. Export guidance now appears on first visit regardless of milestone stage, while the shell continues to render at most one guide.
+Verification: `npx.cmd tsc --noEmit` passed. Onboarding stage tests passed 3 tests. `npm.cmd run lint` passed with the existing six unrelated warnings.
+Follow-up: Browser-visit preview, versions, export, and account; confirm one guide appears per route, dismissal persists, and Restart Guide makes each route guide available again.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Progressive onboarding application layer
+Status: Application layer and remote migration completed; browser verification pending
+Files changed: supabase/migrations/20260712082223_progressive_onboarding.sql, supabase/schema/phase-1-database-schema.sql, lib/supabase/types.ts, lib/onboarding/*, app/api/onboarding/route.ts, proxy.ts, components/onboarding/*, app/(app)/layout.tsx, components/upload/UploadDropzone.tsx, components/upload/PasteTextForm.tsx, components/editor/EditorWorkspace.tsx, components/export/ExportWorkspace.tsx, context/project-overview.md, context/architecture.md, context/build-plan.md, context/code-standards.md, context/library-docs.md, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a server-only Clerk-user onboarding model, milestone derivation from real documents/AI/apply/export records, authenticated GET/PATCH API, TanStack Query state, first-session welcome, dashboard activation checklist, progressive creation/editor/version/export tips, replay control, and milestone invalidation after successful domain mutations. Guidance is non-blocking and limited to one proactive surface at a time.
+Verification: `npx.cmd tsc --noEmit` passed. Onboarding stage tests passed 3 tests. `npm.cmd run lint` passed with existing unrelated warnings. `npm.cmd test` passed 34 test files / 180 tests. `npm.cmd run build` passed on Next.js 16.2.7.
+Database verification: Applied `progressive_onboarding` through Supabase MCP as remote migration `20260712115722`. Confirmed `user_onboarding` exists with RLS enabled, the `user_onboarding_set_updated_at` trigger installed, zero RLS policies, no DML privileges for `anon` or `authenticated`, and DML privileges for `service_role`. Security and performance advisors reported no new actionable findings; the server-only no-policy informational notice is expected.
+Follow-up: Browser-test new user, dismissals, milestone progression, completion, and replay.
+```
 
 ```txt
 Date: 2026-07-12

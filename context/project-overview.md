@@ -390,3 +390,5 @@ A student, professional, job seeker, writer, or business user who:
 - Dashboard gives users a clear overview of document activity
 - UI remains visually consistent across all pages
 - Users understand when formatting is preserved, limited, or plain-text only
+- First-time users receive progressive, dismissible guidance toward document creation, AI review, version safety, and export without a forced product tour.
+- Returning users do not see guidance for milestones they have already completed and can replay the guide from the authenticated shell.

@@ -824,3 +824,13 @@ Add and run MVP-level tests.
 | Phase 9 — Account and Usage           | 2        |
 | Phase 10 — Final Review and Hardening | 3        |
 | **Total**                             | **30**   |
+
+---
+
+## Phase 13 - Progressive Onboarding
+
+- Add server-only `user_onboarding` state and derive real milestones from domain records.
+- Add authenticated onboarding read/update routes and TanStack Query integration.
+- Add first-session welcome, dashboard activation checklist, contextual workflow tips, and replay control.
+- Invalidate onboarding progress after successful document, AI, apply, and export mutations.
+- Verify one-guide-at-a-time behavior, cross-session dismissal, replay, and non-blocking failure behavior.

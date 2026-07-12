@@ -629,6 +629,42 @@ export type Database = {
           },
         ]
       }
+      user_onboarding: {
+        Row: {
+          checklist_dismissed_at: string | null
+          completed_at: string | null
+          created_at: string
+          dismissed_tips: string[]
+          onboarding_version: number
+          replay_started_at: string | null
+          updated_at: string
+          user_id: string
+          welcome_dismissed_at: string | null
+        }
+        Insert: {
+          checklist_dismissed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_tips?: string[]
+          onboarding_version?: number
+          replay_started_at?: string | null
+          updated_at?: string
+          user_id: string
+          welcome_dismissed_at?: string | null
+        }
+        Update: {
+          checklist_dismissed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dismissed_tips?: string[]
+          onboarding_version?: number
+          replay_started_at?: string | null
+          updated_at?: string
+          user_id?: string
+          welcome_dismissed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

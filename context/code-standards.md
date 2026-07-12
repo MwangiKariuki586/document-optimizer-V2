@@ -633,6 +633,22 @@ Example prefixes:
 
 ---
 
+## Progressive Onboarding Rules
+
+- Derive completion from owned domain records; do not store duplicate milestone booleans.
+- Persist only onboarding UI state in `user_onboarding`, keyed by authenticated Clerk `userId`.
+- Keep `user_onboarding` server-only with RLS enabled and no browser policies.
+- Show at most one proactive guide at a time and never block a core workflow.
+- Dismissed tips stay hidden for the current onboarding version.
+- Increment `ONBOARDING_VERSION` when a material guide presentation or sequence
+  change must be shown again. Version upgrades may reset onboarding UI state,
+  but must never alter milestones derived from domain records.
+- Replay resets UI dismissals without deleting or rewriting real milestones.
+- Onboarding query failures degrade silently and must not replace page content with an error state.
+- Invalidate the onboarding query only after successful document, AI, apply, or export mutations.
+
+---
+
 ## Environment Variables
 
 All environment variables are defined in `.env.local` for development.

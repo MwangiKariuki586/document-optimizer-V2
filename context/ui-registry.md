@@ -2305,3 +2305,50 @@ Delete button: bg-error-muted text-error-foreground hover:bg-error-light
 
 - Always requires explicit confirmation click — no auto-delete.
 - Uses `bg-error-muted` button styling to communicate destructive intent without a full red button.
+
+---
+
+## Progressive Onboarding Components
+
+### ProgressiveOnboarding
+
+**Path:** `components/onboarding/ProgressiveOnboarding.tsx`
+
+Authenticated-shell orchestrator that loads normalized onboarding state and
+renders exactly one welcome, checklist, or contextual guidance surface. Includes
+an icon-only replay control that restarts UI guidance without clearing real
+milestones.
+
+### WelcomeGuide
+
+**Path:** `components/onboarding/WelcomeGuide.tsx`
+
+Dismissible first-session modal shown only on the dashboard for users without a
+document. Its single primary action opens the upload flow.
+
+### OnboardingChecklist
+
+**Path:** `components/onboarding/OnboardingChecklist.tsx`
+
+Compact dashboard checklist deriving four outcome steps from real document, AI,
+apply, and export records. It is dismissible after completion.
+
+### ContextualTip
+
+**Path:** `components/onboarding/ContextualTip.tsx`
+
+Non-rendering adapter that presents document creation, editor, preview, version
+history, export, and account guidance through the global Sonner toaster.
+Route-specific tips are independently dismissible from milestone-stage
+guidance. Toasts persist until the explicit `Got it` action and may include one
+contextual navigation action.
+
+**Rules:**
+
+- Use project tokens and compact 8px-or-less radius.
+- Never render more than one onboarding surface.
+- Every overlay has a named dismiss control and remains keyboard accessible.
+- Use the centralized `appToast.persistentInfo()` helper and the existing
+  top-right toast stack instead of custom fixed-position panels.
+- Route cleanup removes the visible toast without persisting a user dismissal.
+- Onboarding API failure renders no overlay and does not affect page content.

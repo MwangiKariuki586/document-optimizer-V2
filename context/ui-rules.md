@@ -586,3 +586,6 @@ Rules:
 - Never add a second persistent navigation rail inside authenticated pages
 - Never stack more than two nested rounded card containers
 - Never use fixed positioning unless required for a modal, toast, or controlled overlay
+- Progressive onboarding may use fixed positioning only for its welcome modal, compact checklist, contextual tip, and replay control.
+- Show only one proactive onboarding surface at a time; all guidance must be dismissible and keyboard accessible.
+- Contextual onboarding guidance uses the global informational toast UI, remains until explicit dismissal, and must not create a second custom-positioned overlay.

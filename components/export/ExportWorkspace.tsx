@@ -24,6 +24,7 @@ import type {
 } from "@/components/export/export.types";
 import type { EditorDocument } from "@/lib/documents/document.types";
 import { appToast } from "@/lib/feedback/toast";
+import { useInvalidateOnboarding } from "@/lib/onboarding/onboarding.query";
 import type { AppliedSuggestionSummary } from "@/lib/suggestions/suggestions.types";
 
 type ExportWorkspaceProps = {
@@ -113,6 +114,7 @@ export function ExportWorkspace({
   improvementSummary,
   aiRequestId,
 }: ExportWorkspaceProps) {
+  const invalidateOnboarding = useInvalidateOnboarding();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("docx");
   const [options, setOptions] = useState<ExportOptionsState>(defaultOptions);
   const [status, setStatus] = useState<ExportStatus>("idle");
@@ -194,6 +196,7 @@ export function ExportWorkspace({
       setStatus("ready");
       setCompletedAt(new Date().toISOString());
       downloadExport(payload.data);
+      void invalidateOnboarding();
       appToast.success("Export completed. Your download has started.");
 
       if (payload.data.warning) {

@@ -25,6 +25,19 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.user_onboarding (
+  user_id text primary key,
+  onboarding_version integer not null default 1,
+  welcome_dismissed_at timestamptz,
+  dismissed_tips text[] not null default '{}'::text[],
+  checklist_dismissed_at timestamptz,
+  replay_started_at timestamptz,
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint user_onboarding_version_check check (onboarding_version > 0)
+);
+
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,
@@ -267,6 +280,11 @@ create trigger profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
+drop trigger if exists user_onboarding_set_updated_at on public.user_onboarding;
+create trigger user_onboarding_set_updated_at
+before update on public.user_onboarding
+for each row execute function public.set_updated_at();
+
 drop trigger if exists documents_set_updated_at on public.documents;
 create trigger documents_set_updated_at
 before update on public.documents
@@ -278,6 +296,7 @@ before update on public.suggestions
 for each row execute function public.set_updated_at();
 
 alter table public.profiles enable row level security;
+alter table public.user_onboarding enable row level security;
 alter table public.documents enable row level security;
 alter table public.document_versions enable row level security;
 alter table public.document_snapshot_sessions enable row level security;
@@ -285,6 +304,9 @@ alter table public.ai_requests enable row level security;
 alter table public.suggestions enable row level security;
 alter table public.exports enable row level security;
 alter table public.usage_ledger enable row level security;
+
+revoke all on table public.user_onboarding from anon, authenticated;
+grant all on table public.user_onboarding to service_role;
 
 drop policy if exists "profiles_select_own" on public.profiles;
 drop policy if exists "profiles_insert_own" on public.profiles;

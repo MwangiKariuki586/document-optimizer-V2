@@ -10,6 +10,7 @@ import {
   TITLE_ALLOWED_PATTERN,
 } from "@/lib/documents/document.validators";
 import { appToast } from "@/lib/feedback/toast";
+import { useInvalidateOnboarding } from "@/lib/onboarding/onboarding.query";
 
 type CreateDocumentResponse = {
   success: boolean;
@@ -19,6 +20,7 @@ type CreateDocumentResponse = {
 
 export function PasteTextForm() {
   const router = useRouter();
+  const invalidateOnboarding = useInvalidateOnboarding();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,6 +64,7 @@ export function PasteTextForm() {
       }
 
       appToast.success("Document created.");
+      void invalidateOnboarding();
       router.push(`/documents/${result.data.id}`);
     } catch {
       appToast.error("Something went wrong. Please try again.");

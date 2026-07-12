@@ -18,6 +18,7 @@ import type {
   SignedUploadTarget,
 } from "@/lib/ingestion/ingestion.types";
 import { appToast } from "@/lib/feedback/toast";
+import { useInvalidateOnboarding } from "@/lib/onboarding/onboarding.query";
 
 type ApiResponse<T> = { success: boolean; data?: T; error?: string };
 type CompleteUploadResult = {
@@ -75,6 +76,7 @@ async function uploadWithTus(
 
 export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: string | null }) {
   const router = useRouter();
+  const invalidateOnboarding = useInvalidateOnboarding();
   const inputRef = useRef<HTMLInputElement>(null);
   const activeUpload = useRef<tus.Upload | null>(null);
   const idempotencyKeys = useRef(new Map<string, string>());
@@ -102,10 +104,11 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
     if (result.data.status === "completed" && !readyNavigationStarted.current) {
       readyNavigationStarted.current = true;
       appToast.success("Document ready.");
+      void invalidateOnboarding();
       router.push(`/documents/${documentId}`);
     }
     return result.data;
-  }, [router]);
+  }, [invalidateOnboarding, router]);
 
   const monitorDocument = useCallback(async (documentId: string) => {
     setPhase("queuing");

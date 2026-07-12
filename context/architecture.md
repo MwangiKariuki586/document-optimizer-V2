@@ -846,3 +846,27 @@ Rules the AI agent must never violate:
 - Use skeletons for large loading areas.
 - Do not introduce an ORM during MVP unless explicitly approved.
 - Do not add billing, teams, collaboration, or admin tables during MVP unless explicitly requested.
+
+---
+
+## Progressive Onboarding
+
+Progressive onboarding is mounted once in the authenticated app layout and is
+non-blocking. `GET /api/onboarding` authenticates with Clerk, initializes the
+server-only `user_onboarding` row, and derives milestones from owned documents,
+completed AI requests, applied suggestions/AI usage, and completed exports.
+`PATCH /api/onboarding` persists only UI state: welcome dismissal, stable tip
+keys, checklist dismissal, and replay state. TanStack Query holds the browser
+state and is invalidated after successful document creation, AI completion,
+suggestion apply, and export generation.
+When `ONBOARDING_VERSION` advances, the service resets only persisted guide UI
+state for older rows; domain-derived milestones remain authoritative.
+
+`user_onboarding` uses Clerk `user_id` as its primary key, has RLS enabled, and
+grants no browser access. Real workflow milestones are never duplicated into
+the onboarding row. The resolver exposes exactly one stage at a time: welcome,
+create document, run AI, review result, version safety, export, or complete.
+Route-specific first-visit tips cover the preview, version history, export, and
+account workspaces independently of milestone stage, while the shell still
+renders at most one onboarding surface at a time.
+Onboarding fetch/update failures must never block core product workflows.

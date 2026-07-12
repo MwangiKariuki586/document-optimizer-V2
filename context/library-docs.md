@@ -243,6 +243,18 @@ JSON and explicit benchmark-script output are intentional and remain separate.
 
 ---
 
+## Progressive Onboarding
+
+`ProgressiveOnboarding` uses the existing root `QueryProvider` and
+`useOnboarding()` from `lib/onboarding/onboarding.query.ts`. The query calls the
+authenticated `/api/onboarding` route with a 60-second stale time. Successful
+updates replace the query value directly; domain mutations invalidate the query
+so milestones are re-derived from server records. Do not fetch Supabase from
+onboarding Client Components and do not surface onboarding query errors as
+blocking page errors.
+
+---
+
 ## Supabase
 
 Supabase is used for Postgres, private storage, RLS, and generated TypeScript types.
@@ -1055,6 +1067,20 @@ export const appToast = {
   error: (message: string) => toast.error(message),
   warning: (message: string) => toast.warning(message),
   info: (message: string) => toast.info(message),
+  persistentInfo: (message, options) =>
+    toast.info(message, {
+      ...options,
+      duration: Infinity,
+      closeButton: false,
+      dismissible: true,
+      action: {
+        label: "Got it",
+        onClick: () => {
+          toast.dismiss(options.id);
+          options.onConfirm();
+        },
+      },
+    }),
 };
 ```
 
@@ -1063,6 +1089,8 @@ export const appToast = {
 - Mount `AppToaster` once
 - Use centralized toast helpers
 - Use success, error, warning, and info consistently
+- Use `appToast.persistentInfo()` for contextual onboarding guidance that must
+  remain until the explicit `Got it` action; clean it up when its route unmounts.
 - Critical errors must also be shown inline
 - Do not use toast as the only feedback for page-level failures
 

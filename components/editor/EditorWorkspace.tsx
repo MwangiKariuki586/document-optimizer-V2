@@ -20,6 +20,7 @@ import { EditorTopBar } from "@/components/editor/EditorTopBar";
 import { FidelityBadge, FidelityStatus } from "@/components/documents/FidelityBadge";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { appToast } from "@/lib/feedback/toast";
+import { useInvalidateOnboarding } from "@/lib/onboarding/onboarding.query";
 import { countWords } from "@/lib/documents/text-to-editor";
 import type { EditorDocument } from "@/lib/documents/document.types";
 import type {
@@ -131,6 +132,7 @@ export function EditorWorkspace({
   initialAIActionRuns,
 }: EditorWorkspaceProps) {
   const router = useRouter();
+  const invalidateOnboarding = useInvalidateOnboarding();
   const initialContent = useMemo<JSONContent>(
     () =>
       (document.editorJson as JSONContent | null) ?? {
@@ -454,6 +456,7 @@ export function EditorWorkspace({
     }
 
     router.refresh();
+    void invalidateOnboarding();
 
     return {
       id: data.data.id,
@@ -706,6 +709,7 @@ export function EditorWorkspace({
         );
       }
       router.refresh();
+      void invalidateOnboarding();
       appToast.success("Suggestion applied. Your rollback point is preserved.");
     } catch {
       if (appliedOptimistically) {
@@ -760,6 +764,7 @@ export function EditorWorkspace({
       setSaveState("saved");
       setActiveSuggestionId(null);
       router.refresh();
+      void invalidateOnboarding();
       appToast.success(
         `Switched to version v${data.data.selectedVersionNumber}.`,
       );
