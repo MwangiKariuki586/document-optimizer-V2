@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import {
+  invalidateDocumentCache,
+  invalidateWorkspaceCache,
+} from "@/lib/cache/workspace-cache";
 import { resolveDuplicateIngestion } from "@/lib/ingestion/ingestion.service";
 import { duplicateResolutionSchema, ingestionIdParamSchema } from "@/lib/ingestion/ingestion.validators";
 
@@ -19,10 +23,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ ing
       action: parsed.data.action,
     });
     if (!result) return NextResponse.json({ success: false, error: "Ingestion not found." }, { status: 404 });
+    if (result.documentId) {
+      invalidateDocumentCache(userId, result.documentId);
+    } else {
+      invalidateWorkspaceCache(userId);
+    }
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/uploads/duplicate-resolution]", error);
     return NextResponse.json({ success: false, error: "Failed to resolve duplicate." }, { status: 500 });
   }
 }
-

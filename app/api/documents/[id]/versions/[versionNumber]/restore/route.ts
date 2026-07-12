@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import {
   enforceRateLimitPreset,
   RateLimitExceededError,
@@ -57,6 +58,7 @@ export async function POST(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, parsedParams.data.id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/versions/restore]", error);

@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ChevronDown, FileUp, ClipboardList } from "lucide-react";
+import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { DocumentsSummaryCards } from "@/components/documents/DocumentsSummaryCards";
 import { DocumentsTabs } from "@/components/documents/DocumentsTabs";
@@ -14,8 +20,14 @@ import { ArchiveDocumentDialog } from "@/components/documents/ArchiveDocumentDia
 import { DeleteDocumentDialog } from "@/components/documents/DeleteDocumentDialog";
 import type {
   DocumentsLibraryItem,
-  DocumentsLibraryResult,
 } from "@/lib/documents/documents-library.service";
+import {
+  DOCUMENTS_LIBRARY_STALE_TIME_MS,
+  documentsLibraryQueryKey,
+  documentsLibraryQueryRootKey,
+  fetchDocumentsLibrary,
+  parseDocumentsLibraryQuery,
+} from "@/lib/documents/documents-library.query";
 import { newDocumentHref } from "@/lib/documents/new-document.routes";
 
 type DialogState =
@@ -23,10 +35,6 @@ type DialogState =
   | { kind: "rename"; doc: DocumentsLibraryItem }
   | { kind: "archive"; doc: DocumentsLibraryItem }
   | { kind: "delete"; doc: DocumentsLibraryItem };
-
-type DocumentsLibraryWorkspaceProps = {
-  data: DocumentsLibraryResult;
-};
 
 // ─── New Document Dropdown ────────────────────────────────────────────────────
 
@@ -97,14 +105,29 @@ function NewDocumentDropdown() {
 
 // ─── Main Workspace ───────────────────────────────────────────────────────────
 
-export function DocumentsLibraryWorkspace({
-  data,
-}: DocumentsLibraryWorkspaceProps) {
-  const router = useRouter();
+export function DocumentsLibraryWorkspace() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
+
+  const query = useMemo(
+    () =>
+      parseDocumentsLibraryQuery(
+        (key) => searchParams.get(key) ?? undefined,
+      ),
+    [searchParams],
+  );
+  const {
+    data,
+    error: queryError,
+    isPending,
+  } = useQuery({
+    queryKey: documentsLibraryQueryKey(query),
+    queryFn: () => fetchDocumentsLibrary(query),
+    staleTime: DOCUMENTS_LIBRARY_STALE_TIME_MS,
+    placeholderData: keepPreviousData,
+  });
 
   // Read current param values from URL
   const currentTab = searchParams.get("tab") ?? "all";
@@ -138,12 +161,33 @@ export function DocumentsLibraryWorkspace({
         params.delete("page");
       }
 
-      startTransition(() => {
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
-      });
+      const queryString = params.toString();
+      window.history.pushState(
+        null,
+        "",
+        queryString ? `${pathname}?${queryString}` : pathname,
+      );
     },
-    [pathname, router, searchParams],
+    [pathname, searchParams],
   );
+
+  useEffect(() => {
+    if (!data) return;
+
+    const totalPages = Math.ceil(data.total / data.pageSize);
+    const adjacentPages = [query.page - 1, query.page + 1].filter(
+      (page) => page >= 1 && page <= totalPages,
+    );
+
+    for (const page of adjacentPages) {
+      const adjacentQuery = { ...query, page };
+      void queryClient.prefetchQuery({
+        queryKey: documentsLibraryQueryKey(adjacentQuery),
+        queryFn: () => fetchDocumentsLibrary(adjacentQuery),
+        staleTime: DOCUMENTS_LIBRARY_STALE_TIME_MS,
+      });
+    }
+  }, [data, query, queryClient]);
 
   // ─── Filter handlers ────────────────────────────────────────────────────────
 
@@ -187,8 +231,8 @@ export function DocumentsLibraryWorkspace({
   // ─── Dialog handlers ────────────────────────────────────────────────────────
 
   function handleDialogSuccess() {
-    startTransition(() => {
-      router.refresh();
+    void queryClient.invalidateQueries({
+      queryKey: documentsLibraryQueryRootKey,
     });
   }
 
@@ -220,14 +264,28 @@ export function DocumentsLibraryWorkspace({
         actions={<NewDocumentDropdown />}
       />
 
+      {queryError ? (
+        <InlineAlert title="Documents unavailable" variant="warning">
+          {queryError instanceof Error
+            ? queryError.message
+            : "We could not refresh your documents."}
+        </InlineAlert>
+      ) : null}
+
       {/* Summary cards */}
-      <DocumentsSummaryCards summary={data.summary} />
+      {data ? <DocumentsSummaryCards summary={data.summary} /> : null}
 
       {/* Tabs + toolbar + table */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
         <DocumentsTabs
           activeTab={currentTab}
-          counts={data.tabCounts}
+          counts={data?.tabCounts ?? {
+            all: 0,
+            needsReview: 0,
+            suggestionsReady: 0,
+            readyToExport: 0,
+            archived: 0,
+          }}
           onTabChange={handleTabChange}
         />
 
@@ -247,7 +305,8 @@ export function DocumentsLibraryWorkspace({
         />
 
         <DocumentsTable
-          documents={data.documents}
+          documents={data?.documents ?? []}
+          loading={isPending}
           hasFilters={hasActiveFilters || currentTab !== "all"}
           onClearFilters={handleClearFilters}
           onRenameDoc={openRename}
@@ -255,7 +314,7 @@ export function DocumentsLibraryWorkspace({
           onDeleteDoc={openDelete}
         />
 
-        {data.total > 0 ? (
+        {data && data.total > 0 ? (
           <DocumentsPagination
             page={data.page}
             pageSize={data.pageSize}

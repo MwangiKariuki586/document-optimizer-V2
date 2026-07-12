@@ -1,27 +1,24 @@
 import { auth } from "@clerk/nextjs/server";
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from "@tanstack/react-query";
 import { PageShell } from "@/components/layout/PageShell";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { DocumentsLibraryWorkspace } from "@/components/documents/DocumentsLibraryWorkspace";
+import { getCachedDocumentsLibrary } from "@/lib/cache/workspace-cache";
 import {
-  getDocumentsLibrary,
   getEmptyDocumentsLibrary,
   type DocumentsLibraryResult,
 } from "@/lib/documents/documents-library.service";
+import {
+  documentsLibraryQueryKey,
+  parseDocumentsLibraryQuery,
+  type DocumentsLibraryQuery,
+} from "@/lib/documents/documents-library.query";
 
-const DEFAULT_PAGE_SIZE = 10;
-
-function parseIntParam(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const n = parseInt(value, 10);
-  return isNaN(n) || n < 1 ? fallback : n;
-}
-
-function parseStringParam(
-  value: string | undefined,
-  fallback: string,
-): string {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
-}
+export const unstable_dynamicStaleTime = 300;
 
 type PageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -29,28 +26,10 @@ type PageProps = {
 
 async function loadLibraryData(
   userId: string,
-  rawParams: Record<string, string | string[] | undefined>,
+  query: DocumentsLibraryQuery,
 ): Promise<{ data: DocumentsLibraryResult; error: string | null }> {
-  // Coerce array values to string (take first)
-  function strParam(key: string): string | undefined {
-    const val = rawParams[key];
-    return Array.isArray(val) ? val[0] : val;
-  }
-
-  const params = {
-    userId,
-    page: parseIntParam(strParam("page"), 1),
-    pageSize: parseIntParam(strParam("pageSize"), DEFAULT_PAGE_SIZE),
-    search: parseStringParam(strParam("search"), ""),
-    status: parseStringParam(strParam("status"), "all"),
-    type: parseStringParam(strParam("type"), "all"),
-    fidelity: parseStringParam(strParam("fidelity"), "all"),
-    sort: parseStringParam(strParam("sort"), "lastUpdated"),
-    tab: parseStringParam(strParam("tab"), "all"),
-  };
-
   try {
-    const data = await getDocumentsLibrary(params);
+    const data = await getCachedDocumentsLibrary({ userId, ...query });
     return { data, error: null };
   } catch (err) {
     console.error("[documents/page]", err);
@@ -65,10 +44,16 @@ async function loadLibraryData(
 export default async function DocumentsPage({ searchParams }: PageProps) {
   const { userId } = await auth();
   const rawParams = await searchParams;
+  const query = parseDocumentsLibraryQuery((key) => {
+    const value = rawParams[key];
+    return Array.isArray(value) ? value[0] : value;
+  });
 
   const { data, error } = userId
-    ? await loadLibraryData(userId, rawParams)
+    ? await loadLibraryData(userId, query)
     : { data: getEmptyDocumentsLibrary(), error: null };
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(documentsLibraryQueryKey(query), data);
 
   return (
     <PageShell>
@@ -78,7 +63,9 @@ export default async function DocumentsPage({ searchParams }: PageProps) {
         </InlineAlert>
       ) : null}
 
-      <DocumentsLibraryWorkspace data={data} />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <DocumentsLibraryWorkspace />
+      </HydrationBoundary>
     </PageShell>
   );
 }

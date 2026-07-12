@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { saveAIRequestResultAsDocumentCopy } from "@/lib/ai/ai.service";
 import { aiRequestRouteParamsSchema } from "@/lib/ai/ai.validators";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import {
   enforceRateLimitPreset,
   RateLimitExceededError,
@@ -58,6 +59,7 @@ export async function POST(_req: Request, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/ai/[requestId]/save-copy]", error);

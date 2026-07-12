@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { retryDocumentIngestion } from "@/lib/ingestion/ingestion.service";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
 
@@ -11,6 +12,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try {
     const result = await retryDocumentIngestion(userId, parsed.data.id);
     if (!result) return NextResponse.json({ success: false, error: "Ingestion not found." }, { status: 404 });
+    invalidateDocumentCache(userId, parsed.data.id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     return NextResponse.json(
@@ -19,4 +21,3 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     );
   }
 }
-

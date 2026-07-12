@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import {
   archiveDocument,
   restoreDocument,
@@ -75,6 +76,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/archive]", error);

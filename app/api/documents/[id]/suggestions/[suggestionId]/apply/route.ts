@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import {
   applySuggestion,
   SuggestionReplacementError,
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, id);
     const response = NextResponse.json({ success: true, data: result });
     const timingEntries = Object.entries(result.serverTimings ?? {}).map(
       ([label, duration]) => `${label};dur=${duration}`,

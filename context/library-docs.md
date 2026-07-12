@@ -176,6 +176,62 @@ Protected routes:
 
 ---
 
+## Next.js Caching
+
+The project currently uses Next.js `16.2.7` without `cacheComponents` enabled.
+For the first protected-read caching pass, use `unstable_cache` from
+`next/cache` instead of enabling the newer `"use cache"` model globally.
+
+### Workspace Read Cache Pattern
+
+```typescript
+import { unstable_cache } from "next/cache";
+
+const result = await unstable_cache(
+  () => getDashboardData(userId),
+  ["dashboard", userId],
+  {
+    revalidate: 60,
+    tags: [`workspace:${userId}`, `dashboard:${userId}`],
+  },
+)();
+```
+
+Use `revalidateTag(tag, { expire: 0 })` from route handlers or server-only
+helpers after successful mutations. Cache invalidation errors should be logged
+but must not turn an already-successful mutation into a failed response.
+
+Cached protected App Router pages use a stale time matching their server cache:
+60 seconds for dashboard and document editor data, and 300 seconds for the less
+volatile Documents Library. This lets repeated client-side navigation reuse the
+client router cache. Browser
+Network can still show RSC navigation requests; the server cache contract is
+that Supabase-backed loaders are not recomputed on cache hits and that
+successful mutations invalidate the relevant tags.
+
+The Documents Library additionally uses `@tanstack/react-query` for browser-side
+pagination and filter caching. `QueryProvider` is mounted once in the root
+layout. The server page seeds a `QueryClient`, dehydrates the current library
+query, and renders `DocumentsLibraryWorkspace` inside `HydrationBoundary`.
+Client query functions call authenticated `GET /api/documents`; do not use a
+Server Action as a query function and do not call Supabase from the browser.
+Use a 300-second `staleTime`, `keepPreviousData`, adjacent-page
+`prefetchQuery()`, and invalidate the root `documents-library` query key after
+successful mutations. Table query-string changes use the native History API so
+Next.js `useSearchParams` updates without an RSC navigation.
+
+### Rules
+
+- Keep private cache keys user-scoped; never cache user-owned Supabase results without `userId`.
+- Put reusable workspace cache helpers in `lib/cache/workspace-cache.ts`.
+- Include every filter/search/pagination dimension in Documents Library cache keys.
+- Include `userId` and `documentId` in document editor cache keys, and tag editor entries with `document-editor:{userId}:{documentId}`.
+- Prefer `invalidateDocumentCache(userId, documentId)` for document-specific mutations so `/dashboard`, `/documents`, and `/documents/[id]` are refreshed together.
+- Keep ingestion status polling uncached.
+- Defer `"use cache"`, `cacheLife()`, and `cacheTag()` until a deliberate Cache Components migration.
+
+---
+
 ## Supabase
 
 Supabase is used for Postgres, private storage, RLS, and generated TypeScript types.

@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Rolling-window rate limiting
-**Next:** Browser-verify upload and paste 429 toasts after the trailing-window limiter change
+**Last completed:** Documents Library browser query caching
+**Next:** Browser-verify cached table pagination/filter navigation and mutation refresh behavior
 
 ---
 
@@ -86,6 +86,10 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 34 Low-Latency Direct Suggestion Apply
 - [x] 35 Rich DOCX Editor Fidelity
 - [x] 36 Authenticated API Rate Limiting
+- [x] 37 Server-side Workspace Read Caching
+- [x] 38 Document Editor and Router Cache Coverage
+- [x] 39 Documents Library Cache Lifetime Tuning
+- [x] 40 Documents Library Browser Query Caching
 
 ---
 
@@ -130,6 +134,46 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-12
+Feature: Documents Library browser query caching
+Status: Completed
+Files changed: app/layout.tsx, app/(app)/documents/page.tsx, app/api/documents/route.ts, components/providers/QueryProvider.tsx, components/documents/DocumentsLibraryWorkspace.tsx, lib/documents/documents-library.query.ts, lib/documents/documents-library.query.test.ts, package.json, package-lock.json, context/architecture.md, context/code-standards.md, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added TanStack Query 5.101.2 as a browser cache above the existing Next.js Documents Library cache. The server page hydrates the initial query, table URL state now uses the native History API instead of RSC navigation, the authenticated GET /api/documents route delegates to getCachedDocumentsLibrary(), queries remain fresh for five minutes, previous rows remain visible while uncached pages load, adjacent pages are prefetched, and successful library mutations invalidate the browser query family after server cache-tag invalidation.
+Verification: `npx.cmd vitest run lib/cache/workspace-cache.test.ts lib/documents/documents-library.query.test.ts` passed 11 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace. `npm.cmd test` passed 32 test files / 175 tests. `npm.cmd run build` passed on Next.js 16.2.7.
+Follow-up: Browser-check page 1 -> page 2 -> page 1 with DevTools Network open. The first uncached API request is expected; revisiting a fresh query key should not issue another request. Then rename/archive/delete and confirm the active query refetches immediately.
+```
+
+```txt
+Date: 2026-07-11
+Feature: Documents Library cache lifetime tuning
+Status: Completed
+Files changed: lib/cache/workspace-cache.ts, lib/cache/workspace-cache.test.ts, app/(app)/documents/page.tsx, context/architecture.md, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Increased the Documents Library server cache and App Router stale time from 60 seconds to 300 seconds while retaining 60-second dashboard and individual document editor caching. Existing successful mutation invalidation continues to expire library data immediately after document, upload, AI, suggestion, version, and export changes.
+Verification: `npx.cmd vitest run lib/cache/workspace-cache.test.ts` passed 9 tests. `npx.cmd tsc --noEmit` passed.
+Follow-up: Browser-check repeated navigation to /documents and confirm document mutations still refresh the library immediately.
+```
+
+```txt
+Date: 2026-07-09
+Feature: Server-side workspace read caching
+Status: Completed
+Files changed: lib/cache/workspace-cache.ts, lib/cache/workspace-cache.test.ts, app/(app)/dashboard/page.tsx, app/(app)/documents/page.tsx, protected document/upload/AI/export/suggestion/version mutation routes, context/architecture.md, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Added Next.js server-side caching for the Supabase-backed dashboard and Documents Library reads with user-scoped keys/tags and a 60 second revalidate window. Dashboard and library pages now call cached service wrappers. Successful protected mutations invalidate the authenticated user's workspace cache after service success while ingestion status polling remains uncached.
+Verification: `npx.cmd vitest run lib/cache/workspace-cache.test.ts` passed 5 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace. `npm.cmd test` passed 31 test files / 169 tests. `npm.cmd run build` passed on Next.js 16.2.7.
+Follow-up: Browser-check repeated navigation between /dashboard and /documents, then create/rename/archive/delete a document and confirm fresh data appears after each mutation.
+```
+
+```txt
+Date: 2026-07-11
+Feature: Document editor and router cache coverage
+Status: Completed
+Files changed: lib/cache/workspace-cache.ts, lib/cache/workspace-cache.test.ts, app/(app)/dashboard/page.tsx, app/(app)/documents/page.tsx, app/(app)/documents/[id]/page.tsx, components/editor/EditorWorkspace.tsx, protected document/upload/AI/export/suggestion/version mutation routes, context/architecture.md, context/code-standards.md, context/library-docs.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Extended workspace caching to the document editor page by caching the stable document, suggestions, and AI action history payload behind a user-and-document-scoped cache key while keeping ingestion status checks live. Added per-page App Router dynamic stale time for dashboard, documents, and document editor navigation reuse. Document-specific mutations now invalidate the affected document editor cache in addition to workspace and library tags, and successful editor mutations refresh the current route so the client router cache does not retain stale editor snapshots.
+Verification: `npx.cmd vitest run lib/cache/workspace-cache.test.ts` passed 8 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace. `npm.cmd test` passed 31 test files / 172 tests. `npm.cmd run build` passed on Next.js 16.2.7.
+Follow-up: Browser-check repeated navigation for /dashboard, /documents, and /documents/[id]. Network requests may still appear for RSC navigation; verify that repeated navigation does not recompute Supabase-backed loaders unless a successful mutation invalidates the tags.
+```
 
 ```txt
 Date: 2026-07-09

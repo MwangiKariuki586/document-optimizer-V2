@@ -67,6 +67,19 @@ The AI agent on this project operates as a senior engineer. This means:
 - Server-only utilities must never be imported into Client Components
 - Always check current documentation before implementing framework-specific behavior
 
+### Server Cache Rules
+
+- Use `lib/cache/workspace-cache.ts` for dashboard, Documents Library, and document editor server read caching.
+- Private cached data must include the authenticated Clerk `userId` in both the cache key and cache tags.
+- Documents Library cache keys must include every normalized query dimension: page, page size, search, status, type, fidelity, sort, and tab.
+- Document editor cache keys must include both `userId` and `documentId`, and document editor cache tags must include `document-editor:{userId}:{documentId}`.
+- Cache lifetimes should match volatility: dashboard and document editor data use 60 seconds, while the Documents Library uses 300 seconds. Cached protected App Router pages should use the matching `unstable_dynamicStaleTime` unless the page needs live navigation data.
+- Successful protected mutations that change documents, suggestions, AI activity, versions, uploads, or exports must call `invalidateDocumentCache(userId, documentId)` after the service succeeds when a document id is available. Use `invalidateWorkspaceCache(userId)` only when the mutation cannot identify a document.
+- Do not cache ingestion status polling or other live processing refresh routes unless the product explicitly accepts stale processing UI.
+- Client query caching is reserved for deliberately interactive read surfaces. The Documents Library uses TanStack Query over authenticated `GET /api/documents`; the browser must never call Supabase or receive a server credential directly.
+- Documents Library table state must update with `window.history.pushState()` so `useSearchParams` stays synchronized without triggering RSC navigation. Query keys must include page, page size, search, status, type, fidelity, sort, and tab.
+- Documents Library browser queries use a 300-second `staleTime`, retain previous page data, and may prefetch adjacent pages. Successful table mutations must invalidate the browser `documents-library` query family after the server route has invalidated Next.js tags.
+
 ---
 
 ## File and Folder Naming

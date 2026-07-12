@@ -1032,7 +1032,7 @@ className="inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-m
 
 **Purpose:**
 
-Client orchestrator for the document editor workspace. Receives a real `EditorDocument` plus server-loaded `initialSuggestions`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter, suggestion action loading), and the save handler. Uses the global app sidebar from the authenticated layout, then composes the editor canvas and right AI rail. Exports the `SaveState` type.
+Client orchestrator for the document editor workspace. Receives a real `EditorDocument` plus server-loaded `initialSuggestions`, owns the TipTap editor instance (`useEditor` + StarterKit), local UI state (title text, save state, word/character counts, right-rail mode, suggestions open/closed, active filter, suggestion action loading), and the save handler. Successful editor mutations refresh the current route so the document editor App Router cache does not retain stale document, suggestion, or AI action snapshots. Uses the global app sidebar from the authenticated layout, then composes the editor canvas and right AI rail. Exports the `SaveState` type.
 
 **Used on:**
 
@@ -2024,7 +2024,7 @@ components/ui/AIActionsPanel.tsx
 
 **Purpose:**
 
-Client orchestrator for the Documents Library page. Owns URL state via `useSearchParams`/`useRouter`, manages rename/archive/delete dialog state, and composes `PageHeader`, summary cards, tabs, toolbar, table, and pagination. Calls `router.refresh()` after dialog actions to get fresh server data.
+Client orchestrator for the Documents Library page. Owns URL state through `useSearchParams` and the native History API, manages TanStack Query pagination/filter caching, prefetches adjacent pages, manages rename/archive/delete dialog state, and composes `PageHeader`, summary cards, tabs, toolbar, table, and pagination. Successful dialog actions invalidate the browser Documents Library query family; server routes independently invalidate Next.js cache tags.
 
 **Used on:**
 
@@ -2038,8 +2038,10 @@ Passes data from server page; no unique structural classes — uses PageShell la
 
 **Rules:**
 
-- All filter/search/sort/page changes update URL params and reset page to 1 where appropriate.
-- Dialog success triggers `router.refresh()` for fresh server data.
+- All filter/search/sort/page changes update URL params with `window.history.pushState()` and reset page to 1 where appropriate.
+- Table query keys include every normalized URL dimension and stay fresh for five minutes.
+- Pagination retains previous rows while uncached data loads and prefetches adjacent pages.
+- Dialog success invalidates the browser `documents-library` query family.
 - Contains `NewDocumentDropdown` for the header primary action.
 
 ---

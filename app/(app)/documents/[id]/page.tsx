@@ -1,12 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
-import { getDocumentForUser } from "@/lib/documents/document.service";
-import { listDocumentSuggestions } from "@/lib/suggestions/suggestions.service";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCachedDocumentEditorData } from "@/lib/cache/workspace-cache";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { getDocumentIngestion } from "@/lib/ingestion/ingestion.service";
-import { listDocumentAIActionRuns } from "@/lib/ai/ai.service";
+
+export const unstable_dynamicStaleTime = 60;
 
 type DocumentEditorPageProps = {
   params: Promise<{ id: string }>;
@@ -30,17 +29,12 @@ export default async function DocumentEditorPage({
     );
   }
 
-  const document = await getDocumentForUser(userId, id);
+  const { document, initialSuggestions, initialAIActionRuns } =
+    await getCachedDocumentEditorData(userId, id);
 
   if (!document) {
     notFound();
   }
-
-  const supabase = createSupabaseServerClient();
-  const [initialSuggestions, initialAIActionRuns] = await Promise.all([
-    listDocumentSuggestions(supabase, userId, id),
-    listDocumentAIActionRuns(supabase, userId, id),
-  ]);
 
   return (
     <EditorWorkspace

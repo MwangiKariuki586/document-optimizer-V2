@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { generateDocumentExport } from "@/lib/export/export.service";
 import { createExportSchema } from "@/lib/export/export.validators";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/export]", error);

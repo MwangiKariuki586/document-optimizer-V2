@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
 import { createSuggestionSelectionSchema } from "@/lib/suggestions/suggestions.validators";
 import {
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, parsedParams.data.id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/suggestions/apply-all]", error);

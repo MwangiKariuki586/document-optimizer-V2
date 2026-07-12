@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { renameDocument } from "@/lib/documents/documents-library.service";
 import { documentIdParamSchema, documentTitleSchema } from "@/lib/documents/document.validators";
 import { z } from "zod";
@@ -68,6 +69,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error("[api/documents/[id]/rename]", error);

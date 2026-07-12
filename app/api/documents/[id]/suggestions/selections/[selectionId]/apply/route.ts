@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import {
   applySelectedSuggestions,
   SuggestionReplacementError,
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
+    invalidateDocumentCache(userId, parsed.data.id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error(

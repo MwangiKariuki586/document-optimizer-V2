@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import {
+  invalidateDocumentCache,
+  invalidateWorkspaceCache,
+} from "@/lib/cache/workspace-cache";
 import { initializeDocumentUpload } from "@/lib/ingestion/ingestion.service";
 import { initializeUploadSchema } from "@/lib/ingestion/ingestion.validators";
 import {
@@ -38,6 +42,11 @@ export async function POST(req: NextRequest) {
       idempotencyKey: parsed.data.idempotencyKey,
       duplicateDecision: parsed.data.duplicateDecision,
     });
+    if (result.documentId) {
+      invalidateDocumentCache(userId, result.documentId);
+    } else {
+      invalidateWorkspaceCache(userId);
+    }
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {
     console.error("[api/uploads/init]", error);

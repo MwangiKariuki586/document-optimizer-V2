@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
+import {
+  getCachedDocumentsLibrary,
+  invalidateDocumentCache,
+} from "@/lib/cache/workspace-cache";
 import { createPasteDocument } from "@/lib/documents/document.service";
+import { parseDocumentsLibraryQuery } from "@/lib/documents/documents-library.query";
 import { createPasteDocumentSchema } from "@/lib/documents/document.validators";
 import {
   enforceRateLimitPreset,
@@ -9,6 +14,32 @@ import {
 import { rateLimitResponse } from "@/lib/rate-limit/route-response";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CreatedDocument } from "@/lib/documents/document.types";
+
+export async function GET(req: NextRequest) {
+  try {
+    const userId = await getAuthenticatedUserId();
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "You must be signed in to do that." },
+        { status: 401 },
+      );
+    }
+
+    const query = parseDocumentsLibraryQuery(
+      (key) => req.nextUrl.searchParams.get(key) ?? undefined,
+    );
+    const data = await getCachedDocumentsLibrary({ userId, ...query });
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error("[api/documents/list]", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to load documents." },
+      { status: 500 },
+    );
+  }
+}
 
 function getSourceType(body: unknown): string {
   if (body && typeof body === "object" && "sourceType" in body) {
@@ -72,6 +103,7 @@ export async function POST(req: NextRequest) {
         title: parsed.data.title,
         content: parsed.data.content,
       });
+      invalidateDocumentCache(userId, document.id);
     } else {
       return NextResponse.json(
         { success: false, error: "Unsupported document source." },

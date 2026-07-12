@@ -228,6 +228,52 @@ concurrency guard and are not replaced by request rate limits. Ingestion status
 polling is intentionally not rate-limited in the first release so processing UI
 refreshes keep working.
 
+### Protected Read Caching
+
+Read-heavy protected workspace pages cache their Supabase-backed service
+results on the server with Next.js `unstable_cache`. Cached private data must
+always include the authenticated Clerk `userId` in the cache key and tag.
+
+```txt
+Protected page resolves Clerk user
+        â†“
+Page calls cached workspace loader
+        â†“
+Cache key includes userId and all request filters
+        â†“
+Cache hit returns the prior service result
+        â†“
+Successful mutations revalidate the user's workspace tags
+```
+
+The current cached surfaces are `/dashboard`, `/documents`, and
+`/documents/[id]`. Dashboard cache entries use `workspace:{userId}` and
+`dashboard:{userId}` tags. Documents Library cache entries use
+`workspace:{userId}` and `documents-library:{userId}` tags, and their keys
+include page, page size, search, status, type, fidelity, sort, and tab.
+Document editor cache entries use `workspace:{userId}`,
+`documents-library:{userId}`, and `document-editor:{userId}:{documentId}` tags.
+The document editor keeps ingestion status checks live, then caches the stable
+document, suggestions, and AI action history payload. Dashboard and document
+editor data revalidate after 60 seconds; the less volatile Documents Library
+revalidates after 300 seconds. Each protected page uses the matching
+`unstable_dynamicStaleTime` so repeated client-side navigation can reuse the App
+Router cache. Successful document, upload, AI, suggestion, version, and
+export mutations invalidate the affected user's workspace cache and, when a
+document id is known, the affected document editor cache after the domain
+service succeeds. Ingestion status polling remains uncached.
+
+The Documents Library adds a browser cache above the server cache using
+TanStack Query. The server-rendered first result is dehydrated into the browser
+query cache. Pagination, filtering, search, tabs, and sorting update the URL
+with the native History API, then fetch `GET /api/documents`; they do not trigger
+an App Router RSC navigation. Browser query keys include every normalized table
+dimension, remain fresh for 300 seconds, retain previous rows while another page
+loads, and prefetch adjacent pages. The API route authenticates with Clerk and
+calls `getCachedDocumentsLibrary()`, so the existing Next.js cache remains the
+only layer that reads Supabase. Successful library mutations invalidate both the
+server tags in the route and the browser `documents-library` query family.
+
 ### Document Creation
 
 ```txt

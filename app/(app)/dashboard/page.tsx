@@ -16,12 +16,14 @@ import { UsageSummary } from "@/components/dashboard/UsageSummary";
 import { InlineAlert } from "@/components/feedback/InlineAlert";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageShell } from "@/components/layout/PageShell";
+import { getCachedDashboardData } from "@/lib/cache/workspace-cache";
 import {
-  getDashboardData,
   getEmptyDashboardData,
   type DashboardData,
 } from "@/lib/dashboard/dashboard.service";
 import { newDocumentHref } from "@/lib/documents/new-document.routes";
+
+export const unstable_dynamicStaleTime = 60;
 
 const quickActions = [
   {
@@ -72,7 +74,7 @@ async function loadDashboardData(userId: string): Promise<{
 }> {
   try {
     return {
-      data: await getDashboardData(userId),
+      data: await getCachedDashboardData(userId),
       error: null,
     };
   } catch (error) {

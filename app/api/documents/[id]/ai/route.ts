@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { runDocumentAIAction } from "@/lib/ai/ai.service";
 import { runAIActionRequestSchema } from "@/lib/ai/ai.validators";
+import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
 import {
   enforceRateLimitPreset,
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       hasRevisedMarkdown: Boolean(result.result.output.revisedMarkdown),
     });
 
+    invalidateDocumentCache(userId, id);
     const response = NextResponse.json({
       success: true,
       data: {

@@ -314,6 +314,7 @@ export function EditorWorkspace({
       }
 
       setSaveState("saved");
+      router.refresh();
       appToast.success("Document saved.");
     } catch {
       setSaveState("dirty");
@@ -354,6 +355,7 @@ export function EditorWorkspace({
         setVersionNumber(data.data.versionNumber);
       }
       setSaveState("saved");
+      router.refresh();
       appToast.success("Version saved.");
     } catch {
       appToast.error("Could not save a version. Please try again.");
@@ -450,6 +452,8 @@ export function EditorWorkspace({
       setRightPanel("ai-actions");
       appToast.success("AI result is ready for review.");
     }
+
+    router.refresh();
 
     return {
       id: data.data.id,
@@ -701,6 +705,7 @@ export function EditorWorkspace({
           ),
         );
       }
+      router.refresh();
       appToast.success("Suggestion applied. Your rollback point is preserved.");
     } catch {
       if (appliedOptimistically) {
@@ -800,6 +805,7 @@ export function EditorWorkspace({
       }
 
       appToast.info("Suggestion ignored.");
+      router.refresh();
     } catch {
       setSuggestions((current) =>
         current.map((suggestion) =>
@@ -862,6 +868,7 @@ export function EditorWorkspace({
             : suggestion,
         ),
       );
+      router.refresh();
       appToast.success(
         `${data.data.appliedCount} suggestions applied. A version snapshot was created first.`,
       );
