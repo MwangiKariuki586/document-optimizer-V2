@@ -130,8 +130,8 @@ function UsageByCategory({
   const categories = categoriesByRange[selectedRange];
 
   return (
-    <section className="flex h-full min-h-[500px] flex-col rounded-2xl border border-border bg-surface px-6 py-4 shadow-card-soft">
-      <div className="flex items-center justify-between gap-4">
+    <section className="flex h-full flex-col rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft sm:min-h-[500px] sm:px-6">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold leading-8 text-text-primary">
           Usage by category
         </h2>
@@ -142,7 +142,7 @@ function UsageByCategory({
         />
       </div>
 
-      <div className="mt-8 grid flex-1 gap-8 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center">
+      <div className="mt-6 grid flex-1 gap-6 sm:mt-8 sm:grid-cols-[minmax(0,1fr)_160px] sm:items-center sm:gap-8">
         <div className="space-y-6">
           {categories.map((item) => (
             <div key={item.label}>
@@ -264,8 +264,8 @@ function HealthScore({
   const health = healthByRange[selectedRange];
 
   return (
-    <section className="flex h-full min-h-[500px] flex-col rounded-2xl border border-border bg-surface px-6 py-4 shadow-card-soft">
-      <div className="flex items-center justify-between gap-4">
+    <section className="flex h-full flex-col rounded-xl border border-border bg-surface px-4 py-4 shadow-card-soft sm:min-h-[500px] sm:px-6">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold leading-8 text-text-primary">
           Document Readiness
         </h2>
@@ -277,7 +277,7 @@ function HealthScore({
       </div>
 
       <div className="mt-7 grid flex-1 gap-6 sm:grid-cols-[144px_minmax(0,1fr)] sm:items-center">
-        <div className="flex size-36 items-center justify-center rounded-full bg-[conic-gradient(var(--color-success)_0_28%,var(--color-accent)_28%_86%,var(--color-accent-light)_86%_100%)] p-4">
+        <div className="mx-auto flex size-36 items-center justify-center rounded-full bg-[conic-gradient(var(--color-success)_0_28%,var(--color-accent)_28%_86%,var(--color-accent-light)_86%_100%)] p-4 sm:mx-0">
           <div className="flex size-full  items-center justify-center rounded-full bg-surface">
             <span className="text-3xl font-bold text-text-primary">
               {health.score}

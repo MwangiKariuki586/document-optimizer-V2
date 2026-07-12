@@ -230,7 +230,7 @@ export function ExportWorkspace({
           />
         </div>
 
-        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)]">
+        <div className="grid min-h-0 gap-3 xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden">
           {!isExportReady ? (
             <div className="xl:col-span-2">
               <h2 className="text-sm font-semibold text-text-primary">

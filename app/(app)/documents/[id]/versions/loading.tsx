@@ -8,7 +8,7 @@ export default function DocumentVersionsLoading() {
       aria-label="Loading version history"
     >
       <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden">
-        <div className="flex min-h-0 flex-col gap-3 overflow-hidden xl:h-full">
+        <div className="flex min-h-0 flex-col gap-3 xl:h-full xl:overflow-hidden">
           <div className="flex shrink-0 flex-col gap-2 rounded-xl">
             <PageHeader
               eyebrow="Versions"
@@ -31,7 +31,7 @@ export default function DocumentVersionsLoading() {
             </div>
           </div>
 
-          <div className="grid min-h-[560px] flex-1 gap-3 overflow-hidden lg:grid-cols-[240px_minmax(0,1fr)] xl:min-h-0 xl:grid-cols-[240px_minmax(0,1fr)_288px]">
+          <div className="grid min-h-[560px] flex-1 gap-3 lg:grid-cols-[240px_minmax(0,1fr)] xl:min-h-0 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl:overflow-hidden">
             <aside className="rounded-xl border border-border bg-surface p-3 shadow-card-soft">
               <div className="h-5 w-28 animate-pulse rounded bg-surface-tertiary" />
               <div className="mt-4 space-y-3">

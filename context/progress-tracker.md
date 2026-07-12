@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 13 - Progressive Onboarding
-**Last completed:** Persistent onboarding toast Sonner action fix with regression coverage
-**Next:** Browser-verify the progressive onboarding first-user, route-guide, dismissal, and replay journeys
+**Phase:** Phase 14 - Responsive Hardening
+**Last completed:** Shared navigation and core workspace responsive hardening
+**Next:** Browser-verify public and authenticated routes at 360px, 768px, 1024px, and 1440px; fix evidence-backed residual issues
 
 ---
 
@@ -98,6 +98,11 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 43 Progressive Onboarding Application Layer
 - [ ] 44 Apply Onboarding Migration and Browser Verification (migration and route-guide coverage complete; browser verification pending)
 
+### Phase 14 - Responsive Hardening
+
+- [x] 45 Shared Navigation and Core Workspace Responsive Pass
+- [ ] 46 Cross-Route Viewport Verification and Residual Fixes
+
 ---
 
 ## Decisions Made During Build
@@ -141,6 +146,16 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-12
+Feature: Shared navigation and core workspace responsive hardening
+Status: Code-level implementation complete; cross-route browser verification pending
+Files changed: components/layout/PublicNavbar.tsx, components/layout/AppSidebar.tsx, app/(app)/layout.tsx, components/onboarding/ProgressiveOnboarding.tsx, components/documents/DocumentsLibraryWorkspace.tsx, components/documents/DocumentsToolbar.tsx, components/documents/DocumentsPagination.tsx, components/usage/AccountUsageWorkspace.tsx, components/dashboard/RecentDocuments.tsx, components/dashboard/RecentActivity.tsx, components/dashboard/SuggestionsReady.tsx, components/dashboard/UsageSummary.tsx, document workspace and loading overflow files, context/architecture.md, context/ui-rules.md, context/ui-registry.md, context/progress-tracker.md
+What was completed: Added a mobile public navigation menu; replaced the authenticated desktop rail below `md` with safe-area-aware bottom navigation; preserved contextual Editor, Versions, and Export destinations; reserved matching mobile content space; moved the onboarding replay control clear of navigation; exposed all Documents filters in a responsive grid; simplified phone pagination; reduced mobile panel padding; removed forced phone heights and nested scrolling from Dashboard and Account panels; and scoped document workspace/loading hidden-overflow behavior to the `xl` single-viewport layout so phone and tablet content scroll normally.
+Verification: `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with six existing warnings. `npm.cmd test` passed 35 files / 181 tests. `npm.cmd run build` passed on Next.js 16.2.7. `git diff --check` passed.
+Follow-up: Visually verify homepage, login, dashboard, documents, creation, editor, preview, versions, export, account, dialogs, menus, loading states, and onboarding toasts at 360x800, 768x1024, 1024x768, and 1440x900. Check horizontal overflow, bottom-nav occlusion, menu reachability, focus order, touch targets, sticky/fixed collisions, and virtual-keyboard behavior.
+```
 
 ```txt
 Date: 2026-07-12

@@ -553,6 +553,10 @@ Rules:
 - Collapse nav into a clean menu
 - Editor canvas comes before AI/supporting panels
 - Avoid tiny sidebars or cramped panels
+- Below `md`, replace the authenticated sidebar with the safe-area-aware bottom navigation; do not reserve desktop rail width.
+- Below `xl`, document workspaces use normal page scrolling. Scope hidden outer overflow and internal pane scrolling to the desktop single-viewport layout.
+- Do not hide functional filters on narrow screens; reflow them into a compact grid instead.
+- Avoid nested scrolling for dashboard cards on phones; use natural-height panels and enable internal card scrolling from `sm` where needed.
 
 ---
 

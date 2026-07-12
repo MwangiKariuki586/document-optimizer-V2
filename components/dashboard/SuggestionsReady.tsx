@@ -32,7 +32,7 @@ export function SuggestionsReady({ suggestions }: SuggestionsReadyProps) {
   const visibleSuggestions = suggestions.slice(0, 3);
 
   return (
-    <section className="flex h-[280px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
+    <section className="flex min-h-[280px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:h-[280px] sm:p-6">
       <div className="flex shrink-0 items-center justify-between gap-4">
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Suggestions Ready
@@ -42,7 +42,7 @@ export function SuggestionsReady({ suggestions }: SuggestionsReadyProps) {
         </span>
       </div>
       {suggestionCount > 0 ? (
-        <div className="scrollbar-hidden mt-4 min-h-0 flex-1 divide-y divide-border-light overflow-y-auto pb-2">
+        <div className="mt-4 min-h-0 flex-1 divide-y divide-border-light pb-2 sm:scrollbar-hidden sm:overflow-y-auto">
           {visibleSuggestions.map(
             ({ documentTitle, impact, kind, title, variant }) => {
               const Icon = suggestionIcons[kind];

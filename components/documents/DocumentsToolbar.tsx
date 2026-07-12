@@ -56,7 +56,7 @@ const SORT_OPTIONS = [
 ];
 
 const selectClass =
-  "h-9 appearance-none rounded-md border border-border bg-surface py-1.5 pl-3 pr-8 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent";
+  "h-9 w-full appearance-none rounded-md border border-border bg-surface py-1.5 pl-3 pr-8 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent";
 
 export function DocumentsToolbar({
   search,
@@ -91,9 +91,9 @@ export function DocumentsToolbar({
   }, [localSearch]);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center">
       {/* Search */}
-      <div className="relative flex min-w-0 flex-1 items-center">
+      <div className="relative col-span-2 flex min-w-0 items-center lg:flex-1">
         <Search className="pointer-events-none absolute left-3 size-4 text-text-muted" />
         <input
           type="search"
@@ -121,7 +121,7 @@ export function DocumentsToolbar({
       </div>
 
       {/* Status filter */}
-      <div className="relative">
+      <div className="relative min-w-0 lg:min-w-[132px]">
         <select
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
@@ -140,7 +140,7 @@ export function DocumentsToolbar({
       </div>
 
       {/* Type filter */}
-      <div className="relative">
+      <div className="relative min-w-0 lg:min-w-[112px]">
         <select
           value={type}
           onChange={(e) => onTypeChange(e.target.value)}
@@ -159,7 +159,7 @@ export function DocumentsToolbar({
       </div>
 
       {/* Fidelity filter */}
-      <div className="relative hidden xl:block">
+      <div className="relative col-span-2 min-w-0 sm:col-span-1 lg:min-w-[170px]">
         <select
           value={fidelity}
           onChange={(e) => onFidelityChange(e.target.value)}
@@ -178,7 +178,7 @@ export function DocumentsToolbar({
       </div>
 
       {/* Sort */}
-      <div className="relative">
+      <div className="relative min-w-0 lg:min-w-[132px]">
         <select
           value={sort}
           onChange={(e) => onSortChange(e.target.value)}
@@ -201,7 +201,7 @@ export function DocumentsToolbar({
         <button
           type="button"
           onClick={onClearFilters}
-          className="flex h-9 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary"
+          className="col-span-2 flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary sm:col-span-1 lg:col-span-1"
         >
           <X className="size-3.5" />
           Clear

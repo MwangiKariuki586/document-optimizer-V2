@@ -276,7 +276,7 @@ export function DocumentsLibraryWorkspace() {
       {data ? <DocumentsSummaryCards summary={data.summary} /> : null}
 
       {/* Tabs + toolbar + table */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-card-soft">
+      <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-3 shadow-card-soft sm:p-5">
         <DocumentsTabs
           activeTab={currentTab}
           counts={data?.tabCounts ?? {

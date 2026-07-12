@@ -176,7 +176,7 @@ export function UsageSummary({
 
   return (
     <aside className={`min-w-0 space-y-6 ${className ?? ""}`}>
-      <section className="flex h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
+      <section className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:h-[420px] sm:p-6">
         <div className="flex shrink-0 items-center justify-between gap-4">
           <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Usage Overview
@@ -226,7 +226,7 @@ export function UsageSummary({
         </div>
       </section>
 
-      <section className="flex h-[300px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
+      <section className="flex min-h-[300px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:h-[300px] sm:p-6">
         <h2 className="text-lg font-semibold leading-7 text-text-primary">
           Exports by Format
         </h2>

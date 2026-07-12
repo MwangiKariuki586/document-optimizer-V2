@@ -88,8 +88,8 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
   const visibleDocuments = documents.slice(0, 5);
 
   return (
-    <section className="flex h-[360px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface px-6 pt-6 pb-6 shadow-card-soft">
-      <div className="flex shrink-0 items-center justify-between gap-4">
+    <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface p-4 shadow-card-soft sm:h-[360px] sm:p-6">
+      <div className="flex shrink-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
           <h2 className="text-lg font-semibold leading-7 text-text-primary">
             Recent Documents
@@ -128,7 +128,7 @@ export function RecentDocuments({ documents }: RecentDocumentsProps) {
         </div>
       ) : (
         <>
-          <div className="scrollbar-hidden mt-5 min-h-0 flex-1 space-y-3 overflow-y-auto pb-2 md:hidden">
+          <div className="mt-5 min-h-0 flex-1 space-y-3 pb-2 md:hidden">
             {visibleDocuments.map((document) => (
               <Link
                 key={document.id}

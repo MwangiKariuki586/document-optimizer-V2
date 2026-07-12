@@ -16,7 +16,7 @@ export default function DocumentExportLoading() {
           />
         </div>
 
-        <div className="grid min-h-0 gap-3 overflow-hidden xl:h-full xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid min-h-0 gap-3 xl:h-full xl:grid-cols-[minmax(0,1fr)_320px] xl:overflow-hidden">
           <section className="min-h-0 overflow-y-auto rounded-xl">
             <div className="h-4 w-44 animate-pulse rounded bg-surface-tertiary" />
 

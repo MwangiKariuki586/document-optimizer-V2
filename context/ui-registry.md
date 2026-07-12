@@ -176,7 +176,8 @@ className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between rou
 
 **Variants:**
 
-- None
+- Desktop inline navigation at `md` and above.
+- Mobile button-controlled menu containing section links, login, and Get Started.
 
 **Rules:**
 
@@ -244,6 +245,7 @@ className="flex items-center gap-3 rounded-md px-3 py-2"
 
 - Collapsed rail - 64px icon-only navigation with accessible labels and tooltips.
 - Expanded rail - 224px text navigation with section labels.
+- Mobile bottom navigation - replaces the sidebar below `md`, includes safe-area padding, and preserves primary plus current-document destinations.
 - Document context - shows Editor, Versions, and Export links when the current route is a document workspace.
 - Clerk enabled - shows Clerk `UserButton` for signed-in users.
 - Clerk missing - shows a fallback account avatar.
@@ -252,6 +254,8 @@ className="flex items-center gap-3 rounded-md px-3 py-2"
 
 - Used by `app/(app)/layout.tsx`; all authenticated gated pages inherit it.
 - Collapsed is the default state.
+- Hide the desktop rail below `md`; never squeeze it into a phone viewport.
+- Mobile app content reserves the bottom-navigation height plus device safe area.
 - Active item uses `text-accent`.
 - `/documents` is the Documents Library and is a primary navigation target in the sidebar.
 - Do not add a second persistent page-level navigation rail inside authenticated pages.

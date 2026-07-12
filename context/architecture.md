@@ -870,3 +870,20 @@ Route-specific first-visit tips cover the preview, version history, export, and
 account workspaces independently of milestone stage, while the shell still
 renders at most one onboarding surface at a time.
 Onboarding fetch/update failures must never block core product workflows.
+
+### Responsive Shell Contract
+
+Authenticated navigation uses the collapsed sidebar at `md` and above. Below
+`md`, the desktop rail is removed from layout and replaced by a safe-area-aware
+fixed bottom navigation. General routes expose Dashboard, Documents, New
+Document, and Account; document routes expose Documents, Editor, New Document,
+Versions, and Export. The content column reserves matching bottom space only on
+mobile.
+
+Public navigation uses the full inline navigation at `md` and above and a
+button-controlled menu below `md`. Mobile menus preserve every homepage section
+plus login and Get Started actions.
+
+Editor, preview, versions, and export workspaces use normal page scrolling below
+`xl`. Height caps, hidden outer overflow, and internal pane scrolling apply only
+from `xl`, where the single-viewport desktop workspace is active.

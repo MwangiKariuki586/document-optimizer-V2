@@ -58,18 +58,18 @@ export function DocumentsPagination({
         {" "}documents
       </p>
 
-      <nav aria-label="Pagination" className="flex items-center gap-1">
+      <nav aria-label="Pagination" className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
         <button
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Previous page"
         >
           Previous
         </button>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden items-center gap-1 sm:flex">
           {pageNumbers.map((p, idx) =>
             p === "…" ? (
               <span
@@ -101,7 +101,7 @@ export function DocumentsPagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-9 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Next page"
         >
           Next

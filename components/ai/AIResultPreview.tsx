@@ -254,7 +254,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
               </div>
             </div>
 
-            <aside className="grid min-h-0 min-w-0 gap-3 overflow-hidden rounded-xl bg-accent-muted xl:flex xl:h-full xl:flex-col">
+            <aside className="grid min-h-0 min-w-0 gap-3 rounded-xl bg-accent-muted xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
               <section className="rounded-xl border border-border-light bg-surface p-3">
                 <button
                   type="button"

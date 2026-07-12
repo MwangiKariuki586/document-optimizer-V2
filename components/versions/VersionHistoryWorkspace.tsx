@@ -177,7 +177,7 @@ export function VersionHistoryWorkspace({
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
       <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden">
-        <div className="flex min-h-0 flex-col gap-3 overflow-hidden xl:h-full">
+        <div className="flex min-h-0 flex-col gap-3 xl:h-full xl:overflow-hidden">
           <div className="flex shrink-0 flex-col gap-2 rounded-xl ">
             <PageHeader
               eyebrow="Versions"
@@ -253,9 +253,9 @@ export function VersionHistoryWorkspace({
               />
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 xl:overflow-hidden">
               <div
-                className={`grid min-h-0 flex-1 gap-3 overflow-hidden ${
+                className={`grid min-h-0 flex-1 gap-3 xl:overflow-hidden ${
                   showDetailsPanel
                     ? "xl:grid-cols-[240px_minmax(0,1fr)_288px]"
                     : "lg:grid-cols-[240px_minmax(0,1fr)]"

@@ -159,6 +159,30 @@ function SidebarAccountName() {
   );
 }
 
+function MobileNavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const Icon = item.icon;
+  const isActive = item.match ? item.match(pathname) : pathname === item.href;
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={isActive ? "page" : undefined}
+      className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium transition ${
+        isActive ? "text-accent" : "text-text-muted hover:text-text-primary"
+      }`}
+    >
+      <span
+        className={`flex size-8 items-center justify-center rounded-md ${
+          isActive ? "bg-accent-light" : ""
+        }`}
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="max-w-full truncate">{item.label}</span>
+    </Link>
+  );
+}
+
 export function AppSidebar({ hasClerk }: AppSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(true);
@@ -193,9 +217,14 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
     [documentId],
   );
 
+  const mobileItems = documentId
+    ? [primaryItems[1], ...documentItems.slice(0, 1), primaryItems[2], ...documentItems.slice(1)]
+    : primaryItems;
+
   return (
-    <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-border-light bg-background-soft px-3 py-3 transition-[width] ${
+    <>
+      <aside
+      className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border-light bg-background-soft px-3 py-3 transition-[width] md:flex ${
         collapsed ? "w-[64px] items-center" : "w-[254px]"
       }`}
       aria-label="Workspace navigation"
@@ -326,6 +355,16 @@ export function AppSidebar({ hasClerk }: AppSidebarProps) {
           </Link>
         )}
       </div>
-    </aside>
+      </aside>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 flex min-h-16 items-stretch border-t border-border bg-surface px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_18px_rgba(23,19,33,0.08)] md:hidden"
+        aria-label="Mobile workspace navigation"
+      >
+        {mobileItems.map((item) => (
+          <MobileNavLink key={item.href} item={item} pathname={pathname} />
+        ))}
+      </nav>
+    </>
   );
 }
