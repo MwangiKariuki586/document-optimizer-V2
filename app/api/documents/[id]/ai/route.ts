@@ -5,6 +5,7 @@ import { runDocumentAIAction } from "@/lib/ai/ai.service";
 import { runAIActionRequestSchema } from "@/lib/ai/ai.validators";
 import { invalidateDocumentCache } from "@/lib/cache/workspace-cache";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
+import { devLog } from "@/lib/logging/dev-log";
 import {
   enforceRateLimitPreset,
   RateLimitExceededError,
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       documentId: id,
     });
 
-    console.log("[api/documents/[id]/ai] request", {
+    devLog("api/documents/[id]/ai", "request", {
       documentId: id,
       action: parsed.data.action,
       contentLength: parsed.data.contentMarkdown.length,
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     }
 
     if (result.status === "failed") {
-      console.log("[api/documents/[id]/ai] failed", {
+      devLog("api/documents/[id]/ai", "failed", {
         documentId: id,
         requestId: result.id,
       });
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    console.log("[api/documents/[id]/ai] completed", {
+    devLog("api/documents/[id]/ai", "completed", {
       documentId: id,
       requestId: result.id,
       mode: result.result.mode,

@@ -32,6 +32,7 @@ import type {
   SuggestionType,
 } from "@/lib/suggestions/suggestions.types";
 import type { Database, Json, TablesInsert } from "@/lib/supabase/types";
+import { devLog } from "@/lib/logging/dev-log";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import {
   getOrCreateMutationSnapshot,
@@ -520,7 +521,7 @@ export async function saveSuggestionsFromAIResult(
     rejectedSuggestions[reason] = (rejectedSuggestions[reason] ?? 0) + 1;
   };
 
-  console.log("[suggestions/save-from-ai] input", {
+  devLog("suggestions/save-from-ai", "input", {
     documentId: input.documentId,
     aiRequestId: input.aiRequestId,
     action: input.action,
@@ -534,7 +535,7 @@ export async function saveSuggestionsFromAIResult(
     input.action === "summarize_shorten" ||
     input.action === "translate_document"
   ) {
-    console.log("[suggestions/save-from-ai] skipping result-only action", {
+    devLog("suggestions/save-from-ai", "skipping result-only action", {
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
@@ -551,7 +552,7 @@ export async function saveSuggestionsFromAIResult(
       input.output.structureChangeLevel === "major" ||
       input.output.mode === "preview")
   ) {
-    console.log("[suggestions/save-from-ai] skipping major structure result", {
+    devLog("suggestions/save-from-ai", "skipping major structure result", {
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
@@ -627,7 +628,7 @@ export async function saveSuggestionsFromAIResult(
     originalMarkdown &&
     SUGGESTION_FRIENDLY_ACTIONS.has(input.action)
   ) {
-    console.log("[suggestions/save-from-ai] using fallback suggestion", {
+    devLog("suggestions/save-from-ai", "using fallback suggestion", {
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
@@ -647,7 +648,7 @@ export async function saveSuggestionsFromAIResult(
   }
 
   if (rows.length === 0) {
-    console.log("[suggestions/save-from-ai] no rows to insert", {
+    devLog("suggestions/save-from-ai", "no rows to insert", {
       documentId: input.documentId,
       aiRequestId: input.aiRequestId,
       action: input.action,
@@ -673,7 +674,7 @@ export async function saveSuggestionsFromAIResult(
     .map(mapSuggestionRow)
     .filter((row): row is DocumentSuggestion => row !== null);
 
-  console.log("[suggestions/save-from-ai] inserted", {
+  devLog("suggestions/save-from-ai", "inserted", {
     documentId: input.documentId,
     aiRequestId: input.aiRequestId,
     count: saved.length,

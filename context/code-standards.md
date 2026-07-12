@@ -608,6 +608,11 @@ Rules:
 
 - Never use empty catch blocks
 - Always log errors with a clear context prefix
+- Route/service success and diagnostic traces must use `devLog(scope, event, fields)` and are development-only.
+- Production must not emit normal request, AI timing, or suggestion-persistence success logs.
+- Production errors and operational warnings remain logged, but metadata must exclude document content, credentials, provider payloads, and raw SQL details.
+- Client Components must not call `console.log`, `console.info`, `console.warn`, or `console.error`. Show expected failures through toast, inline, or component error state; log unexpected failures at the authenticated server boundary.
+- Worker lifecycle logs and explicit benchmark scripts are operational/CLI output and are not routed through `devLog`.
 - User-facing errors must be human readable
 - Do not expose raw provider errors
 - Do not expose SQL errors

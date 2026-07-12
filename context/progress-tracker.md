@@ -7,7 +7,7 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 12 - Performance and Scalability
-**Last completed:** Documents Library browser query caching
+**Last completed:** Browser console error cleanup
 **Next:** Browser-verify cached table pagination/filter navigation and mutation refresh behavior
 
 ---
@@ -90,6 +90,8 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 38 Document Editor and Router Cache Coverage
 - [x] 39 Documents Library Cache Lifetime Tuning
 - [x] 40 Documents Library Browser Query Caching
+- [x] 41 Development-only Diagnostic Logging Cleanup
+- [x] 42 Browser Console Error Cleanup
 
 ---
 
@@ -134,6 +136,26 @@ _Add notes here as the build progresses: workarounds, patterns, anything that di
 ## Implementation Log
 
 _Add completed work notes here after each feature._
+
+```txt
+Date: 2026-07-12
+Feature: Browser console error cleanup
+Status: Completed
+Files changed: components/upload/UploadDropzone.tsx, components/upload/PasteTextForm.tsx, context/code-standards.md, context/progress-tracker.md
+What was completed: Removed the remaining application-owned console.error calls from Client Components. Upload and paste failures continue to use existing user-facing toast messages, while API and service failures remain logged at server boundaries. Added the standard that Client Components must not write application diagnostics to the browser console.
+Verification: Client Component source scan returned `NO_CLIENT_CONSOLE_CALLS`. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace.
+Follow-up: Browser-trigger upload and paste failures and confirm the toast remains visible without an application-owned console error.
+```
+
+```txt
+Date: 2026-07-12
+Feature: Development-only diagnostic logging cleanup
+Status: Completed
+Files changed: lib/logging/dev-log.ts, lib/logging/dev-log.test.ts, lib/ai/ai.service.ts, lib/suggestions/suggestions.service.ts, app/api/documents/[id]/ai/route.ts, app/api/documents/[id]/suggestions/route.ts, context/code-standards.md, context/library-docs.md, context/progress-tracker.md
+What was completed: Added a centralized devLog helper that suppresses normal diagnostic and success logs in production. Migrated verbose AI request lifecycle, provider timing, suggestion persistence, and suggestions route request/completion logs to the helper. Production error and warning logs remain available with existing safe context, while ingestion worker lifecycle JSON and explicit benchmark script output remain intentional.
+Verification: Focused logger, AI service, and suggestions service tests passed 20 tests. `npx.cmd tsc --noEmit` passed. `npm.cmd run lint` passed with existing unrelated warnings in LoginPanel, AppSidebar, Footer, PublicNavbar, and AccountUsageWorkspace. `npm.cmd test` passed 33 test files / 177 tests. `git diff --check` passed.
+Follow-up: Confirm the development server still shows AI and suggestion diagnostics, then production builds should emit no normal app/lib console.log or console.info output.
+```
 
 ```txt
 Date: 2026-07-12

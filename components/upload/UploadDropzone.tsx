@@ -210,7 +210,6 @@ export function UploadDropzone({ initialDocumentId }: { initialDocumentId?: stri
       await runDirectUpload(file, result.data.documentId, result.data.upload);
       idempotencyKeys.current.delete(checksumSha256);
     } catch (uploadError) {
-      console.error("[upload/create]", uploadError);
       const message = uploadError instanceof Error ? uploadError.message : "Something went wrong. Please try again.";
       appToast.error(message);
       setPhase("idle");

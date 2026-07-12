@@ -63,8 +63,7 @@ export function PasteTextForm() {
 
       appToast.success("Document created.");
       router.push(`/documents/${result.data.id}`);
-    } catch (error) {
-      console.error("[paste-document/create]", error);
+    } catch {
       appToast.error("Something went wrong. Please try again.");
       setIsSubmitting(false);
     }

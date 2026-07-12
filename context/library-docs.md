@@ -232,6 +232,17 @@ Next.js `useSearchParams` updates without an RSC navigation.
 
 ---
 
+## Development Logging
+
+Use `devLog(scope, event, fields)` from `lib/logging/dev-log.ts` for verbose
+request lifecycle, AI timing, suggestion persistence, and success diagnostics.
+It emits through `console.info` outside production and is a no-op when
+`NODE_ENV=production`. Keep production `console.error` and operational warnings
+limited to safe metadata so real incidents remain diagnosable. Worker lifecycle
+JSON and explicit benchmark-script output are intentional and remain separate.
+
+---
+
 ## Supabase
 
 Supabase is used for Postgres, private storage, RLS, and generated TypeScript types.

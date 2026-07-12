@@ -14,6 +14,7 @@ import type {
 import { aiActionSchema, parseAIActionOutput } from "@/lib/ai/ai.validators";
 import { markdownToEditorJson } from "@/lib/documents/markdown-to-editor";
 import { countWords } from "@/lib/documents/text-to-editor";
+import { devLog } from "@/lib/logging/dev-log";
 import { recordUsageEvent } from "@/lib/usage/usage.service";
 import type { Database, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
 import { saveSuggestionsFromAIResult } from "@/lib/suggestions/suggestions.service";
@@ -234,7 +235,7 @@ export async function runDocumentAIAction(
   }
 
   const requestId = await createAIRequest(supabase, input, document);
-  console.log("[ai/run-document-action] request created", {
+  devLog("ai/run-document-action", "request created", {
     documentId: input.documentId,
     requestId,
     action: input.action,
@@ -253,7 +254,7 @@ export async function runDocumentAIAction(
     const providerStartedAt = performance.now();
     const result = await runAIAction(aiInput);
     const providerDurationMs = Math.round(performance.now() - providerStartedAt);
-    console.log("[ai/run-document-action] provider response", {
+    devLog("ai/run-document-action", "provider response", {
       documentId: input.documentId,
       requestId,
       action: input.action,
@@ -287,7 +288,7 @@ export async function runDocumentAIAction(
       });
     }
 
-    console.log("[ai/run-document-action] suggestions saved", {
+    devLog("ai/run-document-action", "suggestions saved", {
       documentId: input.documentId,
       requestId,
       savedSuggestionCount: savedSuggestions.length,
@@ -309,7 +310,7 @@ export async function runDocumentAIAction(
       },
     });
 
-    console.log("[ai/run-document-action] completed", {
+    devLog("ai/run-document-action", "completed", {
       documentId: input.documentId,
       requestId,
       providerDurationMs,

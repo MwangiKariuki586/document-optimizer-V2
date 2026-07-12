@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getAuthenticatedUserId } from "@/lib/auth/clerk";
 import { listDocumentSuggestions } from "@/lib/suggestions/suggestions.service";
 import { documentIdParamSchema } from "@/lib/documents/document.validators";
+import { devLog } from "@/lib/logging/dev-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -35,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     const { id } = parsedParams.data;
     const supabase = createSupabaseServerClient();
-    console.log("[api/documents/[id]/suggestions] request", {
+    devLog("api/documents/[id]/suggestions", "request", {
       documentId: id,
     });
 
@@ -48,7 +49,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       );
     }
 
-    console.log("[api/documents/[id]/suggestions] completed", {
+    devLog("api/documents/[id]/suggestions", "completed", {
       documentId: id,
       count: suggestions.length,
     });
