@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/test-results
+/playwright/.auth
+/.playwright-mcp
+/*-editor-*.png
+/*-preview-*.png
 
 # next.js
 /.next/

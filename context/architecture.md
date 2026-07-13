@@ -887,3 +887,16 @@ plus login and Get Started actions.
 Editor, preview, versions, and export workspaces use normal page scrolling below
 `xl`. Height caps, hidden outer overflow, and internal pane scrolling apply only
 from `xl`, where the single-viewport desktop workspace is active.
+
+The editor keeps its 300px AI rail from `xl`; below `xl`, the same AI Actions
+and Suggestions content is mounted in a modal bottom sheet with focus
+management and body-scroll locking. Result preview switches to a single-pane
+Proposed/Current/Changes review surface below `lg`, remains side-by-side from
+`lg`, and allocates a desktop change-navigation rail only when change anchors
+exist. These layout changes do not alter document, AI, suggestion, version, or
+export service contracts.
+
+Result preview is a review-and-export surface: it keeps a single back-to-editor
+control in the header and an Export action below the internally scrolling
+document pane. Copy and direct Apply controls are intentionally not exposed in
+this workspace.

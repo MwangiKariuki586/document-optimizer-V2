@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronDown, TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ChevronDown, TriangleAlert } from "lucide-react";
 
 import { ChangeNavigator } from "@/components/ai/ChangeNavigator";
 import type { PreviewChangeAnchor } from "@/components/ai/ChangeNavigator";
@@ -31,6 +32,7 @@ type AIResultPreviewProps = {
 };
 
 type SuggestionType = ChangeSummaryType;
+type ReviewTab = "proposed" | "current" | "changes";
 
 const suggestionLabels: Record<SuggestionType, string> = {
   clarity: "Clarity",
@@ -97,7 +99,21 @@ function getPreviewModeLabel(mode: PreviewMode): string {
     return "Side-by-side";
   }
 
-  return "Proposed only";
+  return mode === "current-only" ? "Current only" : "Proposed only";
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, [query]);
+
+  return matches;
 }
 
 function normalizePreview(preview: PreviewPayload) {
@@ -122,7 +138,6 @@ function normalizePreview(preview: PreviewPayload) {
       kind: preview.kind,
       id: data.id,
       documentId: data.documentId,
-      documentTitle: data.documentTitle,
       sourceLabel: `AI request ${data.id.slice(0, 8)}`,
       statusLabel: "Result ready",
       title,
@@ -136,7 +151,6 @@ function normalizePreview(preview: PreviewPayload) {
       summary: data.output.summary,
       warnings: data.output.warnings,
       suggestions: data.output.suggestions,
-      resultMode,
       usageLabel: `${data.provider ?? "AI"} ${data.model ?? "model"} - ${
         (data.inputTokens ?? 0) + (data.outputTokens ?? 0)
       } tokens`,
@@ -151,7 +165,6 @@ function normalizePreview(preview: PreviewPayload) {
     kind: preview.kind,
     id: data.id,
     documentId: data.documentId,
-    documentTitle: data.documentTitle,
     sourceLabel: isAppliedReview
       ? "Applied suggestions"
       : isSingle
@@ -179,7 +192,6 @@ function normalizePreview(preview: PreviewPayload) {
     summary: data.summary,
     warnings: data.warnings,
     suggestions: data.suggestions,
-    resultMode: undefined,
     usageLabel: `${data.suggestions.length} suggestion${
       data.suggestions.length === 1 ? "" : "s"
     } ready for review`,
@@ -192,6 +204,8 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
   const [syncScroll, setSyncScroll] = useState(true);
   const [comparisonSettingsOpen, setComparisonSettingsOpen] = useState(false);
   const [activeChangeId, setActiveChangeId] = useState<string | null>(null);
+  const [reviewTab, setReviewTab] = useState<ReviewTab>("proposed");
+  const isWideComparison = useMediaQuery("(min-width: 1024px)");
 
   const changeAnchors = useMemo(
     () =>
@@ -207,12 +221,28 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
     changeAnchors.some((change) => change.id === activeChangeId)
       ? activeChangeId
       : (changeAnchors[0]?.id ?? null);
+  const hasChanges = changeAnchors.length > 0;
+  const effectivePreviewMode: PreviewMode = isWideComparison
+    ? previewMode
+    : reviewTab === "current"
+      ? "current-only"
+      : "proposed-only";
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
-      <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:overflow-hidden">
-        <section className="min-w-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          <h1 className="sr-only">{display.title}</h1>
+    <main className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background px-3 py-3 md:static md:h-dvh md:px-5">
+      <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden">
+        <header className="flex shrink-0 items-center gap-3 rounded-xl border border-border-light bg-surface px-3 py-3 shadow-card-soft sm:px-4">
+          <Link href={`/documents/${display.documentId}`} aria-label="Return to Editor" title="Return to Editor" className="inline-flex size-9 shrink-0 items-center justify-center gap-2 rounded-md border border-border text-sm font-medium text-accent transition hover:bg-surface-secondary sm:w-auto sm:px-3">
+            <ArrowLeft className="size-4" />
+            <span className="sr-only sm:not-sr-only">Editor</span>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold text-text-primary">{display.title}</h1>
+            <p className="mt-1 line-clamp-1 text-xs text-text-secondary">{display.description}</p>
+          </div>
+        </header>
+
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden">
 
           {display.warnings.length > 0 ? (
             <div className="grid shrink-0 gap-2 rounded-xl border border-warning bg-warning-muted px-4 py-2">
@@ -228,34 +258,71 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
             </div>
           ) : null}
 
-          <div className="grid min-h-0 gap-3 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:overflow-hidden">
-            <div className="min-w-0 xl:flex xl:min-h-0 xl:flex-col xl:overflow-hidden">
-              <PreviewComparison
-                mode={previewMode}
-                syncScroll={syncScroll}
-                currentMarkdown={display.originalMarkdown}
-                currentEditorJson={display.originalEditorJson}
-                initialProposedMarkdown={display.proposedMarkdown}
-                initialProposedEditorJson={display.proposedEditorJson}
-                currentProposedMarkdown={display.proposedMarkdown}
-                emptyProposedText={display.emptyProposedText}
-                changes={changeAnchors}
-                activeChangeId={effectiveActiveChangeId}
-                onSelectChange={setActiveChangeId}
-              />
+          <section className="hidden shrink-0 rounded-xl border border-border-light bg-surface p-3 lg:block">
+            <button type="button" onClick={() => setComparisonSettingsOpen((current) => !current)} className="flex w-full items-center justify-between gap-3 text-left" aria-expanded={comparisonSettingsOpen}>
+              <span>
+                <span className="block text-xs font-semibold text-text-primary">Comparison settings</span>
+                <span className="mt-0.5 block text-[11px] leading-4 text-text-muted">{getPreviewModeLabel(previewMode)} · Sync {syncScroll ? "on" : "off"}</span>
+              </span>
+              <ChevronDown className={`size-4 shrink-0 text-text-muted transition ${comparisonSettingsOpen ? "rotate-180" : ""}`} />
+            </button>
+            {comparisonSettingsOpen ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <PreviewModeToggle value={previewMode} onChange={setPreviewMode} />
+                <SyncScrollToggle enabled={syncScroll} onChange={setSyncScroll} />
+              </div>
+            ) : null}
+          </section>
 
-              <div className="mt-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl border border-border-light bg-surface p-1 lg:hidden" role="tablist" aria-label="Result review view">
+            {(["proposed", "current", ...(hasChanges ? ["changes" as const] : [])] as ReviewTab[]).map((tab) => (
+              <button key={tab} type="button" role="tab" aria-selected={reviewTab === tab} onClick={() => setReviewTab(tab)} className={`min-h-9 flex-1 rounded-md px-3 text-sm font-semibold capitalize transition ${reviewTab === tab ? "bg-accent-light text-accent" : "text-text-secondary hover:bg-surface-secondary"}`}>
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className={`grid min-h-0 min-w-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden ${hasChanges ? "xl:grid-cols-[minmax(0,1fr)_300px]" : "xl:grid-cols-1"}`}>
+            <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+              <div className="order-1 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                {!isWideComparison && reviewTab === "changes" ? (
+                  <div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+                    <ChangeNavigator changes={changeAnchors} activeChangeId={effectiveActiveChangeId} onSelect={setActiveChangeId} />
+                  </div>
+                ) : (
+                  <PreviewComparison
+                    mode={effectivePreviewMode}
+                    syncScroll={syncScroll}
+                    currentMarkdown={display.originalMarkdown}
+                    currentEditorJson={display.originalEditorJson}
+                    initialProposedMarkdown={display.proposedMarkdown}
+                    initialProposedEditorJson={display.proposedEditorJson}
+                    currentProposedMarkdown={display.proposedMarkdown}
+                    emptyProposedText={display.emptyProposedText}
+                    changes={changeAnchors}
+                    activeChangeId={effectiveActiveChangeId}
+                    onSelectChange={setActiveChangeId}
+                  />
+                )}
+              </div>
+
+              <div className="order-2 mt-2 shrink-0">
                 <PreviewActionBar
                   documentId={display.documentId}
                   requestId={display.kind === "ai_request" ? display.id : undefined}
-                  resultMode={display.resultMode}
-                  proposedMarkdown={display.proposedMarkdown}
                 />
               </div>
+
+              {hasChanges ? (
+                <div className="order-3 mt-3 hidden min-h-[320px] lg:flex xl:hidden">
+                  <ChangeNavigator changes={changeAnchors} activeChangeId={effectiveActiveChangeId} onSelect={setActiveChangeId} />
+                </div>
+              ) : null}
             </div>
 
-            <aside className="grid min-h-0 min-w-0 gap-3 rounded-xl bg-accent-muted xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
-              <section className="rounded-xl border border-border-light bg-surface p-3">
+            {hasChanges ? (
+            <aside className="hidden min-h-0 min-w-0 gap-3 rounded-xl bg-accent-muted xl:flex xl:h-full xl:flex-col xl:overflow-hidden">
+              <section className="hidden">
                 <button
                   type="button"
                   onClick={() =>
@@ -300,6 +367,7 @@ export function AIResultPreview({ preview }: AIResultPreviewProps) {
                 onSelect={setActiveChangeId}
               />
             </aside>
+            ) : null}
           </div>
         </section>
       </div>

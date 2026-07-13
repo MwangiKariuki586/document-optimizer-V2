@@ -13,6 +13,7 @@ import { ExportFormatCard } from "@/components/export/ExportFormatCard";
 import { ExportOptionsPanel } from "@/components/export/ExportOptionsPanel";
 import { ExportSummaryPanel } from "@/components/export/ExportSummaryPanel";
 import { ExportSuccessPanel } from "@/components/export/ExportSuccessPanel";
+import { LoadingButton } from "@/components/feedback/LoadingButton";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type {
   ExportFormat,
@@ -214,7 +215,7 @@ export function ExportWorkspace({
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 pb-24 pt-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden xl:py-3">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 xl:h-full xl:overflow-hidden">
         <div className="rounded-xl bg-transparent px-0 py-0">
           <PageHeader
@@ -311,6 +312,20 @@ export function ExportWorkspace({
           </div>
         </div>
       </div>
+
+      {!isExportReady ? (
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-surface/95 px-3 py-2 backdrop-blur md:inset-x-auto md:bottom-5 md:right-5 md:w-80 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none xl:hidden">
+          <LoadingButton
+            className="w-full md:shadow-popover"
+            isLoading={status === "processing"}
+            loadingText="Exporting"
+            disabled={status === "processing"}
+            onClick={handleGenerateExport}
+          >
+            Export
+          </LoadingButton>
+        </div>
+      ) : null}
     </main>
   );
 }

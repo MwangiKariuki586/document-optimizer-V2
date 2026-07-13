@@ -557,6 +557,18 @@ Rules:
 - Below `xl`, document workspaces use normal page scrolling. Scope hidden outer overflow and internal pane scrolling to the desktop single-viewport layout.
 - Do not hide functional filters on narrow screens; reflow them into a compact grid instead.
 - Avoid nested scrolling for dashboard cards on phones; use natural-height panels and enable internal card scrolling from `sm` where needed.
+- Keep editor flex/grid ancestors width-contained with `min-w-0`; formatting toolbars may scroll horizontally inside their own width, but the page must not.
+- Below `xl`, expose editor AI actions and suggestions in a labelled, focus-managed bottom sheet opened by a persistent icon trigger. Keep the fixed 300px AI rail from `xl`.
+- In the AI bottom sheet, scroll the action list rather than the entire panel; expanded settings and the primary Run action must remain visible.
+- Below `lg`, result preview uses one pane at a time with Proposed selected first and explicit Current/Changes tabs.
+- Result preview exposes one left-aligned Return to Editor control in its compact header and one Export action beneath the review pane. The pane owns vertical scrolling so the page remains viewport-contained.
+- On mobile, pin result preview between the viewport top and fixed bottom navigation. Current and Proposed content regions must support touch, wheel, and keyboard scrolling independently of document scroll position.
+- From `lg`, retain side-by-side result comparison. Reserve the 300px change-navigation rail only when change anchors exist.
+- Persistent onboarding toasts use compact top-center placement on phones and top-right placement from `sm`, and must not cover primary actions.
+- Below `xl`, keep the export-workspace primary Export command fixed above mobile navigation or at the lower-right tablet edge; long format and option content scrolls behind reserved bottom space.
+- Hide the Version Timeline below `lg`; narrow version-history layouts use the comparison workspace's Selected Version control instead of repeating the version list above it.
+- On mobile version history, hide source filters and header utilities, keep one version selector with a contextual Details control, and use compact Selected/Current/Changes preview tabs.
+- Keep version-history chrome viewport-fixed on mobile and viewport-bounded from `md`; scroll selected/current document content inside the comparison pane instead of scrolling the page.
 
 ---
 

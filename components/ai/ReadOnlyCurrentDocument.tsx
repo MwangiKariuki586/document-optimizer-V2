@@ -108,7 +108,10 @@ export const ReadOnlyCurrentDocument = forwardRef<
       <div
         ref={ref}
         onScroll={onScroll}
-        className="min-h-[360px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0"
+        role="region"
+        aria-label="Current document content"
+        tabIndex={0}
+        className="min-h-0 flex-1 touch-pan-y overflow-y-scroll overscroll-contain bg-surface-secondary"
       >
         <div className="document-editor min-h-[320px] w-full bg-surface px-5 py-6 md:px-7 md:py-7 xl:min-h-0">
           {markdown || editorJson ? (

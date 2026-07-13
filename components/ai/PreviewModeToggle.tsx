@@ -1,4 +1,4 @@
-export type PreviewMode = "side-by-side" | "proposed-only";
+export type PreviewMode = "side-by-side" | "proposed-only" | "current-only";
 
 type PreviewModeToggleProps = {
   value: PreviewMode;

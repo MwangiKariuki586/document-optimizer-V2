@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEditor, type JSONContent } from "@tiptap/react";
-import { TriangleAlert } from "lucide-react";
+import { Sparkles, TriangleAlert } from "lucide-react";
 
 import { editorExtensions } from "@/lib/editor/editor-extensions";
 
 import { AIActionsPanel } from "@/components/ai/AIActionsPanel";
 import { EditorCanvas } from "@/components/editor/EditorCanvas";
+import { EditorAssistantSheet } from "@/components/editor/EditorAssistantSheet";
 import { EditorStatusBar } from "@/components/editor/EditorStatusBar";
 import {
   EditorSuggestion,
@@ -43,6 +44,20 @@ type EditorWorkspaceProps = {
   initialSuggestions: DocumentSuggestion[];
   initialAIActionRuns: AIActionRun[];
 };
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, [query]);
+
+  return matches;
+}
 
 export type SaveState = "saved" | "dirty" | "saving";
 
@@ -150,6 +165,9 @@ export function EditorWorkspace({
     initialSuggestions.length > 0 ? "suggestions" : "ai-actions",
   );
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const isDesktopAssistant = useMediaQuery("(min-width: 1280px)");
+
   const [activeTypeFilter, setActiveTypeFilter] = useState("all");
   const [activeStatusFilter, setActiveStatusFilter] = useState("pending");
   const [activeRunId, setActiveRunId] = useState(
@@ -181,6 +199,7 @@ export function EditorWorkspace({
     setActiveSuggestionId(suggestionId);
     setSuggestionsOpen(true);
     setRightPanel("suggestions");
+    setAssistantOpen(true);
   }, []);
 
   const workspaceEditorExtensions = useMemo(
@@ -886,15 +905,57 @@ export function EditorWorkspace({
 
   const fidelityStatus = document.fidelityStatus as FidelityStatus;
   const formattingWarning = FORMATTING_WARNING[document.fidelityStatus];
+  const assistantPanel =
+    rightPanel === "ai-actions" ? (
+      <AIActionsPanel
+        onShowSuggestions={() => setRightPanel("suggestions")}
+        suggestionCount={suggestions.length}
+        onRunAction={handleRunAIAction}
+      />
+    ) : (
+      <EditorSuggestionsPanel
+        documentId={document.id}
+        open={suggestionsOpen}
+        onReopen={() => setSuggestionsOpen(true)}
+        onOpenAIActions={() => setRightPanel("ai-actions")}
+        suggestions={filteredSuggestions}
+        allSuggestions={suggestions}
+        actionRuns={aiActionRuns}
+        activeRunId={activeRunId}
+        onRunChange={(runId) => {
+          setActiveRunId(runId);
+          setActiveStatusFilter("all");
+          setActiveTypeFilter("all");
+        }}
+        statusFilters={statusFilters}
+        activeStatusFilter={effectiveStatusFilter}
+        onStatusFilterChange={setActiveStatusFilter}
+        typeFilters={typeFilters}
+        activeTypeFilter={effectiveTypeFilter}
+        onTypeFilterChange={setActiveTypeFilter}
+        onApplySuggestion={handleApplySuggestion}
+        onReviewAppliedSuggestions={handleReviewAppliedSuggestions}
+        onApplyAllSuggestions={handleApplyAllSuggestions}
+        onIgnoreSuggestion={handleIgnoreSuggestion}
+        pendingCount={scopedPendingSuggestions.length}
+        appliedCount={scopedAppliedSuggestionCount}
+        applyingSuggestionId={applyingSuggestionId}
+        ignoringSuggestionId={ignoringSuggestionId}
+        isReviewingAll={isReviewingAll}
+        isReviewingSelected={isReviewingSelected}
+        activeSuggestionId={activeSuggestionId}
+        onFocusSuggestion={focusSuggestionInEditor}
+      />
+    );
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden">
+    <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+      <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden">
         <div
-          className="grid min-h-0 gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
+          className="grid min-h-0 min-w-0 w-full gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
         >
-          <div className="order-1 flex min-h-0 flex-col gap-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
-            <div className="relative z-20 flex shrink-0 flex-col rounded-xl border border-border bg-surface shadow-card-soft">
+          <div className="order-1 flex min-h-0 min-w-0 w-full flex-col gap-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
+            <div className="relative z-20 flex min-w-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
               <EditorTopBar
                 title={title}
                 onTitleChange={handleTitleChange}
@@ -944,50 +1005,31 @@ export function EditorWorkspace({
             />
           </div>
 
-          <div className="order-2 min-h-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-            {rightPanel === "ai-actions" ? (
-              <AIActionsPanel
-                onShowSuggestions={() => setRightPanel("suggestions")}
-                suggestionCount={suggestions.length}
-                onRunAction={handleRunAIAction}
-              />
-            ) : (
-              <EditorSuggestionsPanel
-                documentId={document.id}
-                open={suggestionsOpen}
-                onReopen={() => setSuggestionsOpen(true)}
-                onOpenAIActions={() => setRightPanel("ai-actions")}
-                suggestions={filteredSuggestions}
-                allSuggestions={suggestions}
-                actionRuns={aiActionRuns}
-                activeRunId={activeRunId}
-                onRunChange={(runId) => {
-                  setActiveRunId(runId);
-                  setActiveStatusFilter("all");
-                  setActiveTypeFilter("all");
-                }}
-                statusFilters={statusFilters}
-                activeStatusFilter={effectiveStatusFilter}
-                onStatusFilterChange={setActiveStatusFilter}
-                typeFilters={typeFilters}
-                activeTypeFilter={effectiveTypeFilter}
-                onTypeFilterChange={setActiveTypeFilter}
-                onApplySuggestion={handleApplySuggestion}
-                onReviewAppliedSuggestions={handleReviewAppliedSuggestions}
-                onApplyAllSuggestions={handleApplyAllSuggestions}
-                onIgnoreSuggestion={handleIgnoreSuggestion}
-                pendingCount={scopedPendingSuggestions.length}
-                appliedCount={scopedAppliedSuggestionCount}
-                applyingSuggestionId={applyingSuggestionId}
-                ignoringSuggestionId={ignoringSuggestionId}
-                isReviewingAll={isReviewingAll}
-                isReviewingSelected={isReviewingSelected}
-                activeSuggestionId={activeSuggestionId}
-                onFocusSuggestion={focusSuggestionInEditor}
-              />
-            )}
+          <div className="order-2 hidden min-h-0 min-w-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
+            {isDesktopAssistant ? assistantPanel : null}
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setAssistantOpen(true)}
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-popover transition hover:bg-accent-dark md:bottom-5 xl:hidden"
+          aria-haspopup="dialog"
+          aria-expanded={assistantOpen}
+          aria-label="Open AI assistant"
+          title="Open AI assistant"
+        >
+          <Sparkles className="size-4" />
+          {scopedPendingSuggestions.length > 0 ? (
+            <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-surface text-[10px] font-bold text-accent shadow-card-soft">
+              {scopedPendingSuggestions.length}
+            </span>
+          ) : null}
+        </button>
+
+        <EditorAssistantSheet open={assistantOpen && !isDesktopAssistant} onClose={() => setAssistantOpen(false)}>
+          {!isDesktopAssistant ? assistantPanel : null}
+        </EditorAssistantSheet>
 
       </div>
     </main>

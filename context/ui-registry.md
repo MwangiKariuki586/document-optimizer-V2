@@ -318,6 +318,7 @@ className="mt-3 text-base leading-[26px] text-text-secondary"
 - With eyebrow - renders compact uppercase context label above the title.
 - With actions - displays right-aligned action group on desktop.
 - Without actions - title and description only.
+- Compact mobile - reduces title spacing and hides supporting description below `sm` while preserving the desktop header.
 
 **Rules:**
 
@@ -1461,7 +1462,7 @@ Reusable preview controls for view mode, sync scrolling, and final preview actio
 
 - `PreviewModeToggle` supports `side-by-side` and `proposed-only`.
 - `SyncScrollToggle` displays `Sync scrolling: On / Off`.
-- `PreviewActionBar` renders mode-specific result controls. AI request previews expose Return to Editor, Copy Result or Copy Translation when proposed output exists, and Export. Optimization results also include Apply to Document after approval. The preview footer does not expose separate Save or Discard actions because returning to the editor leaves the saved document unchanged, and applying an optimization result is the explicit document-changing action.
+- `PreviewActionBar` exposes only Export beneath the bounded review pane. The compact preview header owns the single Return to Editor control. Result preview does not expose Copy Result or Apply to Document actions.
 - For AI request previews, Export links to `/documents/[id]/export?requestId=[requestId]` so users choose format/options in the dedicated export workspace. That workspace submits to `/api/documents/[id]/ai/[requestId]/export` and exports the proposed AI result. For already-saved document previews, Export links to `/documents/[id]/export`.
 
 ### SuggestionHighlight
@@ -1519,7 +1520,7 @@ are created.
 
 **Purpose:**
 
-Real-data Version History workspace with shared `PageHeader`, version tabs, timeline, side-by-side selected/current version preview, change summary, version details rail, restore confirmation dialog, and empty export-version state.
+Real-data Version History workspace with shared `PageHeader`, version tabs, desktop timeline, side-by-side selected/current version preview, change summary, version details rail, restore confirmation dialog, and empty export-version state. Below `lg`, the timeline is hidden and version selection stays available through the comparison workspace selector.
 
 **Used on:**
 
@@ -1548,6 +1549,8 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 - Uses the global `AppSidebar`; the page itself starts with a compact header/tab band so the timeline, comparison panes, and details rail own the page space.
 - Uses `PageHeader` for the primary title and actions.
 - Desktop layout keeps supporting rails narrow: timeline around 240px, details around 288px, and the comparison column gets the remaining width.
+- Mobile hides source-filter tabs and header utilities, presents one selected-version control, moves Details beside that selector, and shortens preview tabs to Selected, Current, and Changes. Current-version context remains implicit until the Current tab is opened.
+- Mobile version history is pinned between the viewport top and bottom navigation; from `md` it uses `100dvh`. The comparison grid owns the remaining height and each version preview is a named touch, wheel, and keyboard scroll region.
 - Restore actions live in the comparison header/details rail; the previous persistent desktop bottom action bar is intentionally not rendered so preview panes keep more height.
 - Restore posts to `POST /api/documents/[id]/versions/[versionNumber]/restore`, shows Sonner feedback through `appToast`, and returns to the editor on success.
 - Restore/switch updates the live document row to the selected saved version and must not create a new `document_versions` row. The editor and version history derive the current version from the latest validated `version_restore` usage metadata when available, then from the saved version whose content matches the live document.
@@ -1562,7 +1565,7 @@ className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_288px] xl
 
 **Purpose:**
 
-Real export workspace with shared `PageHeader`, export format selection, export options, formatting warning, API-backed generation, automatic same-origin download, in-route success state, and sticky export summary rail. Document navigation comes from the global `AppSidebar`.
+Real export workspace with shared `PageHeader`, export format selection, export options, formatting warning, API-backed generation, automatic same-origin download, in-route success state, and sticky export summary rail. On mobile, the primary Export command sits in an edge-to-edge action dock attached above navigation; tablet uses a compact lower-right action. Document navigation comes from the global `AppSidebar`.
 
 **Used on:**
 
@@ -1615,6 +1618,7 @@ Right-side export summary rail with selected document, format, options, document
 - Applied AI improvement totals come from owned `suggestions` rows with `status = applied`, grouped by normalized suggestion type.
 - Legacy `seo` suggestion rows count as Structure, and legacy `style` rows count as Tone.
 - Do not render hardcoded category counts in this panel.
+- Keep its generation footer desktop-only; `ExportWorkspace` owns the persistent mobile/tablet Export command.
 
 ### ExportSuccessPanel
 
@@ -2356,3 +2360,27 @@ contextual navigation action.
   top-right toast stack instead of custom fixed-position panels.
 - Route cleanup removes the visible toast without persisting a user dismissal.
 - Onboarding API failure renders no overlay and does not affect page content.
+
+### EditorAssistantSheet
+
+**Path:** `components/editor/EditorAssistantSheet.tsx`
+
+Responsive modal bottom sheet used below `xl` to present the existing editor AI
+Actions and Suggestions panels. It owns the backdrop, close/Escape behavior,
+initial focus, focus restoration, and body-scroll lock; it must not duplicate
+assistant business state.
+
+`AIActionsPanel` must fill the available sheet height. Its action list is the
+scrollable region; expanded settings and the primary Run action remain visible
+at the bottom of the panel.
+
+### Responsive Result Preview
+
+**Paths:** `components/ai/AIResultPreview.tsx`,
+`components/ai/PreviewComparison.tsx`, `components/ai/PreviewActionBar.tsx`
+
+Uses Proposed/Current/Changes tabs below `lg`, side-by-side comparison from
+`lg`, an internally scrolling viewport-bounded review pane, an Export action
+beneath the pane, and a conditional 300px change-navigation rail. Summary and
+translation previews must consume the freed desktop width when no change
+anchors exist.

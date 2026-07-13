@@ -175,15 +175,17 @@ export function VersionHistoryWorkspace({
   };
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
+    <main className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background px-3 py-3 md:static md:h-dvh md:px-5">
       <div className="mx-auto grid h-full min-h-0 w-full max-w-[1600px] gap-3 xl:grid-rows-1 xl:overflow-hidden">
         <div className="flex min-h-0 flex-col gap-3 xl:h-full xl:overflow-hidden">
           <div className="flex shrink-0 flex-col gap-2 rounded-xl ">
             <PageHeader
+              compactOnMobile
               eyebrow="Versions"
               title="Version History"
               description="Compare saved versions, inspect document changes, and restore a previous state when needed."
               actions={
+                isLg ? (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -204,10 +206,11 @@ export function VersionHistoryWorkspace({
                     <PanelRightOpen className="size-4" />
                   </button>
                 </div>
+                ) : undefined
               }
             />
 
-            <div className="flex shrink-0 flex-wrap items-center gap-1  pt-1">
+            <div className="hidden shrink-0 flex-wrap items-center gap-1 pt-1 md:flex">
               {versionTabs.map((tab) => {
                 const isActive = tab.key === activeTab;
 
@@ -253,15 +256,15 @@ export function VersionHistoryWorkspace({
               />
             </div>
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 xl:overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
               <div
-                className={`grid min-h-0 flex-1 gap-3 xl:overflow-hidden ${
+                className={`grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden ${
                   showDetailsPanel
                     ? "xl:grid-cols-[240px_minmax(0,1fr)_288px]"
                     : "lg:grid-cols-[240px_minmax(0,1fr)]"
                 }`}
               >
-                <div ref={timelineRef} className="min-h-0 shrink-0">
+                <div ref={timelineRef} className="hidden min-h-0 shrink-0 lg:block">
                   <VersionTimeline
                     versions={filteredVersions}
                     selectedVersionNumber={selectedPreview.versionNumber}
@@ -278,6 +281,7 @@ export function VersionHistoryWorkspace({
                   currentVersionNumber={currentPreview.versionNumber}
                   changeSummary={changeSummary}
                   onSelectedVersionChange={setSelectedVersionNumber}
+                  onOpenDetails={openDetails}
                 />
 
                 {showDetailsPanel ? (

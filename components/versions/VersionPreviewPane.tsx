@@ -68,7 +68,7 @@ export function VersionPreviewPane({
     version.source === "current" ? "Current" : sourceLabel[version.source];
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
+    <section className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border-light px-4 py-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-normal text-text-muted">
@@ -97,8 +97,11 @@ export function VersionPreviewPane({
       </div>
 
       <div
-        className={`min-h-0 flex-1 overflow-y-auto bg-surface-secondary ${
-          compact ? "min-h-[280px]" : "min-h-[360px] xl:min-h-0"
+        role="region"
+        aria-label={`${label} content`}
+        tabIndex={0}
+        className={`min-h-0 flex-1 touch-pan-y overflow-y-scroll overscroll-contain bg-surface-secondary ${
+          compact ? "min-h-0" : "min-h-[360px] xl:min-h-0"
         }`}
       >
         <div className="document-editor min-h-full w-full bg-surface px-5 py-5">

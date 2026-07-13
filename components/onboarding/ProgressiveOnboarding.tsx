@@ -38,7 +38,7 @@ export function ProgressiveOnboarding() {
   return (
     <>
       {guide}
-      <button type="button" onClick={async () => { await updateAsync({ action: "restart-guide" }); router.push("/dashboard"); }} className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-9 items-center justify-center rounded-full border border-border bg-surface text-text-muted shadow-card-soft transition hover:bg-surface-secondary hover:text-text-primary md:bottom-5 md:left-20 md:right-auto" title="Restart getting started guide" aria-label="Restart getting started guide"><CircleHelp className="size-4" /></button>
+      <button type="button" onClick={async () => { await updateAsync({ action: "restart-guide" }); router.push("/dashboard"); }} className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 z-30 inline-flex size-9 items-center justify-center rounded-full border border-border bg-surface text-text-muted shadow-card-soft transition hover:bg-surface-secondary hover:text-text-primary md:bottom-5 md:left-20" title="Restart getting started guide" aria-label="Restart getting started guide"><CircleHelp className="size-4" /></button>
     </>
   );
 }

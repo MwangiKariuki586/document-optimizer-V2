@@ -1239,9 +1239,9 @@ Use Vitest for:
 
 ## Playwright
 
-Playwright is deferred until MVP flows stabilize.
+Playwright covers stable MVP journeys and responsive workspace contracts.
 
-### Usage Later
+### Usage
 
 Use Playwright for:
 
@@ -1251,10 +1251,13 @@ Use Playwright for:
 - AI preview flow
 - version restore flow
 - export flow
+- editor and result-preview responsive behavior
 
 ### Rules
 
-- Do not add Playwright tests before core flows stabilize
 - Keep E2E tests focused on user journeys
 - Do not test visual details with brittle selectors
 - Use stable labels, roles, and test IDs where needed
+- Supply authenticated responsive runs with `PLAYWRIGHT_STORAGE_STATE`,
+  `PLAYWRIGHT_EDITOR_URL`, and `PLAYWRIGHT_PREVIEW_URL`; keep storage state and
+  generated screenshots under ignored Playwright output directories.

@@ -155,7 +155,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   };
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto border-t border-border-light px-3 py-1.5">
+    <div className="scrollbar-hidden flex w-full min-w-0 max-w-full items-center gap-1 overflow-x-auto border-t border-border-light px-3 py-1.5">
       <label className="sr-only" htmlFor="editor-block-type">
         Text style
       </label>

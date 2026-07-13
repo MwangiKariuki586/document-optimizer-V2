@@ -10,6 +10,7 @@ type PersistentInfoOptions = {
     onClick: () => void;
   };
   onConfirm: () => void;
+  position?: "top-center" | "top-right";
 };
 
 export const appToast = {
@@ -24,6 +25,9 @@ export const appToast = {
       duration: Infinity,
       closeButton: false,
       dismissible: true,
+      position: options.position,
+      className: "onboarding-guide-toast max-w-[calc(100vw-1rem)] sm:max-w-sm",
+      descriptionClassName: "text-xs leading-4 sm:text-sm sm:leading-5",
       action: {
         label: "Got it",
         onClick: () => {

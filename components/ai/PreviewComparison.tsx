@@ -162,9 +162,9 @@ export function PreviewComparison({
   ]);
 
   return (
-    <section className="min-h-[540px] min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
+    <section className="min-h-0 min-w-0 flex-1 overflow-hidden">
       <div
-        className={`grid h-full min-h-[540px] gap-3 xl:min-h-0 xl:overflow-hidden ${
+        className={`grid h-full min-h-0 gap-3 overflow-hidden ${
           mode === "side-by-side" ? "lg:grid-cols-2" : "grid-cols-1"
         }`}
       >
@@ -188,7 +188,8 @@ export function PreviewComparison({
           wordCount={proposedMetrics.wordCount}
           characterCount={proposedMetrics.characterCount}
           changes={changes}
-          activeChangeId={activeChangeId}
+        activeChangeId={activeChangeId}
+        hidden={mode === "current-only"}
           onSelectChange={onSelectChange}
           onScroll={() => syncPaneScroll("proposed")}
         />

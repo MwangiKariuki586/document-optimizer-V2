@@ -2282,6 +2282,86 @@ Verification: Supabase MCP list_migrations shows the private storage migration. 
 Follow-up: Continue Phase 2 / 07 Dashboard Page - Full UI. Later, verify signed URL behavior and storage access with real Clerk-authenticated upload/export flows.
 ```
 
+```txt
+Date: 2026-07-12
+Feature: Editor and result preview responsive UI/UX
+Status: Completed
+Files changed: components/editor/EditorAssistantSheet.tsx, components/editor/EditorWorkspace.tsx, components/editor/EditorTopBar.tsx, components/editor/EditorToolbar.tsx, components/editor/EditorStatusBar.tsx, components/ai/AIResultPreview.tsx, components/ai/PreviewComparison.tsx, components/ai/PreviewModeToggle.tsx, components/ai/EditableProposedResult.tsx, components/ai/PreviewActionBar.tsx, components/onboarding/ContextualTip.tsx, components/onboarding/ProgressiveOnboarding.tsx, lib/feedback/toast.ts, playwright.config.ts, tests/playwright/responsive-editor-preview.spec.ts, .gitignore, context/architecture.md, context/library-docs.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Contained editor width and toolbar overflow, recomposed narrow editor controls, added a focus-managed AI assistant sheet below xl while retaining the desktop rail, added Proposed-first single-pane preview tabs below lg, sticky responsive preview actions, compact comparison settings, and a conditional desktop change rail. Added responsive persistent onboarding toast placement and authenticated responsive Playwright coverage for 360, 768, 1024, and 1440 widths.
+Verification: `npx.cmd tsc --noEmit` passed; focused ESLint passed; `npm.cmd run lint` passed with six existing unrelated warnings; `npm.cmd test` passed all 35 files and 181 tests; `npm.cmd run build` passed. The responsive Playwright suite was discovered at all four target viewports and skipped as designed because authenticated URL/storage-state environment variables were not supplied. Authenticated browser audit confirmed the mobile editor has zero page-level horizontal overflow and the assistant dialog opens; the remaining automated viewport matrix is ready for the next authenticated storage-state run.
+Follow-up: Run the responsive Playwright suite with non-committed Clerk storage state whenever authenticated test credentials are refreshed.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Mobile AI action footer visibility
+Status: Completed
+Files changed: components/ai/AIActionsPanel.tsx, tests/playwright/responsive-editor-preview.spec.ts, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Gave the assistant sheet an explicit responsive height instead of only a maximum height, then made AIActionsPanel fill that bounded space at every breakpoint. The action list now owns vertical scrolling while expanded action settings and the Run action remain fixed and reachable. Added a mobile responsive assertion for the expanded Translate Document configuration.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed. Fresh authenticated browser verification was unavailable because the browser bridge rejected its session metadata.
+Follow-up: Re-run the responsive Playwright suite with authenticated storage state to exercise the new Translate Document assertion.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Compact mobile preview actions
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/PreviewActionBar.tsx, tests/playwright/responsive-editor-preview.spec.ts, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Removed the duplicate Return to Editor action from the preview footer and retained the header as the single navigation control. Made that header control icon-only on phones, restored its Editor label from sm, and compressed mobile result actions into a primary full-width Apply row plus a shared Copy/Export row.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed.
+Follow-up: Confirm the compact sticky action bar remains clear of the fixed mobile navigation on the authenticated preview route.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Simplified viewport-contained result preview
+Status: Completed
+Files changed: components/ai/AIResultPreview.tsx, components/ai/PreviewActionBar.tsx, components/ai/PreviewComparison.tsx, components/ai/ReadOnlyCurrentDocument.tsx, components/ai/EditableProposedResult.tsx, tests/playwright/responsive-editor-preview.spec.ts, context/architecture.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Removed the document title, Copy Result/Translation, and Apply to Document controls from result preview. Moved the single back-to-editor control to the left of the compact header, reduced the action footer to Export, and placed it below a viewport-bounded Current/Proposed review pane. Document content now scrolls inside its pane with overscroll containment rather than extending the page.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed. Responsive Playwright assertions now require Export, reject Copy/Apply controls, and check zero page-level vertical overflow.
+Follow-up: Run the authenticated responsive Playwright matrix to confirm internal pane scrolling at all four target viewports. Mobile preview is fixed between the viewport top and bottom navigation so stale page scroll cannot displace its header or Export action. Current and Proposed panes are named, focusable touch/keyboard scroll regions inside an explicit `minmax(0, 1fr)` grid row.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Persistent export-workspace action
+Status: Completed
+Files changed: components/export/ExportWorkspace.tsx, components/export/ExportSummaryPanel.tsx, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Moved the sub-xl Export generation action out of the summary panel and fixed it above mobile navigation or at the lower-right tablet edge. Added workspace bottom padding so formats and options remain reachable without being obscured. The summary-panel generation footer remains available only in the desktop rail.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed.
+Follow-up: Verify idle, processing, error retry, and successful automatic-download states on the authenticated export route.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Compact mobile version history
+Status: Completed
+Files changed: components/versions/VersionHistoryWorkspace.tsx, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Hid the redundant Version Timeline card below lg. Narrow layouts now move directly from version filters to the comparison workspace and use its Selected Version control; the timeline remains the desktop left rail.
+Verification: `npx.cmd tsc --noEmit` and focused ESLint passed.
+Follow-up: Continue responsive review of the version comparison controls and details drawer on phone and tablet widths.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Minimal mobile version comparison controls
+Status: Completed
+Files changed: components/layout/PageHeader.tsx, components/versions/VersionHistoryWorkspace.tsx, components/versions/VersionComparisonWorkspace.tsx, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Added an opt-in compact mobile PageHeader variant and applied it to version history. Hid mobile source filters and header utilities, reduced comparison setup to one selected-version control, moved Details beside that control to preserve restore access, hid redundant Current/swap controls below 900px, and shortened narrow preview tab labels.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed.
+Follow-up: Verify version selection, Details/restore, Current, and Changes flows on the authenticated mobile route.
+```
+
+```txt
+Date: 2026-07-13
+Feature: Internally scrolling version comparison
+Status: Completed
+Files changed: components/versions/VersionHistoryWorkspace.tsx, components/versions/VersionPreviewPane.tsx, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Pinned mobile version history between the viewport top and bottom navigation, bounded the workspace to 100dvh from md, assigned remaining height through an explicit minmax grid row, and converted selected/current previews into named touch, wheel, and keyboard scroll regions. The compact tab-content wrapper now participates in the flex height chain and VersionPreviewPane fills that bounded wrapper, allowing its inner content region to scroll. Header, selector, tabs, and navigation remain fixed.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed.
+Follow-up: Verify internal scrolling and Details drawer focus behavior on authenticated phone and tablet viewports.
+```
+
 ### Entry Template
 
 ```txt

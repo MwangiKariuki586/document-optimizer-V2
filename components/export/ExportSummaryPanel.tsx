@@ -203,7 +203,7 @@ export function ExportSummaryPanel({
       </div>
 
       {showFooterAction ? (
-        <div className="shrink-0 p-4">
+        <div className="hidden shrink-0 p-4 xl:block">
           {status === "ready" && result ? (
             <button
               type="button"

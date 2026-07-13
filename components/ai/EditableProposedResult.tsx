@@ -23,6 +23,7 @@ type EditableProposedResultProps = {
   activeChangeId: string | null;
   onSelectChange?: (changeId: string) => void;
   onScroll?: () => void;
+  hidden?: boolean;
 };
 
 export const EditableProposedResult = forwardRef<
@@ -39,6 +40,7 @@ export const EditableProposedResult = forwardRef<
     activeChangeId,
     onSelectChange,
     onScroll,
+    hidden,
   },
   ref,
 ) {
@@ -93,7 +95,7 @@ export const EditableProposedResult = forwardRef<
   }, [activeChangeId, editor]);
 
   return (
-    <article className="flex min-h-0 min-w-0 flex-col rounded-xl border border-border bg-surface">
+    <article className={`${hidden ? "hidden" : "flex"} min-h-0 min-w-0 flex-col rounded-xl border border-border bg-surface`}>
       <div className="flex shrink-0 items-center justify-between border-b border-border-light px-4 py-3">
         <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-accent">
           <Sparkles className="size-4" />
@@ -104,7 +106,10 @@ export const EditableProposedResult = forwardRef<
       <div
         ref={ref}
         onScroll={onScroll}
-        className="min-h-[360px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0"
+        role="region"
+        aria-label="Proposed result content"
+        tabIndex={0}
+        className="min-h-0 flex-1 touch-pan-y overflow-y-scroll overscroll-contain bg-surface-secondary"
       >
         <div className="document-editor min-h-[320px] w-full bg-surface px-5 py-6 md:px-7 md:py-7 xl:min-h-0">
           {!initialMarkdown ? (

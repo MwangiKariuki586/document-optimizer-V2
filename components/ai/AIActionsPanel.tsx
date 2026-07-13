@@ -328,8 +328,8 @@ export function AIActionsPanel({
             : "Creates inline highlights";
 
   return (
-    <div className="flex flex-col xl:h-full xl:min-h-0">
-      <section className="flex flex-col rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
+    <div className="flex h-full min-h-0 flex-col">
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
         <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border-light px-3 py-2.5">
           <div className="flex min-w-0 items-center gap-2">
             <Sparkles className="size-4 shrink-0 text-ai" />
@@ -387,13 +387,13 @@ export function AIActionsPanel({
           </div>
         ) : null}
 
-        <div className="flex min-h-0 flex-col xl:flex-1">
+        <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 border-b border-border-light px-3 py-2">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">
               Default actions
             </p>
           </div>
-          <div className="flex flex-col gap-2 overflow-y-auto p-3 xl:min-h-0 xl:flex-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
             {AI_ACTIONS.map((action) => {
               const Icon = action.icon;
               const isSelected = selectedAction === action.key;

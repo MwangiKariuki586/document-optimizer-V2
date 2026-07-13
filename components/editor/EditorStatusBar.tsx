@@ -180,7 +180,7 @@ export function EditorStatusBar({
     });
 
   return (
-    <section className="flex shrink-0 flex-wrap items-center justify-center gap-2 rounded-xl px-3 py-2 ">
+    <section className="flex w-full min-w-0 shrink-0 flex-wrap items-center justify-center gap-2 overflow-hidden rounded-xl px-1 py-2 sm:px-3">
       <MetricPill label="Health" value={resolvedHealthScore} />
       <MetricPill label="Readability" value={resolvedReadabilityScore} />
       <MetricPill label="SEO" value={resolvedSeoScore} />

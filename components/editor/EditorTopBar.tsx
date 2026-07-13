@@ -100,7 +100,7 @@ export function EditorTopBar({
   const isDirty = saveState === "dirty";
 
   return (
-    <div className="flex flex-col gap-2 px-4 py-2 md:flex-row md:items-center md:justify-between md:gap-3">
+    <div className="flex w-full min-w-0 flex-col gap-2 px-3 py-2 sm:px-4 xl:flex-row xl:items-center xl:justify-between xl:gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <label htmlFor="editor-title" className="sr-only">
           Document title
@@ -120,7 +120,7 @@ export function EditorTopBar({
         </div>
       ) : null}
 
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="scrollbar-hidden flex w-full min-w-0 items-center gap-1 overflow-x-auto pb-0.5 xl:w-auto xl:shrink-0 xl:overflow-visible xl:pb-0">
         <div className="relative inline-flex">
           <button
             type="button"

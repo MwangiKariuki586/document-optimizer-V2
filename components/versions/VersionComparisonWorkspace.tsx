@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, PanelRightOpen } from "lucide-react";
 
 import { VersionChangeSummaryCard } from "@/components/versions/VersionChangeSummaryCard";
 import { VersionPreviewPane } from "@/components/versions/VersionPreviewPane";
@@ -21,6 +21,7 @@ type VersionComparisonWorkspaceProps = {
   currentVersionNumber: number;
   changeSummary: VersionChangeSummary;
   onSelectedVersionChange: (versionNumber: number) => void;
+  onOpenDetails?: () => void;
   comparisonRef?: React.RefObject<HTMLElement | null>;
 };
 
@@ -45,16 +46,17 @@ export function VersionComparisonWorkspace({
   currentVersionNumber,
   changeSummary,
   onSelectedVersionChange,
+  onOpenDetails,
   comparisonRef,
 }: VersionComparisonWorkspaceProps) {
   const isWideComparison = useMediaQuery("(min-width: 900px)");
   const [previewTab, setPreviewTab] =
     useState<ComparisonPreviewTab>("selected");
 
-  const previewTabs: { key: ComparisonPreviewTab; label: string }[] = [
-    { key: "selected", label: "Selected Version" },
-    { key: "current", label: "Current Version" },
-    { key: "changes", label: "Changes" },
+  const previewTabs: { key: ComparisonPreviewTab; label: string; compactLabel: string }[] = [
+    { key: "selected", label: "Selected Version", compactLabel: "Selected" },
+    { key: "current", label: "Current Version", compactLabel: "Current" },
+    { key: "changes", label: "Changes", compactLabel: "Changes" },
   ];
 
   return (
@@ -64,7 +66,7 @@ export function VersionComparisonWorkspace({
     >
       <div className="shrink-0 rounded-xl border border-border bg-surface px-3 py-2 shadow-card-soft">
         <div className="flex flex-col gap-2 2xl:flex-row 2xl:items-center 2xl:justify-between">
-          <h2 className="shrink-0 text-sm font-semibold text-text-primary">
+          <h2 className="hidden shrink-0 text-sm font-semibold text-text-primary lg:block">
             Compare Versions
           </h2>
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -75,16 +77,23 @@ export function VersionComparisonWorkspace({
               currentVersion={currentPreview}
               onChange={onSelectedVersionChange}
             />
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-secondary text-accent">
+            <div className="hidden size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-secondary text-accent min-[900px]:flex">
               <ArrowLeftRight className="size-4" />
             </div>
-            <VersionSelector
-              label="Current"
-              value={currentPreview}
-              versions={versions}
-              currentVersion={currentPreview}
-              disabled
-            />
+            <div className="hidden min-w-0 flex-1 min-[900px]:block">
+              <VersionSelector
+                label="Current"
+                value={currentPreview}
+                versions={versions}
+                currentVersion={currentPreview}
+                disabled
+              />
+            </div>
+            {onOpenDetails ? (
+              <button type="button" onClick={onOpenDetails} className="inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-border text-text-secondary transition hover:bg-surface-secondary hover:text-text-primary lg:hidden" aria-label="Open version details" title="Open version details">
+                <PanelRightOpen className="size-4" />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -119,13 +128,14 @@ export function VersionComparisonWorkspace({
                       : "text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
                   }`}
                 >
-                  {tab.label}
+                  <span className="sm:hidden">{tab.compactLabel}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-hidden p-2">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2">
             {previewTab === "selected" ? (
               <VersionPreviewPane
                 label="Selected Version"
