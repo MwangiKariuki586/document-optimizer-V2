@@ -46,8 +46,13 @@ export function EditorCanvas({
   const resetZoom = () => setZoom(100);
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft xl:min-h-0 xl:flex-1">
-      <div className="min-h-[320px] flex-1 overflow-y-auto bg-surface-secondary xl:min-h-0">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
+      <div
+        role="region"
+        aria-label="Document editor content"
+        tabIndex={0}
+        className="min-h-0 flex-1 touch-pan-y overflow-y-scroll overscroll-contain bg-surface-secondary"
+      >
         <div
           className={`document-editor min-h-[320px] w-full origin-top bg-surface px-5 py-5 transition-transform md:min-h-[480px] md:px-7 md:py-6 xl:min-h-0 ${zoomScaleClasses[zoom]}`}
         >

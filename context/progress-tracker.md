@@ -2362,6 +2362,26 @@ Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` pas
 Follow-up: Verify internal scrolling and Details drawer focus behavior on authenticated phone and tablet viewports.
 ```
 
+```txt
+Date: 2026-07-15
+Feature: Internally scrolling editor with reserved status row
+Status: Completed
+Files changed: components/editor/EditorWorkspace.tsx, components/editor/EditorCanvas.tsx, components/editor/EditorStatusBar.tsx, tests/playwright/responsive-editor-preview.spec.ts, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Pinned the mobile editor between the viewport top and bottom navigation, bounded the workspace to 100dvh from md, propagated remaining height through an explicit minmax grid row, and made the TipTap canvas a named touch, wheel, and keyboard scroll region. Reserved the canvas footer and Health/Readability/SEO status row beneath the document, compacted narrow score pills into one horizontally safe row, and moved the AI trigger above the status area.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed. Responsive Playwright now asserts the editor scroll region and visible Health status. The attempted focused Vitest path had no matching test file.
+Follow-up: Run the authenticated responsive Playwright matrix to verify canvas scrolling and status-bar visibility at all four target viewports.
+```
+
+```txt
+Date: 2026-07-15
+Feature: Remove persistent onboarding replay control
+Status: Completed
+Files changed: components/onboarding/ProgressiveOnboarding.tsx, context/project-overview.md, context/build-plan.md, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Removed the global question-mark onboarding replay button from every screen size. Progressive first-session guidance, milestone derivation, dismissals, and onboarding persistence remain unchanged; only the persistent shell affordance was removed.
+Verification: `npx.cmd tsc --noEmit` and focused ESLint passed.
+Follow-up: None.
+```
+
 ### Entry Template
 
 ```txt

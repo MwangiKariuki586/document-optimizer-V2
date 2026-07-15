@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { CircleHelp } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { ContextualTip } from "@/components/onboarding/ContextualTip";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { WelcomeGuide } from "@/components/onboarding/WelcomeGuide";
@@ -9,8 +8,7 @@ import { useOnboarding } from "@/lib/onboarding/onboarding.query";
 
 export function ProgressiveOnboarding() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { data, updateAsync, isPending } = useOnboarding();
+  const { data, isPending } = useOnboarding();
   if (isPending || !data) return null;
 
   const isDashboard = pathname === "/dashboard";
@@ -35,10 +33,5 @@ export function ProgressiveOnboarding() {
   else if (data.stage === "version-safety" && isEditor) guide = <ContextualTip tip="version-safety" title="Your previous version is safe" description="Applied AI changes create a recovery point, so you can restore earlier content from Versions." actionLabel="View versions" actionHref={`${pathname}/versions`} />;
   else if (isDashboard && !data.checklistDismissed && data.stage !== "welcome") guide = <OnboardingChecklist state={data} />;
 
-  return (
-    <>
-      {guide}
-      <button type="button" onClick={async () => { await updateAsync({ action: "restart-guide" }); router.push("/dashboard"); }} className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-4 z-30 inline-flex size-9 items-center justify-center rounded-full border border-border bg-surface text-text-muted shadow-card-soft transition hover:bg-surface-secondary hover:text-text-primary md:bottom-5 md:left-20" title="Restart getting started guide" aria-label="Restart getting started guide"><CircleHelp className="size-4" /></button>
-    </>
-  );
+  return guide;
 }

@@ -558,6 +558,7 @@ Rules:
 - Do not hide functional filters on narrow screens; reflow them into a compact grid instead.
 - Avoid nested scrolling for dashboard cards on phones; use natural-height panels and enable internal card scrolling from `sm` where needed.
 - Keep editor flex/grid ancestors width-contained with `min-w-0`; formatting toolbars may scroll horizontally inside their own width, but the page must not.
+- Keep the editor workspace viewport-bounded at every breakpoint. The document canvas owns vertical scrolling, while its footer and the compact status row remain visible above navigation.
 - Below `xl`, expose editor AI actions and suggestions in a labelled, focus-managed bottom sheet opened by a persistent icon trigger. Keep the fixed 300px AI rail from `xl`.
 - In the AI bottom sheet, scroll the action list rather than the entire panel; expanded settings and the primary Run action must remain visible.
 - Below `lg`, result preview uses one pane at a time with Proposed selected first and explicit Current/Changes tabs.
@@ -602,6 +603,6 @@ Rules:
 - Never add a second persistent navigation rail inside authenticated pages
 - Never stack more than two nested rounded card containers
 - Never use fixed positioning unless required for a modal, toast, or controlled overlay
-- Progressive onboarding may use fixed positioning only for its welcome modal, compact checklist, contextual tip, and replay control.
+- Progressive onboarding may use fixed positioning only for its welcome modal, compact checklist, and contextual tip.
 - Show only one proactive onboarding surface at a time; all guidance must be dismissible and keyboard accessible.
 - Contextual onboarding guidance uses the global informational toast UI, remains until explicit dismissal, and must not create a second custom-positioned overlay.

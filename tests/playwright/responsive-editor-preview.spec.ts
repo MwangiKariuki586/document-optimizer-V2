@@ -28,6 +28,8 @@ test.describe("responsive editor", () => {
       await expectNoPageOverflow(page);
       await expect(page.getByLabel("Document title")).toBeVisible();
       await expect(page.getByRole("button", { name: /Save|Saved/ }).first()).toBeVisible();
+      await expect(page.getByRole("region", { name: "Document editor content" })).toHaveCSS("overflow-y", "scroll");
+      await expect(page.getByText("Health", { exact: true })).toBeVisible();
 
       if (viewport.width < 1280) {
         const trigger = page.getByRole("button", { name: "Open AI assistant" });

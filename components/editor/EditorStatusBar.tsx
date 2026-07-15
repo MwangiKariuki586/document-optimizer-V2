@@ -143,12 +143,12 @@ function getScoreClass(value: number): string {
 
 function MetricPill({ label, value }: MetricPillProps) {
   return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-border-light bg-surface px-3 py-1.5 shadow-card-soft">
+    <div className="inline-flex min-w-0 shrink-0 items-center gap-1 rounded-full border border-border-light bg-surface px-2 py-1 shadow-card-soft sm:gap-2 sm:px-3 sm:py-1.5">
       <span className="truncate text-xs font-medium text-text-secondary">
         {label}
       </span>
       <span
-        className={`rounded-full px-2 py-0.5 text-xs font-bold ${getScoreClass(value)}`}
+        className={`rounded-full px-1.5 py-0.5 text-xs font-bold sm:px-2 ${getScoreClass(value)}`}
       >
         {value}%
       </span>
@@ -180,10 +180,12 @@ export function EditorStatusBar({
     });
 
   return (
-    <section className="flex w-full min-w-0 shrink-0 flex-wrap items-center justify-center gap-2 overflow-hidden rounded-xl px-1 py-2 sm:px-3">
-      <MetricPill label="Health" value={resolvedHealthScore} />
-      <MetricPill label="Readability" value={resolvedReadabilityScore} />
-      <MetricPill label="SEO" value={resolvedSeoScore} />
+    <section className="scrollbar-hidden w-full min-w-0 shrink-0 overflow-x-auto rounded-xl px-1 py-1.5 sm:px-3 sm:py-2">
+      <div className="flex w-max min-w-full items-center justify-center gap-2">
+        <MetricPill label="Health" value={resolvedHealthScore} />
+        <MetricPill label="Readability" value={resolvedReadabilityScore} />
+        <MetricPill label="SEO" value={resolvedSeoScore} />
+      </div>
     </section>
   );
 }

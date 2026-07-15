@@ -949,12 +949,12 @@ export function EditorWorkspace({
     );
 
   return (
-    <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden bg-background px-3 py-3 md:px-5 xl:h-screen xl:max-h-screen xl:overflow-hidden">
-      <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-[1600px] flex-col gap-3 xl:overflow-hidden">
+    <main className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] top-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background px-3 py-3 md:static md:h-dvh md:px-5">
+      <div className="mx-auto flex h-full min-h-0 min-w-0 w-full max-w-[1600px] flex-col gap-3 overflow-hidden">
         <div
-          className="grid min-h-0 min-w-0 w-full gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-1 xl:overflow-hidden"
+          className="grid min-h-0 min-w-0 w-full flex-1 grid-rows-[minmax(0,1fr)] gap-3 overflow-hidden xl:grid-cols-[minmax(0,1fr)_300px]"
         >
-          <div className="order-1 flex min-h-0 min-w-0 w-full flex-col gap-2 xl:min-h-0 xl:flex-1 xl:overflow-hidden">
+          <div className="order-1 flex h-full min-h-0 min-w-0 w-full flex-col gap-2 overflow-hidden">
             <div className="relative z-20 flex min-w-0 w-full shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-card-soft">
               <EditorTopBar
                 title={title}
@@ -1013,7 +1013,7 @@ export function EditorWorkspace({
         <button
           type="button"
           onClick={() => setAssistantOpen(true)}
-          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-popover transition hover:bg-accent-dark md:bottom-5 xl:hidden"
+          className="fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] right-4 z-40 inline-flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-popover transition hover:bg-accent-dark md:bottom-20 xl:hidden"
           aria-haspopup="dialog"
           aria-expanded={assistantOpen}
           aria-label="Open AI assistant"

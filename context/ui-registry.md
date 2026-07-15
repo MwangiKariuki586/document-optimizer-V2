@@ -1169,7 +1169,7 @@ className="flex items-center gap-1 overflow-x-auto border-t border-border-light 
 
 **Purpose:**
 
-Document canvas hosting the live TipTap `<EditorContent>` (real `editor_json`) plus a footer with word/character counts, language, and zoom controls.
+Document canvas hosting the live TipTap `<EditorContent>` (real `editor_json`) plus a footer with word/character counts, language, and zoom controls. The canvas fills the workspace's remaining height and exposes the document body as a named touch, wheel, and keyboard scroll region.
 
 **Used on:**
 
@@ -1243,7 +1243,7 @@ Suggestions, Apply All, and compact empty states.
 
 **Purpose:**
 
-Compact center-column editor metric strip: Health, Readability, and SEO as small name + percentage pills calculated from live editor content and suggestion state.
+Compact center-column editor metric strip: Health, Readability, and SEO as small name + percentage pills calculated from live editor content and suggestion state. It owns a reserved row beneath the canvas; narrow screens use compact non-wrapping pills with internal horizontal overflow when required.
 
 **Used on:**
 
@@ -2323,9 +2323,8 @@ Delete button: bg-error-muted text-error-foreground hover:bg-error-light
 **Path:** `components/onboarding/ProgressiveOnboarding.tsx`
 
 Authenticated-shell orchestrator that loads normalized onboarding state and
-renders exactly one welcome, checklist, or contextual guidance surface. Includes
-an icon-only replay control that restarts UI guidance without clearing real
-milestones.
+renders exactly one welcome, checklist, or contextual guidance surface. It does
+not render a persistent shell replay control.
 
 ### WelcomeGuide
 

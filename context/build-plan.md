@@ -831,6 +831,6 @@ Add and run MVP-level tests.
 
 - Add server-only `user_onboarding` state and derive real milestones from domain records.
 - Add authenticated onboarding read/update routes and TanStack Query integration.
-- Add first-session welcome, dashboard activation checklist, contextual workflow tips, and replay control.
+- Add first-session welcome, dashboard activation checklist, and contextual workflow tips without a persistent shell replay control.
 - Invalidate onboarding progress after successful document, AI, apply, and export mutations.
-- Verify one-guide-at-a-time behavior, cross-session dismissal, replay, and non-blocking failure behavior.
+- Verify one-guide-at-a-time behavior, cross-session dismissal, and non-blocking failure behavior.
