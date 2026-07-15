@@ -37,7 +37,17 @@ test.describe("responsive editor", () => {
         await trigger.click();
         await expect(page.getByRole("dialog", { name: "AI Assistant" })).toBeVisible();
         await page.getByRole("button", { name: /Translate Document/ }).first().click();
-        await expect(page.getByRole("button", { name: /^Translate Document$/ })).toBeVisible();
+        const runAction = page.getByRole("button", { name: /^Translate Document$/ });
+        await expect(runAction).toBeVisible();
+        if (viewport.width < 768) {
+          const actionBox = await runAction.boundingBox();
+          const navigationBox = await page
+            .getByRole("navigation", { name: "Mobile workspace navigation" })
+            .boundingBox();
+          expect(actionBox).not.toBeNull();
+          expect(navigationBox).not.toBeNull();
+          expect(actionBox!.y + actionBox!.height).toBeLessThanOrEqual(navigationBox!.y);
+        }
         await page.keyboard.press("Escape");
         await expect(page.getByRole("dialog", { name: "AI Assistant" })).toBeHidden();
         await expect(trigger).toBeFocused();

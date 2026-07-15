@@ -561,6 +561,7 @@ Rules:
 - Keep the editor workspace viewport-bounded at every breakpoint. The document canvas owns vertical scrolling, while its footer and the compact status row remain visible above navigation.
 - Below `xl`, expose editor AI actions and suggestions in a labelled, focus-managed bottom sheet opened by a persistent icon trigger. Keep the fixed 300px AI rail from `xl`.
 - In the AI bottom sheet, scroll the action list rather than the entire panel; expanded settings and the primary Run action must remain visible.
+- Anchor the mobile AI sheet above fixed workspace navigation; CTA visibility requires the full button bounds to remain above the navigation bar.
 - Below `lg`, result preview uses one pane at a time with Proposed selected first and explicit Current/Changes tabs.
 - Result preview exposes one left-aligned Return to Editor control in its compact header and one Export action beneath the review pane. The pane owns vertical scrolling so the page remains viewport-contained.
 - On mobile, pin result preview between the viewport top and fixed bottom navigation. Current and Proposed content regions must support touch, wheel, and keyboard scrolling independently of document scroll position.

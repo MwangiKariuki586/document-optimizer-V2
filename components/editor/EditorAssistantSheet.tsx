@@ -66,7 +66,7 @@ export function EditorAssistantSheet({ children, open, onClose }: EditorAssistan
   return (
     <div className="fixed inset-0 z-[70] xl:hidden">
       <button type="button" className="absolute inset-0 bg-overlay-muted" aria-label="Close AI assistant" onClick={onClose} />
-      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="editor-assistant-title" className="absolute inset-x-0 bottom-0 flex h-[88dvh] min-w-0 flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-popover md:inset-x-5 md:bottom-5 md:mx-auto md:h-[min(88dvh,720px)] md:max-w-2xl md:rounded-xl">
+      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="editor-assistant-title" className="absolute inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] flex h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] max-h-[88dvh] min-w-0 flex-col overflow-hidden rounded-t-xl border border-border bg-surface shadow-popover md:inset-x-5 md:bottom-5 md:mx-auto md:h-[min(88dvh,720px)] md:max-w-2xl md:rounded-xl">
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border-light px-4 py-3">
           <h2 id="editor-assistant-title" className="inline-flex items-center gap-2 text-sm font-semibold text-text-primary">
             <Sparkles className="size-4 text-accent" />

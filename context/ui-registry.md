@@ -2369,6 +2369,10 @@ Actions and Suggestions panels. It owns the backdrop, close/Escape behavior,
 initial focus, focus restoration, and body-scroll lock; it must not duplicate
 assistant business state.
 
+On mobile, its bottom edge is anchored above the fixed workspace navigation and
+its height is capped to the remaining viewport so the primary action cannot be
+covered by navigation.
+
 `AIActionsPanel` must fill the available sheet height. Its action list is the
 scrollable region; expanded settings and the primary Run action remain visible
 at the bottom of the panel.

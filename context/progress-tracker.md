@@ -2382,6 +2382,16 @@ Verification: `npx.cmd tsc --noEmit` and focused ESLint passed.
 Follow-up: None.
 ```
 
+```txt
+Date: 2026-07-15
+Feature: Mobile AI assistant CTA visibility
+Status: Completed
+Files changed: components/editor/EditorAssistantSheet.tsx, tests/playwright/responsive-editor-preview.spec.ts, context/ui-registry.md, context/ui-rules.md, context/progress-tracker.md
+What was completed: Moved the mobile AI assistant sheet's bottom edge above the fixed workspace navigation and bounded its height to the remaining viewport. Expanded action settings and the Run CTA now stay inside the visible sheet rather than underneath navigation.
+Verification: `npx.cmd tsc --noEmit`, focused ESLint, and `git diff --check` passed. Responsive Playwright now compares the CTA bottom edge with the mobile navigation top edge.
+Follow-up: Run the authenticated responsive Playwright matrix for all configurable AI actions.
+```
+
 ### Entry Template
 
 ```txt
